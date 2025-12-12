@@ -1,0 +1,393 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Header from '@/components/layout/Header';
+import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List, Heading1, Heading2, Loader2 } from 'lucide-react';
+
+type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
+
+const statusConfig: Record<ArticleStatus, { label: string; color: string; bgColor: string }> = {
+  draft: { label: '草稿', color: 'text-slate-600', bgColor: 'bg-slate-100' },
+  pending_review: { label: '待审核', color: 'text-amber-600', bgColor: 'bg-amber-100' },
+  approved: { label: '已审核', color: 'text-green-600', bgColor: 'bg-green-100' },
+  published: { label: '已发布', color: 'text-blue-600', bgColor: 'bg-blue-100' },
+  failed: { label: '发布失败', color: 'text-red-600', bgColor: 'bg-red-100' },
+};
+
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  coverImage: string;
+  images: string[];
+  status: ArticleStatus;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export default function ArticleEditPage() {
+  const params = useParams();
+  const router = useRouter();
+  const isNew = params.id === 'new';
+
+  const [loading, setLoading] = useState(!isNew);
+  const [saving, setSaving] = useState(false);
+  const [article, setArticle] = useState<Article | null>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [status, setStatus] = useState<ArticleStatus>('draft');
+  const [source, setSource] = useState('');
+  const [showImageModal, setShowImageModal] = useState(false);
+
+  // 加载文章数据
+  useEffect(() => {
+    if (!isNew) {
+      fetchArticle();
+    }
+  }, [params.id, isNew]);
+
+  const fetchArticle = async () => {
+    try {
+      const response = await fetch(`/api/articles/${params.id}`);
+      const result = await response.json();
+      if (result.success && result.data) {
+        const data = result.data;
+        setArticle(data);
+        setTitle(data.title);
+        setContent(data.content);
+        setImages(data.images || []);
+        setStatus(data.status);
+        setSource(data.source);
+      } else {
+        alert('文章不存在');
+        router.push('/articles');
+      }
+    } catch (err) {
+      console.error('加载文章失败:', err);
+      alert('加载文章失败');
+      router.push('/articles');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (newStatus?: ArticleStatus) => {
+    if (!title.trim()) {
+      alert('请输入文章标题');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/articles/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content,
+          images,
+          status: newStatus || status,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        if (newStatus) {
+          setStatus(newStatus);
+        }
+        alert('保存成功');
+      } else {
+        alert(result.error || '保存失败');
+      }
+    } catch (err) {
+      console.error('保存失败:', err);
+      alert('保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const unsplashImages = [
+    'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
+    'https://images.unsplash.com/photo-1684163761883-8a1e3f3e3e3e?w=400',
+    'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400',
+    'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400',
+    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400',
+  ];
+
+  const addImage = (url: string) => {
+    setImages([...images, url]);
+    setShowImageModal(false);
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  // 计算纯文本字数
+  const getWordCount = () => {
+    return content.replace(/<[^>]*>/g, '').length;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header title="加载中..." />
+        <div className="p-6 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isNew) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header title="新建文章" />
+        <div className="p-6">
+          <Link href="/articles" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6">
+            <ArrowLeft className="w-4 h-4" />
+            返回列表
+          </Link>
+          <div className="bg-white rounded-xl p-12 shadow-sm border border-slate-200 text-center">
+            <p className="text-slate-500 mb-4">推荐使用「选题分析」页面的「一键创作」功能生成文章</p>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              前往选题分析
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <Header
+        title="编辑文章"
+        action={
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSave()}
+              disabled={saving}
+              className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              保存草稿
+            </button>
+            {status === 'draft' && (
+              <button
+                onClick={() => handleSave('pending_review')}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                提交审核
+              </button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="p-6">
+        <Link
+          href="/articles"
+          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          返回列表
+        </Link>
+
+        <div className="grid grid-cols-3 gap-6">
+          {/* Editor */}
+          <div className="col-span-2 space-y-4">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <label className="block text-sm font-medium text-slate-700 mb-2">标题</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="请输入文章标题..."
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+              />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              {/* Toolbar */}
+              <div className="flex items-center gap-1 p-3 border-b border-slate-200 bg-slate-50">
+                <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors">
+                  <Heading1 className="w-4 h-4" />
+                </button>
+                <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors">
+                  <Heading2 className="w-4 h-4" />
+                </button>
+                <div className="w-px h-5 bg-slate-300 mx-1" />
+                <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors">
+                  <Bold className="w-4 h-4" />
+                </button>
+                <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors">
+                  <Italic className="w-4 h-4" />
+                </button>
+                <div className="w-px h-5 bg-slate-300 mx-1" />
+                <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors">
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowImageModal(true)}
+                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="开始写作..."
+                className="w-full h-96 p-6 focus:outline-none resize-none text-slate-700 leading-relaxed"
+              />
+
+              {/* Footer */}
+              <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-500">
+                字数统计: {getWordCount()}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* Article Info */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h3 className="font-medium text-slate-800 mb-4">文章信息</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">状态</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${statusConfig[status].bgColor} ${statusConfig[status].color}`}>
+                    {statusConfig[status].label}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">来源</span>
+                  <span className="text-slate-700 text-right max-w-[150px] truncate" title={source}>
+                    {source || '手动创建'}
+                  </span>
+                </div>
+                {article && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">创建时间</span>
+                      <span className="text-slate-700">{new Date(article.createdAt).toLocaleDateString('zh-CN')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">更新时间</span>
+                      <span className="text-slate-700">{new Date(article.updatedAt).toLocaleDateString('zh-CN')}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h3 className="font-medium text-slate-800 mb-4">图片管理</h3>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {images.map((img, index) => (
+                  <div key={index} className="relative group">
+                    <img src={img} alt="" className="w-full h-16 object-cover rounded-lg" />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowImageModal(true)}
+                className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                从 Unsplash 添加
+              </button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h3 className="font-medium text-slate-800 mb-4">快捷操作</h3>
+              <div className="space-y-2">
+                {status === 'draft' && (
+                  <button
+                    onClick={() => handleSave('pending_review')}
+                    disabled={saving}
+                    className="w-full py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
+                  >
+                    提交审核
+                  </button>
+                )}
+                {status === 'pending_review' && (
+                  <button
+                    onClick={() => handleSave('approved')}
+                    disabled={saving}
+                    className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
+                  >
+                    通过审核
+                  </button>
+                )}
+                {status === 'approved' && (
+                  <>
+                    <button className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
+                      📕 发布到小红书
+                    </button>
+                    <button className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm">
+                      📗 发布到公众号
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Image Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-800">从 Unsplash 选择图片</h3>
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {unsplashImages.map((img, index) => (
+                <button
+                  key={index}
+                  onClick={() => addImage(img)}
+                  className="relative group overflow-hidden rounded-lg"
+                >
+                  <img src={img} alt="" className="w-full h-32 object-cover" />
+                  <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/30 transition-colors flex items-center justify-center">
+                    <Plus className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
