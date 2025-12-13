@@ -79,8 +79,6 @@ export default function ArticlesPage() {
   // 小红书发布相关状态
   const [showXhsModal, setShowXhsModal] = useState(false);
   const [xhsPublishing, setXhsPublishing] = useState(false);
-  const [xhsTags, setXhsTags] = useState<string[]>([]);
-  const [xhsTagInput, setXhsTagInput] = useState('');
   const [xhsResult, setXhsResult] = useState<{
     publishUrl: string;
     title: string;
@@ -249,42 +247,27 @@ export default function ArticlesPage() {
     }
   };
 
-  // 发布到小红书 - 打开弹窗
-  const handlePublishToXiaohongshu = (articleId: string) => {
+  // 发布到小红书 - 直接调用API并显示二维码
+  const handlePublishToXiaohongshu = async (articleId: string) => {
     if (!ensureLogin()) return;
+
     setSelectedArticleForXhs(articleId);
     setOpenDropdownId(null);
-    setXhsTags([]);
-    setXhsTagInput('');
     setXhsResult(null);
-    setShowXhsModal(true);
-  };
-
-  // 确认发布到小红书
-  const confirmPublishToXiaohongshu = async () => {
-    if (!ensureLogin()) return;
-    if (!selectedArticleForXhs) return;
-
     setXhsPublishing(true);
+    setShowXhsModal(true);
 
     try {
-      console.log('开始调用小红书发布API...');
       const response = await fetch('/api/publish/xiaohongshu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          articleId: parseInt(selectedArticleForXhs),
-          tags: xhsTags.length > 0 ? xhsTags : undefined,
+          articleId: parseInt(articleId),
         }),
       });
       const result = await response.json();
 
-      // 调试日志：打印API返回的完整数据
-      console.log('小红书发布API返回结果:', JSON.stringify(result, null, 2));
-
       if (result.success) {
-        console.log('发布成功，发布链接:', result.data.publishUrl);
-
         setXhsResult({
           publishUrl: result.data.publishUrl,
           title: result.data.title,
@@ -292,35 +275,23 @@ export default function ArticlesPage() {
         });
         // 更新文章状态
         setArticles((prev) =>
-          prev.map((a) => (a.id === selectedArticleForXhs ? { ...a, status: 'published' as ArticleStatus } : a))
+          prev.map((a) => (a.id === articleId ? { ...a, status: 'published' as ArticleStatus } : a))
         );
       } else {
-        toast.error('发布失败', {
+        toast.error('生成发布链接失败', {
           description: result.error || '请稍后重试',
         });
+        setShowXhsModal(false);
       }
     } catch (err) {
       console.error('发布失败:', err);
-      toast.error('发布失败', {
+      toast.error('生成发布链接失败', {
         description: '请检查API配置是否正确',
       });
+      setShowXhsModal(false);
     } finally {
       setXhsPublishing(false);
     }
-  };
-
-  // 添加标签
-  const handleAddTag = () => {
-    const tag = xhsTagInput.trim();
-    if (tag && !xhsTags.includes(tag) && xhsTags.length < 5) {
-      setXhsTags([...xhsTags, tag]);
-      setXhsTagInput('');
-    }
-  };
-
-  // 删除标签
-  const handleRemoveTag = (tagToRemove: string) => {
-    setXhsTags(xhsTags.filter(tag => tag !== tagToRemove));
   };
 
   // 复制文章
@@ -999,106 +970,29 @@ export default function ArticlesPage() {
         {/* 小红书发布弹窗 */}
         {showXhsModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] w-[420px] max-h-[85vh] overflow-y-auto">
-              {/* 未发布状态 - 显示配置表单 */}
-              {!xhsResult ? (
-                <>
-                  <h3 className="text-lg font-semibold text-slate-200 mb-6 flex items-center gap-2">
-                    📕 发布到小红书
+            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] w-[420px]">
+              {/* 加载状态 */}
+              {xhsPublishing ? (
+                <div className="py-12 flex flex-col items-center">
+                  <Loader2 className="w-12 h-12 animate-spin text-red-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-200 mb-2">
+                    正在生成发布链接...
                   </h3>
-
-                  {/* 标签配置 */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-slate-300 mb-3">
-                      添加标签（选填，最多5个）
-                    </label>
-                    <div className="flex gap-2 mb-3">
-                      <input
-                        type="text"
-                        value={xhsTagInput}
-                        onChange={(e) => setXhsTagInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                        placeholder="输入标签后按回车添加"
-                        className="flex-1 px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
-                        disabled={xhsTags.length >= 5}
-                      />
-                      <button
-                        onClick={handleAddTag}
-                        disabled={!xhsTagInput.trim() || xhsTags.length >= 5}
-                        className="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      >
-                        添加
-                      </button>
-                    </div>
-                    {xhsTags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {xhsTags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm"
-                          >
-                            #{tag}
-                            <button
-                              onClick={() => handleRemoveTag(tag)}
-                              className="w-4 h-4 rounded-full hover:bg-red-500/30 flex items-center justify-center"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 提示信息 */}
-                  <div className="bg-[#1a1a2e] rounded-xl p-4 mb-6 border border-[#2d2d44]">
-                    <p className="text-sm text-slate-400">
-                      发布后将生成二维码，请使用小红书APP扫码完成发布。
-                    </p>
-                    <p className="text-xs text-slate-500 mt-2">
-                      • 文章内容将自动转换为纯文本格式<br />
-                      • 图片将自动提取并上传
-                    </p>
-                  </div>
-
-                  {/* 操作按钮 */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setShowXhsModal(false);
-                        setSelectedArticleForXhs(null);
-                      }}
-                      className="flex-1 py-2.5 text-sm text-slate-400 hover:text-slate-200 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl transition-colors"
-                    >
-                      取消
-                    </button>
-                    <button
-                      onClick={confirmPublishToXiaohongshu}
-                      disabled={xhsPublishing}
-                      className="flex-1 py-2.5 text-sm text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:from-red-400 hover:to-pink-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {xhsPublishing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          发布中...
-                        </>
-                      ) : (
-                        '确认发布'
-                      )}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                /* 已发布状态 - 显示二维码 */
+                  <p className="text-sm text-slate-400">
+                    请稍候，正在准备发布内容
+                  </p>
+                </div>
+              ) : xhsResult ? (
+                /* 二维码显示 */
                 <>
-                  <h3 className="text-lg font-semibold text-slate-200 mb-2 text-center">
-                    发布成功
+                  <h3 className="text-lg font-semibold text-slate-200 mb-2 text-center flex items-center justify-center gap-2">
+                    📕 扫码发布到小红书
                   </h3>
                   <p className="text-sm text-slate-400 text-center mb-6">
                     请使用小红书APP扫描二维码完成发布
                   </p>
 
-                  {/* 二维码 - 使用 publish_url 生成 */}
+                  {/* 二维码 */}
                   <div className="flex justify-center mb-6">
                     <div className="bg-white p-4 rounded-xl">
                       {xhsResult.publishUrl ? (
@@ -1121,7 +1015,7 @@ export default function ArticlesPage() {
                   </div>
 
                   {/* 文章信息 */}
-                  <div className="bg-[#1a1a2e] rounded-xl p-4 mb-6 border border-[#2d2d44]">
+                  <div className="bg-[#1a1a2e] rounded-xl p-4 mb-4 border border-[#2d2d44]">
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-slate-400">文章标题</span>
                       <span className="text-slate-200 truncate max-w-[200px]">{xhsResult.title}</span>
@@ -1166,7 +1060,7 @@ export default function ArticlesPage() {
                     完成
                   </button>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         )}
