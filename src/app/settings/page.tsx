@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { Eye, EyeOff, Save, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Save, CheckCircle, Loader2, AlertCircle, XCircle, SkipForward } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
@@ -11,43 +11,42 @@ import { cn } from '@/lib/utils';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
 
+// 可选的 URL 验证：允许空字符串或有效 URL
+const optionalUrl = z.string().refine(
+  (val) => val === '' || /^https?:\/\/.+/.test(val),
+  { message: '请输入有效的 URL 地址' }
+);
+
+// 新的验证 schema：所有 API 配置都是可选的
 const settingsSchema = z.object({
   ai: z.object({
-    baseUrl: z.string().url('请输入有效的 API Base URL'),
-    apiKey: z.string().min(1, 'API Key 不能为空'),
-    model: z.string().min(1, '请选择模型'),
+    baseUrl: optionalUrl,
+    apiKey: z.string(),
+    model: z.string(),
   }),
   wechatArticle: z.object({
-    endpoint: z.string().url('请输入有效的接口地址'),
-    apiKey: z.string().min(1, 'API Key 不能为空'),
-  }),
-  unsplash: z.object({
-    accessKey: z.string().optional(),
+    endpoint: optionalUrl,
+    apiKey: z.string(),
   }),
   imageGen: z.object({
-    baseUrl: z.string().url('请输入有效的接口地址'),
-    apiKey: z.string().min(1, 'API Key 不能为空'),
-    model: z.string().min(1, '请选择模型'),
+    baseUrl: optionalUrl,
+    apiKey: z.string(),
+    model: z.string(),
   }),
   xiaohongshu: z.object({
-    endpoint: z.string().url('请输入有效的接口地址'),
-    apiKey: z.string().min(1, 'API Key 不能为空'),
+    endpoint: optionalUrl,
+    apiKey: z.string(),
   }),
   wechatPublish: z.object({
-    endpoint: z.string().url('请输入有效的接口地址'),
-    apiKey: z.string().min(1, 'API Key 不能为空'),
+    endpoint: optionalUrl,
+    apiKey: z.string(),
   }),
-  preferences: z
-    .object({
-      imageCount: z.coerce.number().min(1, '至少生成 1 张图片').max(10, '最多生成 10 张图片'),
-      style: z.string().min(1, '请选择创作风格'),
-      minWords: z.coerce.number().min(300, '字数需不低于 300'),
-      maxWords: z.coerce.number().max(5000, '字数需不超过 5000'),
-    })
-    .refine((val) => val.maxWords >= val.minWords, {
-      message: '最大字数需大于或等于最小字数',
-      path: ['maxWords'],
-    }),
+  preferences: z.object({
+    imageCount: z.coerce.number().min(1).max(10),
+    style: z.string(),
+    minWords: z.coerce.number().min(300),
+    maxWords: z.coerce.number().max(5000),
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -59,11 +58,8 @@ const defaultSettings: SettingsFormValues = {
     model: 'gpt-4o',
   },
   wechatArticle: {
-    endpoint: 'https://api.example.com/wechat',
+    endpoint: '',
     apiKey: '',
-  },
-  unsplash: {
-    accessKey: '',
   },
   imageGen: {
     baseUrl: 'https://api.siliconflow.cn/v1/images/generations',
@@ -71,11 +67,11 @@ const defaultSettings: SettingsFormValues = {
     model: 'Kwai-Kolors/Kolors',
   },
   xiaohongshu: {
-    endpoint: 'https://api.example.com/xhs',
+    endpoint: '',
     apiKey: '',
   },
   wechatPublish: {
-    endpoint: 'https://api.example.com/mp',
+    endpoint: '',
     apiKey: '',
   },
   preferences: {
@@ -85,6 +81,12 @@ const defaultSettings: SettingsFormValues = {
     maxWords: 2500,
   },
 };
+
+interface ValidationResult {
+  name: string;
+  status: 'success' | 'error' | 'skipped';
+  message: string;
+}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -96,16 +98,65 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
+function ValidationResultModal({
+  results,
+  onClose,
+}: {
+  results: ValidationResult[];
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold text-slate-200 mb-4">保存完成 - 验证结果</h3>
+        <div className="space-y-3 mb-6">
+          {results.map((result, index) => (
+            <div key={index} className="flex items-start gap-3">
+              {result.status === 'success' && (
+                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+              )}
+              {result.status === 'error' && (
+                <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              )}
+              {result.status === 'skipped' && (
+                <SkipForward className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className={cn(
+                  'text-sm font-medium',
+                  result.status === 'success' && 'text-emerald-400',
+                  result.status === 'error' && 'text-red-400',
+                  result.status === 'skipped' && 'text-slate-500'
+                )}>
+                  {result.name}
+                </p>
+                <p className="text-xs text-slate-400">{result.message}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors"
+        >
+          知道了
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后配置接口');
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [validationResults, setValidationResults] = useState<ValidationResult[] | null>(null);
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting, isDirty, isValid },
+    getValues,
+    formState: { errors, isSubmitting },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema) as Resolver<SettingsFormValues>,
     mode: 'onBlur',
@@ -122,7 +173,6 @@ export default function SettingsPage() {
           reset({
             ai: { ...defaultSettings.ai, ...result.data.ai },
             wechatArticle: { ...defaultSettings.wechatArticle, ...result.data.wechatArticle },
-            unsplash: { ...defaultSettings.unsplash, ...result.data.unsplash },
             imageGen: { ...defaultSettings.imageGen, ...result.data.imageGen },
             xiaohongshu: { ...defaultSettings.xiaohongshu, ...result.data.xiaohongshu },
             wechatPublish: { ...defaultSettings.wechatPublish, ...result.data.wechatPublish },
@@ -146,32 +196,111 @@ export default function SettingsPage() {
     setShowKeys((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const inputBaseClass = 'w-full px-4 py-2 bg-[#1a1a2e] rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 transition-colors';
+  const inputBaseClass = 'w-full px-4 py-2 bg-[#1a1a2e] rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 transition-colors border';
   const normalInputClass = 'border-[#2d2d44] focus:border-indigo-500 focus:ring-indigo-500/20';
   const errorInputClass = 'border-red-500 focus:border-red-500 focus:ring-red-500/20';
 
+  // 验证单个 API 配置
+  const validateApi = async (
+    name: string,
+    endpoint: string,
+    apiKey: string,
+    testFn?: () => Promise<boolean>
+  ): Promise<ValidationResult> => {
+    if (!endpoint || !apiKey) {
+      return { name, status: 'skipped', message: '未配置，跳过验证' };
+    }
+
+    try {
+      if (testFn) {
+        const success = await testFn();
+        return success
+          ? { name, status: 'success', message: '连接成功' }
+          : { name, status: 'error', message: '连接失败' };
+      }
+      // 默认只检查是否填写
+      return { name, status: 'success', message: '配置已保存' };
+    } catch (error) {
+      return { name, status: 'error', message: error instanceof Error ? error.message : '验证失败' };
+    }
+  };
+
+  // 测试 AI 接口
+  const testAiApi = async (baseUrl: string, apiKey: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/settings/test-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl, apiKey }),
+      });
+      const result = await response.json();
+      return result.success;
+    } catch {
+      return false;
+    }
+  };
+
   const onSubmit = async (values: SettingsFormValues) => {
     if (!ensureLogin()) return;
+
     try {
+      // 先保存配置
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
       const result = await response.json();
-      if (result.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      } else {
-        toast.error('保存失败', {
-          description: result.error,
-        });
+
+      if (!result.success) {
+        toast.error('保存失败', { description: result.error });
+        return;
       }
+
+      // 验证已填写的配置
+      const results: ValidationResult[] = [];
+
+      // AI 接口验证
+      if (values.ai.baseUrl && values.ai.apiKey) {
+        const aiResult = await validateApi(
+          'AI 接口',
+          values.ai.baseUrl,
+          values.ai.apiKey,
+          () => testAiApi(values.ai.baseUrl, values.ai.apiKey)
+        );
+        results.push(aiResult);
+      } else {
+        results.push({ name: 'AI 接口', status: 'skipped', message: '未配置，跳过验证' });
+      }
+
+      // 公众号文章 API
+      results.push(
+        await validateApi('公众号文章 API', values.wechatArticle.endpoint, values.wechatArticle.apiKey)
+      );
+
+      // AI 图片生成
+      results.push(
+        await validateApi('AI 图片生成', values.imageGen.baseUrl, values.imageGen.apiKey)
+      );
+
+      // 小红书发布
+      results.push(
+        await validateApi('小红书发布 API', values.xiaohongshu.endpoint, values.xiaohongshu.apiKey)
+      );
+
+      // 公众号发布
+      results.push(
+        await validateApi('公众号发布 API', values.wechatPublish.endpoint, values.wechatPublish.apiKey)
+      );
+
+      // 显示验证结果
+      setValidationResults(results);
+
+      // 重置表单的 dirty 状态
+      reset(values);
     } catch (err) {
       console.error('保存设置失败:', err);
-      toast.error('保存失败', {
-        description: '网络异常，请稍后重试',
-      });
+      toast.error('保存失败', { description: '网络异常，请稍后重试' });
     }
   };
 
@@ -201,6 +330,13 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#0f0f23]">
       <Header title="设置" />
 
+      {validationResults && (
+        <ValidationResultModal
+          results={validationResults}
+          onClose={() => setValidationResults(null)}
+        />
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl space-y-6">
         {/* API Configuration */}
         <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
@@ -211,23 +347,21 @@ export default function SettingsPage() {
             <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded flex items-center justify-center text-xs">🤖</span>
               AI 接口 (OpenAI兼容)
+              <span className="text-xs text-slate-500 ml-2">核心功能，建议配置</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Base URL <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Base URL</label>
                 <input
                   type="text"
                   {...register('ai.baseUrl')}
                   className={cn(inputBaseClass, errors.ai?.baseUrl ? errorInputClass : normalInputClass)}
+                  placeholder="https://api.openai.com/v1"
                 />
                 <FieldError message={errors.ai?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  Model <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">Model</label>
                 <select
                   {...register('ai.model')}
                   className={cn(inputBaseClass, errors.ai?.model ? errorInputClass : normalInputClass)}
@@ -240,14 +374,13 @@ export default function SettingsPage() {
                 <FieldError message={errors.ai?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Key <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['ai'] ? 'text' : 'password'}
                     {...register('ai.apiKey')}
                     className={cn(inputBaseClass, 'pr-10', errors.ai?.apiKey ? errorInputClass : normalInputClass)}
+                    placeholder="sk-..."
                   />
                   <button
                     type="button"
@@ -267,23 +400,21 @@ export default function SettingsPage() {
             <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📰</span>
               公众号文章 API
+              <span className="text-xs text-slate-500 ml-2">用于搜索文章素材</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Endpoint <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('wechatArticle.endpoint')}
                   className={cn(inputBaseClass, errors.wechatArticle?.endpoint ? errorInputClass : normalInputClass)}
+                  placeholder="https://api.example.com/wechat"
                 />
                 <FieldError message={errors.wechatArticle?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Key <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatArticle'] ? 'text' : 'password'}
@@ -303,43 +434,16 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Unsplash API */}
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-blue-500/20 text-blue-400 rounded flex items-center justify-center text-xs">🖼️</span>
-              Unsplash API
-            </h3>
-            <div>
-              <label className="block text-sm text-slate-500 mb-1">Access Key</label>
-              <div className="relative">
-                <input
-                  type={showKeys['unsplash'] ? 'text' : 'password'}
-                  {...register('unsplash.accessKey')}
-                  className={cn(inputBaseClass, 'pr-10', errors.unsplash?.accessKey ? errorInputClass : normalInputClass)}
-                />
-                <button
-                  type="button"
-                  onClick={() => toggleShowKey('unsplash')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                >
-                  {showKeys['unsplash'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              <FieldError message={errors.unsplash?.accessKey?.message} />
-            </div>
-          </div>
-
           {/* AI Image Generation API */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-pink-500/20 text-pink-400 rounded flex items-center justify-center text-xs">🎨</span>
-              AI 图片生成 API (硅基流动)
+              AI 图片生成 API
+              <span className="text-xs text-slate-500 ml-2">用于生成文章配图</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API URL <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API URL</label>
                 <input
                   type="text"
                   {...register('imageGen.baseUrl')}
@@ -349,9 +453,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.imageGen?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  Model <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">Model</label>
                 <input
                   type="text"
                   {...register('imageGen.model')}
@@ -361,9 +463,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.imageGen?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Key <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['imageGen'] ? 'text' : 'password'}
@@ -381,9 +481,6 @@ export default function SettingsPage() {
                 <FieldError message={errors.imageGen?.apiKey?.message} />
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-2">
-              用于生成文章配图，支持可灵 (Kwai-Kolors/Kolors) 等模型
-            </p>
           </div>
 
           {/* Xiaohongshu API */}
@@ -391,23 +488,21 @@ export default function SettingsPage() {
             <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-red-500/20 text-red-400 rounded flex items-center justify-center text-xs">📕</span>
               小红书发布 API
+              <span className="text-xs text-slate-500 ml-2">可选，用于发布到小红书</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Endpoint <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('xiaohongshu.endpoint')}
                   className={cn(inputBaseClass, errors.xiaohongshu?.endpoint ? errorInputClass : normalInputClass)}
+                  placeholder="https://api.example.com/xhs"
                 />
                 <FieldError message={errors.xiaohongshu?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Key <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['xiaohongshu'] ? 'text' : 'password'}
@@ -432,23 +527,21 @@ export default function SettingsPage() {
             <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📗</span>
               公众号发布 API
+              <span className="text-xs text-slate-500 ml-2">可选，用于发布到公众号</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Endpoint <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('wechatPublish.endpoint')}
                   className={cn(inputBaseClass, errors.wechatPublish?.endpoint ? errorInputClass : normalInputClass)}
+                  placeholder="https://api.example.com/mp"
                 />
                 <FieldError message={errors.wechatPublish?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">
-                  API Key <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-sm text-slate-500 mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatPublish'] ? 'text' : 'password'}
@@ -475,9 +568,7 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">
-                默认插入图片数量 <span className="text-red-400">*</span>
-              </label>
+              <label className="block text-sm text-slate-500 mb-1">默认插入图片数量</label>
               <select
                 {...register('preferences.imageCount', { valueAsNumber: true })}
                 className={cn(inputBaseClass, errors.preferences?.imageCount ? errorInputClass : normalInputClass)}
@@ -492,9 +583,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-500 mb-1">
-                文章风格偏好 <span className="text-red-400">*</span>
-              </label>
+              <label className="block text-sm text-slate-500 mb-1">文章风格偏好</label>
               <select
                 {...register('preferences.style')}
                 className={cn(inputBaseClass, errors.preferences?.style ? errorInputClass : normalInputClass)}
@@ -507,9 +596,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm text-slate-500 mb-1">
-                目标字数范围 <span className="text-red-400">*</span>
-              </label>
+              <label className="block text-sm text-slate-500 mb-1">目标字数范围</label>
               <div className="flex items-center gap-4">
                 <input
                   type="number"
@@ -532,22 +619,17 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Save Button */}
+        {/* Save Button - 始终可用 */}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={isSubmitting || !isValid || !isDirty}
+            disabled={isSubmitting}
             className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                保存中...
-              </>
-            ) : saved ? (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                已保存
+                保存并验证中...
               </>
             ) : (
               <>

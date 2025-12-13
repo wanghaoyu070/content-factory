@@ -20,11 +20,6 @@ export interface WechatPublishConfig {
   apiKey: string;
 }
 
-// Unsplash配置
-export interface UnsplashConfig {
-  accessKey: string;
-}
-
 // AI 图片生成配置
 export interface ImageGenConfig {
   baseUrl: string;      // API 地址
@@ -120,28 +115,6 @@ export function getXiaohongshuPublishConfig(userId?: number): XiaohongshuPublish
 
   // 回退到数据库配置
   const configStr = getSetting('xiaohongshu', userId ?? 1);
-  if (configStr) {
-    try {
-      return JSON.parse(configStr);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
-
-// 获取Unsplash配置
-export function getUnsplashConfig(userId?: number): UnsplashConfig | null {
-  // 优先使用环境变量
-  if (process.env.UNSPLASH_ACCESS_KEY) {
-    return {
-      accessKey: process.env.UNSPLASH_ACCESS_KEY,
-    };
-  }
-
-  // 回退到数据库配置
-  const configStr = getSetting('unsplash', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);

@@ -22,9 +22,6 @@ function getEnvDefaults() {
       apiKey: process.env.OPENAI_API_KEY || '',
       model: process.env.OPENAI_MODEL || 'gpt-4o',
     },
-    unsplash: {
-      accessKey: process.env.UNSPLASH_ACCESS_KEY || '',
-    },
     imageGen: {
       baseUrl: process.env.IMAGE_GEN_API_URL || '',
       apiKey: process.env.IMAGE_GEN_API_KEY || '',
