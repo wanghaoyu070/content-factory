@@ -56,7 +56,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col h-screen fixed left-0 top-0 border-r border-[#2d2d44] bg-[#0a0a1a] text-white transition-all duration-300 z-40',
+        'hidden lg:flex flex-col h-screen fixed left-0 top-0 glass-sidebar text-white transition-all duration-300 z-40',
         collapsed ? 'w-16' : 'w-60'
       )}
     >

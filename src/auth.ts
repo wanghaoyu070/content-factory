@@ -48,6 +48,7 @@ export const authOptions: NextAuthOptions = {
           token.name = user.name || user.github_login || token.name;
           token.picture = user.avatar_url || token.picture;
           token.githubLogin = user.github_login;
+          token.onboardingCompleted = user.onboarding_completed === 1;
         }
       } else if (token.userId) {
         const user = getUserById(token.userId as number);
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
           token.name = user.name || user.github_login || token.name;
           token.picture = user.avatar_url || token.picture;
           token.githubLogin = user.github_login;
+          token.onboardingCompleted = user.onboarding_completed === 1;
         }
       }
 
@@ -71,6 +73,7 @@ export const authOptions: NextAuthOptions = {
           image: (token.picture as string) || session.user?.image || null,
           githubLogin: (token.githubLogin as string) || null,
           isPending: token.role === 'pending',
+          onboardingCompleted: (token.onboardingCompleted as boolean) || false,
         } as typeof session.user;
       }
 

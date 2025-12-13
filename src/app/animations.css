@@ -1,0 +1,381 @@
+/* 全局动效系统 - 微交互动画 */
+
+/* ===== 过渡动画变量 ===== */
+:root {
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===== 按钮微交互 ===== */
+
+/* 主按钮悬停效果 */
+.btn-primary {
+  transition: 
+    transform var(--transition-fast) var(--ease-spring),
+    box-shadow var(--transition-normal) ease-out,
+    background var(--transition-normal) ease-out;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.35);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  transition-duration: 50ms;
+}
+
+/* 次级按钮悬停效果 */
+.btn-secondary {
+  transition: 
+    background var(--transition-fast) ease-out,
+    border-color var(--transition-fast) ease-out,
+    color var(--transition-fast) ease-out;
+}
+
+.btn-secondary:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 图标按钮旋转效果 */
+.btn-icon {
+  transition: transform var(--transition-normal) var(--ease-spring);
+}
+
+.btn-icon:hover {
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* ===== 卡片微交互 ===== */
+
+/* 可点击卡片悬停效果 */
+.card-interactive {
+  transition: 
+    transform var(--transition-normal) var(--ease-out-expo),
+    box-shadow var(--transition-normal) ease-out,
+    border-color var(--transition-fast) ease-out;
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 卡片选中状态 */
+.card-selected {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+/* ===== 列表项动画 ===== */
+
+/* 列表项悬停效果 */
+.list-item-hover {
+  transition: 
+    background var(--transition-fast) ease-out,
+    padding-left var(--transition-fast) var(--ease-spring);
+}
+
+.list-item-hover:hover {
+  background: rgba(255, 255, 255, 0.02);
+  padding-left: 1.25rem;
+}
+
+/* 列表项淡入动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--transition-normal) var(--ease-out-expo) forwards;
+}
+
+/* 列表项依次进入 */
+.stagger-list > * {
+  opacity: 0;
+  animation: fadeInUp var(--transition-normal) var(--ease-out-expo) forwards;
+}
+
+.stagger-list > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-list > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-list > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-list > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-list > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-list > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-list > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-list > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-list > *:nth-child(9) { animation-delay: 400ms; }
+.stagger-list > *:nth-child(10) { animation-delay: 450ms; }
+
+/* ===== 模态框动画 ===== */
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop {
+  animation: modalFadeIn var(--transition-normal) ease-out;
+}
+
+.modal-content {
+  animation: modalSlideIn var(--transition-slow) var(--ease-out-expo);
+}
+
+/* ===== 脉冲动画 ===== */
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* ===== 进度条动画 ===== */
+
+@keyframes progress-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.progress-bar-animated {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.8) 0%,
+    rgba(147, 51, 234, 1) 50%,
+    rgba(99, 102, 241, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s linear infinite;
+}
+
+/* ===== 成功/错误状态动画 ===== */
+
+@keyframes success-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-success {
+  animation: success-pop var(--transition-slow) var(--ease-spring);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ===== 星星收藏动画 ===== */
+
+@keyframes star-pop {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-star {
+  animation: star-pop 0.4s var(--ease-spring);
+}
+
+/* ===== 涟漪效果 ===== */
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.ripple:active::after {
+  transform: scale(2);
+  opacity: 1;
+  transition-duration: 0.1s;
+}
+
+/* ===== 数字跳动动画 ===== */
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-count {
+  animation: count-up 0.6s var(--ease-out-expo);
+}
+
+/* ===== 加载态动画增强 ===== */
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-enhanced {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 30, 56, 0.8) 0%,
+    rgba(45, 45, 68, 0.8) 50%,
+    rgba(30, 30, 56, 0.8) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* ===== 页面过渡 ===== */
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter 0.4s var(--ease-out-expo);
+}
+
+/* ===== 悬浮标签动画 ===== */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ===== 渐变文字动画 ===== */
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.text-gradient-animated {
+  background: linear-gradient(
+    90deg,
+    #818cf8,
+    #a78bfa,
+    #f472b6,
+    #a78bfa,
+    #818cf8
+  );
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* ===== 工具提示动画 ===== */
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tooltip-animated {
+  animation: tooltip-in 0.15s var(--ease-out-expo);
+}

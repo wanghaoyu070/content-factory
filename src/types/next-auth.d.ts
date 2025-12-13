@@ -9,6 +9,7 @@ declare module 'next-auth' {
       image: string | null;
       githubLogin: string | null;
       isPending: boolean;
+      onboardingCompleted: boolean;
     };
   }
 
@@ -23,5 +24,6 @@ declare module 'next-auth/jwt' {
     userId?: number;
     role?: 'admin' | 'user' | 'pending';
     githubLogin?: string | null;
+    onboardingCompleted?: boolean;
   }
 }

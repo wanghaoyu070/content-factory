@@ -6,9 +6,10 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import EditorToolbar from './EditorToolbar';
 import ImageGallery from './ImageGallery';
+import AIAssistToolbar from './AIAssistToolbar';
 
 interface ArticleEditorProps {
   title: string;
@@ -19,6 +20,12 @@ interface ArticleEditorProps {
   onSave?: () => void;
 }
 
+interface AIToolbarState {
+  visible: boolean;
+  selectedText: string;
+  position: { x: number; y: number };
+}
+
 export default function ArticleEditor({
   title,
   content,
@@ -27,6 +34,13 @@ export default function ArticleEditor({
   onContentChange,
   onSave,
 }: ArticleEditorProps) {
+  // AI 工具栏状态
+  const [aiToolbar, setAiToolbar] = useState<AIToolbarState>({
+    visible: false,
+    selectedText: '',
+    position: { x: 0, y: 0 },
+  });
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -55,6 +69,27 @@ export default function ArticleEditor({
     content: content,
     onUpdate: ({ editor }) => {
       onContentChange(editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      const text = editor.state.doc.textBetween(from, to, ' ');
+
+      // 如果选中了文本（至少10个字符），显示 AI 工具栏
+      if (text.length >= 10) {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          setAiToolbar({
+            visible: true,
+            selectedText: text,
+            position: { x: rect.left, y: rect.bottom },
+          });
+        }
+      } else {
+        setAiToolbar((prev) => ({ ...prev, visible: false }));
+      }
     },
     editorProps: {
       attributes: {
@@ -91,6 +126,32 @@ export default function ArticleEditor({
     return imgMatches ? imgMatches.length : 0;
   };
 
+  // 替换选中的文本
+  const handleAIReplace = useCallback((newText: string) => {
+    if (editor) {
+      const { from, to } = editor.state.selection;
+      editor.chain().focus().deleteRange({ from, to }).insertContent(newText).run();
+    }
+  }, [editor]);
+
+  // 关闭 AI 工具栏
+  const handleCloseAIToolbar = useCallback(() => {
+    setAiToolbar((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  // 点击编辑器外部时关闭工具栏
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.ai-assist-toolbar') && !target.closest('.ProseMirror')) {
+        setAiToolbar((prev) => ({ ...prev, visible: false }));
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="flex flex-col h-full">
       {/* 标题输入 */}
@@ -105,11 +166,23 @@ export default function ArticleEditor({
       </div>
 
       {/* 编辑器工具栏 */}
-      <EditorToolbar editor={editor} onInsertImage={() => {}} />
+      <EditorToolbar editor={editor} onInsertImage={() => { }} />
 
       {/* 编辑器内容区域 */}
-      <div className="flex-1 overflow-y-auto bg-[#16162a]">
+      <div className="flex-1 overflow-y-auto bg-[#16162a] relative">
         <EditorContent editor={editor} />
+
+        {/* AI 助手工具栏 */}
+        {aiToolbar.visible && aiToolbar.selectedText && (
+          <div className="ai-assist-toolbar">
+            <AIAssistToolbar
+              selectedText={aiToolbar.selectedText}
+              position={aiToolbar.position}
+              onReplace={handleAIReplace}
+              onClose={handleCloseAIToolbar}
+            />
+          </div>
+        )}
       </div>
 
       {/* 配图库 */}
@@ -124,6 +197,7 @@ export default function ArticleEditor({
         <div className="flex items-center gap-4 text-slate-400">
           <span>字数: {getWordCount()}</span>
           <span>图片: {getUsedImageCount()}/{images.length}</span>
+          <span className="text-xs text-slate-500">💡 选中10+字符可使用 AI 助手</span>
         </div>
         {onSave && (
           <button

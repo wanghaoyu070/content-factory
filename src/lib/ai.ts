@@ -25,11 +25,6 @@ export interface TopicInsight {
   relatedArticles: string[];
 }
 
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
 interface ChatCompletionResponse {
   choices: {
     message: {
@@ -38,8 +33,14 @@ interface ChatCompletionResponse {
   }[];
 }
 
+// 导出 ChatMessage 接口供外部使用
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 // 调用 OpenAI 兼容 API
-async function callAI(config: AIConfig, messages: ChatMessage[]): Promise<string> {
+export async function callAI(config: AIConfig, messages: ChatMessage[]): Promise<string> {
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {

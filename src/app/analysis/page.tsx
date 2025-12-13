@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
@@ -85,8 +85,10 @@ const hotTopics = [
   { keyword: '情感心理', heat: 72 },
 ];
 
-export default function AnalysisPage() {
+// 主要内容组件（使用 useSearchParams）
+function AnalysisPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请先登录后再开始分析');
   const [keyword, setKeyword] = useState('');
   const [step, setStep] = useState<AnalysisStep>('idle');
@@ -100,6 +102,9 @@ export default function AnalysisPage() {
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // 防止重复自动搜索的标记
+  const autoSearchedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -120,6 +125,26 @@ export default function AnalysisPage() {
       active = false;
     };
   }, [isAuthenticated]);
+
+  // 处理 URL 参数自动搜索（从一键创作入口跳转）
+  useEffect(() => {
+    const urlKeyword = searchParams.get('keyword');
+    const autoTrigger = searchParams.get('auto');
+
+    if (urlKeyword && autoTrigger === 'true' && isAuthenticated && !autoSearchedRef.current && !initialLoading) {
+      autoSearchedRef.current = true;
+      setKeyword(urlKeyword);
+
+      // 使用 setTimeout 确保状态已更新
+      setTimeout(() => {
+        handleSearch(urlKeyword);
+      }, 100);
+
+      // 清除 URL 参数，避免刷新页面重复搜索
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [searchParams, isAuthenticated, initialLoading]);
 
   const fetchRecentSearches = async () => {
     if (!isAuthenticated) return;
@@ -391,13 +416,12 @@ export default function AnalysisPage() {
     return (
       <div className="flex items-center gap-3">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-            status === 'done'
-              ? 'bg-emerald-500/20 text-emerald-400'
-              : status === 'active'
+          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${status === 'done'
+            ? 'bg-emerald-500/20 text-emerald-400'
+            : status === 'active'
               ? 'bg-indigo-500/20 text-indigo-400'
               : 'bg-slate-700/50 text-slate-500'
-          }`}
+            }`}
         >
           {status === 'done' ? (
             <CheckCircle2 className="w-4 h-4" />
@@ -408,13 +432,12 @@ export default function AnalysisPage() {
           )}
         </div>
         <span
-          className={`text-sm ${
-            status === 'done'
-              ? 'text-emerald-400'
-              : status === 'active'
+          className={`text-sm ${status === 'done'
+            ? 'text-emerald-400'
+            : status === 'active'
               ? 'text-indigo-400'
               : 'text-slate-500'
-          }`}
+            }`}
         >
           {label}
         </span>
@@ -440,11 +463,10 @@ export default function AnalysisPage() {
                 setKeyword('');
                 setAccountInfo(null);
               }}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                searchMode === 'keyword'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                  : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${searchMode === 'keyword'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
+                }`}
             >
               <Search className="w-4 h-4" />
               关键词搜索
@@ -455,11 +477,10 @@ export default function AnalysisPage() {
                 setKeyword('');
                 setAccountInfo(null);
               }}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                searchMode === 'account'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                  : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
-              }`}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${searchMode === 'account'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
+                }`}
             >
               <User className="w-4 h-4" />
               公众号搜索
@@ -817,5 +838,18 @@ export default function AnalysisPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// 导出带 Suspense 包装的组件（解决 useSearchParams 预渲染问题）
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0f0f23] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <AnalysisPageContent />
+    </Suspense>
   );
 }

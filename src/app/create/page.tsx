@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import { Skeleton, InsightCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import LoginPrompt from '@/components/ui/LoginPrompt';
+import FavoriteButton from '@/components/ui/FavoriteButton';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
 import { toast } from 'sonner';
 
@@ -18,6 +19,10 @@ const ArticleEditor = dynamic(() => import('@/components/create/ArticleEditor'),
 const ArticlePreview = dynamic(() => import('@/components/preview/ArticlePreview'), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full text-slate-400">加载预览...</div>
+});
+
+const ProgressTracker = dynamic(() => import('@/components/ui/ProgressTracker'), {
+  ssr: false,
 });
 import {
   Sparkles,
@@ -82,7 +87,7 @@ interface GeneratedArticle {
 type WritingStyle = 'professional' | 'casual' | 'storytelling';
 type PageMode = 'select' | 'edit';
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
-type ProgressStep = 'validating' | 'generating' | 'fetching_images' | 'saving' | 'completed' | 'error';
+type ProgressStep = 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'saving' | 'completed' | 'error';
 
 interface GenerateProgress {
   step: ProgressStep;
@@ -151,6 +156,10 @@ export default function CreatePage() {
   const [customTitle, setCustomTitle] = useState('');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [generateProgress, setGenerateProgress] = useState<GenerateProgress | null>(null);
+
+  // 收藏状态
+  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
+  const [viewMode, setViewMode] = useState<'all' | 'favorites'>('all');
 
   // 编辑模式状态
   const [articleId, setArticleId] = useState<number | null>(null);
@@ -257,13 +266,19 @@ export default function CreatePage() {
   const fetchData = async () => {
     if (!isAuthenticated) return;
     try {
-      const res = await fetch('/api/insights/all');
-      const data = await res.json();
+      // 并行获取洞察数据和收藏列表
+      const [insightsRes, favoritesRes] = await Promise.all([
+        fetch('/api/insights/all'),
+        fetch('/api/insights/favorites?ids_only=true'),
+      ]);
 
-      if (data.success) {
-        setSearchesWithInsights(data.data);
+      const insightsData = await insightsRes.json();
+      const favoritesData = await favoritesRes.json();
+
+      if (insightsData.success) {
+        setSearchesWithInsights(insightsData.data);
         const flat: FlatInsight[] = [];
-        data.data.forEach((search: SearchWithInsights) => {
+        insightsData.data.forEach((search: SearchWithInsights) => {
           search.insights.forEach((insight) => {
             flat.push({
               ...insight,
@@ -275,6 +290,10 @@ export default function CreatePage() {
         flat.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setFlatInsights(flat);
       }
+
+      if (favoritesData.success) {
+        setFavoriteIds(favoritesData.data);
+      }
     } catch (err) {
       console.error('加载数据失败:', err);
     } finally {
@@ -282,9 +301,22 @@ export default function CreatePage() {
     }
   };
 
-  const filteredInsights = searchFilter === 'all'
-    ? flatInsights
-    : flatInsights.filter(i => i.searchId === searchFilter);
+  // 根据筛选条件和收藏状态过滤洞察
+  const filteredInsights = (() => {
+    let filtered = flatInsights;
+
+    // 按搜索关键词筛选
+    if (searchFilter !== 'all') {
+      filtered = filtered.filter(i => i.searchId === searchFilter);
+    }
+
+    // 按收藏状态筛选
+    if (viewMode === 'favorites') {
+      filtered = filtered.filter(i => favoriteIds.includes(i.id));
+    }
+
+    return filtered;
+  })();
 
   const handleGenerate = async () => {
     if (!ensureLogin()) return;
@@ -571,37 +603,62 @@ export default function CreatePage() {
           <div className="col-span-2 space-y-6">
             {/* 筛选器 */}
             <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Search className="w-4 h-4" />
-                  <span className="text-sm">筛选关键词:</span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center justify-between gap-4 mb-3">
+                {/* 视图模式切换 */}
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setSearchFilter('all')}
-                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                      searchFilter === 'all'
-                        ? 'bg-indigo-500/20 text-indigo-400'
-                        : 'text-slate-400 hover:bg-[#1a1a2e]'
-                    }`}
-                  >
-                    全部 ({flatInsights.length})
-                  </button>
-                  {searchesWithInsights.slice(0, 5).map((search) => (
-                    <button
-                      key={search.searchId}
-                      onClick={() => setSearchFilter(search.searchId)}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                        searchFilter === search.searchId
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'text-slate-400 hover:bg-[#1a1a2e]'
+                    onClick={() => setViewMode('all')}
+                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === 'all'
+                      ? 'bg-indigo-500/20 text-indigo-400'
+                      : 'text-slate-400 hover:bg-[#1a1a2e]'
                       }`}
-                    >
-                      {search.keyword} ({search.insightCount})
-                    </button>
-                  ))}
+                  >
+                    全部洞察 ({flatInsights.length})
+                  </button>
+                  <button
+                    onClick={() => setViewMode('favorites')}
+                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === 'favorites'
+                      ? 'bg-amber-500/20 text-amber-400'
+                      : 'text-slate-400 hover:bg-[#1a1a2e]'
+                      }`}
+                  >
+                    ⭐ 我的收藏 ({favoriteIds.length})
+                  </button>
                 </div>
               </div>
+
+              {/* 关键词筛选 */}
+              {viewMode === 'all' && (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Search className="w-4 h-4" />
+                    <span className="text-sm">筛选关键词:</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setSearchFilter('all')}
+                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${searchFilter === 'all'
+                        ? 'bg-indigo-500/20 text-indigo-400'
+                        : 'text-slate-400 hover:bg-[#1a1a2e]'
+                        }`}
+                    >
+                      全部
+                    </button>
+                    {searchesWithInsights.slice(0, 5).map((search) => (
+                      <button
+                        key={search.searchId}
+                        onClick={() => setSearchFilter(search.searchId)}
+                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${searchFilter === search.searchId
+                          ? 'bg-indigo-500/20 text-indigo-400'
+                          : 'text-slate-400 hover:bg-[#1a1a2e]'
+                          }`}
+                      >
+                        {search.keyword} ({search.insightCount})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 选题洞察列表 */}
@@ -639,9 +696,8 @@ export default function CreatePage() {
                     return (
                       <div
                         key={insight.id}
-                        className={`p-4 transition-colors cursor-pointer ${
-                          isSelected ? 'bg-indigo-500/10' : 'hover:bg-[#1a1a2e]'
-                        }`}
+                        className={`p-4 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-500/10' : 'hover:bg-[#1a1a2e]'
+                          }`}
                         onClick={() => setSelectedInsight(insight)}
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -703,19 +759,36 @@ export default function CreatePage() {
                             )}
                           </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedId(isExpanded ? null : insight.id);
-                            }}
-                            className="p-1 text-slate-500 hover:text-slate-300"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
+                          <div className="flex items-center gap-1">
+                            {/* 收藏按钮 */}
+                            <FavoriteButton
+                              insightId={insight.id}
+                              isFavorited={favoriteIds.includes(insight.id)}
+                              onToggle={(newState) => {
+                                if (newState) {
+                                  setFavoriteIds([...favoriteIds, insight.id]);
+                                } else {
+                                  setFavoriteIds(favoriteIds.filter(id => id !== insight.id));
+                                }
+                              }}
+                              size="sm"
+                            />
+
+                            {/* 展开按钮 */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedId(isExpanded ? null : insight.id);
+                              }}
+                              className="p-1 text-slate-500 hover:text-slate-300"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -773,11 +846,10 @@ export default function CreatePage() {
                       {styleOptions.map((option) => (
                         <label
                           key={option.value}
-                          className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
-                            style === option.value
-                              ? 'bg-indigo-500/20 border border-indigo-500/30'
-                              : 'bg-[#1a1a2e] border border-transparent hover:border-[#2d2d44]'
-                          }`}
+                          className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${style === option.value
+                            ? 'bg-indigo-500/20 border border-indigo-500/30'
+                            : 'bg-[#1a1a2e] border border-transparent hover:border-[#2d2d44]'
+                            }`}
                         >
                           <input
                             type="radio"
@@ -812,57 +884,24 @@ export default function CreatePage() {
                     </div>
                   </div>
 
-                  {/* 生成按钮和进度显示 */}
-                  {generating && generateProgress ? (
-                    <div className="space-y-3">
-                      {/* 进度条 */}
-                      <div className="w-full bg-[#1a1a2e] rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 ease-out"
-                          style={{ width: `${generateProgress.progress}%` }}
-                        />
-                      </div>
-                      {/* 进度信息 */}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-slate-300">
-                          <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-                          <span>{generateProgress.message}</span>
-                        </div>
-                        <span className="text-slate-500">{generateProgress.progress}%</span>
-                      </div>
-                      {/* 步骤指示器 */}
-                      <div className="flex items-center justify-between px-2">
-                        <div className={`flex flex-col items-center gap-1 ${generateProgress.step === 'validating' ? 'text-indigo-400' : generateProgress.progress > 10 ? 'text-emerald-400' : 'text-slate-600'}`}>
-                          <div className={`w-2 h-2 rounded-full ${generateProgress.step === 'validating' ? 'bg-indigo-400 animate-pulse' : generateProgress.progress > 10 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                          <span className="text-xs">验证</span>
-                        </div>
-                        <div className={`flex-1 h-0.5 mx-1 ${generateProgress.progress > 10 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                        <div className={`flex flex-col items-center gap-1 ${generateProgress.step === 'generating' ? 'text-indigo-400' : generateProgress.progress > 60 ? 'text-emerald-400' : 'text-slate-600'}`}>
-                          <div className={`w-2 h-2 rounded-full ${generateProgress.step === 'generating' ? 'bg-indigo-400 animate-pulse' : generateProgress.progress > 60 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                          <span className="text-xs">创作</span>
-                        </div>
-                        <div className={`flex-1 h-0.5 mx-1 ${generateProgress.progress > 60 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                        <div className={`flex flex-col items-center gap-1 ${generateProgress.step === 'fetching_images' ? 'text-indigo-400' : generateProgress.progress > 85 ? 'text-emerald-400' : 'text-slate-600'}`}>
-                          <div className={`w-2 h-2 rounded-full ${generateProgress.step === 'fetching_images' ? 'bg-indigo-400 animate-pulse' : generateProgress.progress > 85 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                          <span className="text-xs">配图</span>
-                        </div>
-                        <div className={`flex-1 h-0.5 mx-1 ${generateProgress.progress > 85 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                        <div className={`flex flex-col items-center gap-1 ${generateProgress.step === 'saving' || generateProgress.step === 'completed' ? 'text-indigo-400' : 'text-slate-600'}`}>
-                          <div className={`w-2 h-2 rounded-full ${generateProgress.step === 'saving' ? 'bg-indigo-400 animate-pulse' : generateProgress.step === 'completed' ? 'bg-emerald-400' : 'bg-slate-600'}`} />
-                          <span className="text-xs">保存</span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleGenerate}
-                      disabled={generating}
-                      className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      一键 AI 创作
-                    </button>
-                  )}
+                  {/* 生成按钮 */}
+                  <button
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        AI 创作中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        一键 AI 创作
+                      </>
+                    )}
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -904,6 +943,16 @@ export default function CreatePage() {
           </div>
         </div>
       </div>
+
+      {/* 生成进度模态框 */}
+      {generating && generateProgress && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <ProgressTracker
+            progress={generateProgress}
+            minimizable={false}
+          />
+        </div>
+      )}
     </div>
   );
 }

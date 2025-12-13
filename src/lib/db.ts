@@ -183,6 +183,25 @@ ensureColumn('articles', 'user_id', 'INTEGER DEFAULT 1', () => {
 db.exec('CREATE INDEX IF NOT EXISTS idx_search_user ON search_records(user_id)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
 
+// Add onboarding_completed column to users table
+ensureColumn('users', 'onboarding_completed', 'INTEGER DEFAULT 0');
+
+// Create insight_favorites table for user favorites
+db.exec(`
+  CREATE TABLE IF NOT EXISTS insight_favorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    insight_id INTEGER NOT NULL,
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (insight_id) REFERENCES topic_insights(id) ON DELETE CASCADE,
+    UNIQUE(user_id, insight_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_favorites_user ON insight_favorites(user_id);
+  CREATE INDEX IF NOT EXISTS idx_favorites_insight ON insight_favorites(insight_id);
+`);
+
 // Types
 export interface SearchRecord {
   id: number;
@@ -258,6 +277,7 @@ export interface UserRecord {
   email: string | null;
   avatar_url: string | null;
   role: 'admin' | 'user' | 'pending';
+  onboarding_completed: number;
   created_at: string;
   updated_at: string;
 }
@@ -274,6 +294,14 @@ export interface InviteCodeRecord {
 export interface InviteCodeDetail extends InviteCodeRecord {
   creator_login: string | null;
   used_login: string | null;
+}
+
+export interface InsightFavorite {
+  id: number;
+  user_id: number;
+  insight_id: number;
+  note: string | null;
+  created_at: string;
 }
 
 // Database operations
@@ -396,6 +424,11 @@ export function markInviteCodeUsed(code: string, userId: number) {
 export function updateUserRole(userId: number, role: 'admin' | 'user' | 'pending') {
   const stmt = db.prepare('UPDATE users SET role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
   stmt.run(role, userId);
+}
+
+export function updateUserOnboarding(userId: number, completed: boolean) {
+  const stmt = db.prepare('UPDATE users SET onboarding_completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+  stmt.run(completed ? 1 : 0, userId);
 }
 
 export function createInviteCodeRecord(code: string, createdBy: number | null): number {
@@ -592,6 +625,68 @@ export function deleteSummariesBySearchId(searchId: number): void {
   stmt.run(searchId);
 }
 
+// Insight favorites operations
+export function addInsightFavorite(userId: number, insightId: number, note?: string): boolean {
+  try {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO insight_favorites (user_id, insight_id, note)
+      VALUES (?, ?, ?)
+    `);
+    stmt.run(userId, insightId, note || null);
+    return true;
+  } catch (error) {
+    console.error('收藏洞察失败:', error);
+    return false;
+  }
+}
+
+export function removeInsightFavorite(userId: number, insightId: number): boolean {
+  try {
+    const stmt = db.prepare('DELETE FROM insight_favorites WHERE user_id = ? AND insight_id = ?');
+    stmt.run(userId, insightId);
+    return true;
+  } catch (error) {
+    console.error('取消收藏失败:', error);
+    return false;
+  }
+}
+
+export function isInsightFavorited(userId: number, insightId: number): boolean {
+  const stmt = db.prepare('SELECT 1 FROM insight_favorites WHERE user_id = ? AND insight_id = ?');
+  return stmt.get(userId, insightId) !== undefined;
+}
+
+export function getUserFavoriteInsights(userId: number): (TopicInsightRecord & { note: string | null; favorited_at: string })[] {
+  const stmt = db.prepare(`
+    SELECT 
+      ti.*,
+      f.note,
+      f.created_at as favorited_at
+    FROM insight_favorites f
+    JOIN topic_insights ti ON f.insight_id = ti.id
+    WHERE f.user_id = ?
+    ORDER BY f.created_at DESC
+  `);
+  return stmt.all(userId) as (TopicInsightRecord & { note: string | null; favorited_at: string })[];
+}
+
+export function getUserFavoriteInsightIds(userId: number): number[] {
+  const stmt = db.prepare('SELECT insight_id FROM insight_favorites WHERE user_id = ?');
+  const rows = stmt.all(userId) as { insight_id: number }[];
+  return rows.map(r => r.insight_id);
+}
+
+export function updateInsightFavoriteNote(userId: number, insightId: number, note: string): boolean {
+  try {
+    const stmt = db.prepare('UPDATE insight_favorites SET note = ? WHERE user_id = ? AND insight_id = ?');
+    stmt.run(note, userId, insightId);
+    return true;
+  } catch (error) {
+    console.error('更新备注失败:', error);
+    return false;
+  }
+}
+
 // Articles operations
 export function createArticle(article: {
   title: string;
@@ -719,8 +814,8 @@ export function copyArticle(id: number, userId: number): number {
 export function archiveArticle(id: number, userId?: number): void {
   const stmt = userId
     ? db.prepare(
-        "UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
-      )
+      "UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+    )
     : db.prepare("UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
   userId ? stmt.run(id, userId) : stmt.run(id);
 }
@@ -784,8 +879,8 @@ export function getDashboardStats(userId?: number): DashboardStats {
     : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published'");
   const pendingStmt = userId
     ? db.prepare(
-        "SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review') AND user_id = ?"
-      )
+      "SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review') AND user_id = ?"
+    )
     : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review')");
 
   return {
@@ -921,19 +1016,19 @@ export function getRecentActivities(limit: number = 10, userId?: number): Recent
       `);
   const articles = userId
     ? (articleStmt.all(userId, limit) as {
-        id: number;
-        title: string;
-        status: string;
-        created_at: string;
-        updated_at: string;
-      }[])
+      id: number;
+      title: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }[])
     : (articleStmt.all(limit) as {
-        id: number;
-        title: string;
-        status: string;
-        created_at: string;
-        updated_at: string;
-      }[]);
+      id: number;
+      title: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }[]);
   articles.forEach((a) => {
     if (a.status === 'published') {
       activities.push({

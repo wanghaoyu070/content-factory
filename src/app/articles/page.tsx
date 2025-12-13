@@ -13,6 +13,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import BatchActionsBar, { BatchSelectCheckbox } from '@/components/articles/BatchActionsBar';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed' | 'archived';
 
@@ -185,6 +186,115 @@ export default function ArticlesPage() {
         description: '网络异常，请稍后重试',
       });
     }
+  };
+
+  // 批量删除
+  const handleBatchDelete = async (ids: number[]) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/articles?id=${id}`, {
+          method: 'DELETE',
+        });
+        const result = await response.json();
+        if (result.success) {
+          successCount++;
+          setArticles((prev) => prev.filter((a) => a.id !== String(id)));
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`成功删除 ${successCount} 篇文章`);
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} 篇文章删除失败`);
+    }
+    setSelectedIds([]);
+  };
+
+  // 批量归档
+  const handleBatchArchive = async (ids: number[]) => {
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of ids) {
+      try {
+        const response = await fetch('/api/articles', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: 'archived' }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          successCount++;
+          setArticles((prev) =>
+            prev.map((a) => (a.id === String(id) ? { ...a, status: 'archived' as ArticleStatus } : a))
+          );
+        } else {
+          failCount++;
+        }
+      } catch {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`成功归档 ${successCount} 篇文章`);
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} 篇文章归档失败`);
+    }
+    setSelectedIds([]);
+  };
+
+  // 批量导出
+  const handleBatchExport = async (ids: number[]) => {
+    let successCount = 0;
+
+    for (const id of ids) {
+      try {
+        const response = await fetch('/api/articles/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, format: 'markdown' }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          // 创建下载
+          const blob = new Blob([result.data.content], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${result.data.title || 'article'}.md`;
+          a.click();
+          URL.revokeObjectURL(url);
+          successCount++;
+        }
+      } catch (err) {
+        console.error('导出失败:', err);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`成功导出 ${successCount} 篇文章`);
+    }
+    setSelectedIds([]);
+  };
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    setSelectedIds(filteredArticles.map(a => a.id));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
   };
 
   const handleStatusChange = async (id: string, newStatus: ArticleStatus) => {
@@ -534,11 +644,10 @@ export default function ArticlesPage() {
               <button
                 key={tab.key}
                 onClick={() => setStatusFilter(tab.key as ArticleStatus | 'all')}
-                className={`px-4 py-2 text-sm rounded-xl transition-colors ${
-                  statusFilter === tab.key
-                    ? 'bg-indigo-500/20 text-indigo-400 font-medium'
-                    : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-slate-200'
-                }`}
+                className={`px-4 py-2 text-sm rounded-xl transition-colors ${statusFilter === tab.key
+                  ? 'bg-indigo-500/20 text-indigo-400 font-medium'
+                  : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-slate-200'
+                  }`}
               >
                 {tab.label} ({statusCounts[tab.key as keyof typeof statusCounts]})
               </button>
@@ -759,12 +868,12 @@ export default function ArticlesPage() {
                 articles.length === 0
                   ? { label: '前往选题分析', href: '/analysis' }
                   : {
-                      label: '重置筛选',
-                      onClick: () => {
-                        setStatusFilter('all');
-                        setSearchQuery('');
-                      },
-                    }
+                    label: '重置筛选',
+                    onClick: () => {
+                      setStatusFilter('all');
+                      setSearchQuery('');
+                    },
+                  }
               }
             />
           )}
@@ -813,11 +922,10 @@ export default function ArticlesPage() {
                       <button
                         key={account.wechatAppid}
                         onClick={() => setPublishConfig(prev => ({ ...prev, wechatAppid: account.wechatAppid }))}
-                        className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left ${
-                          publishConfig.wechatAppid === account.wechatAppid
-                            ? 'bg-indigo-500/20 border-indigo-500'
-                            : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
-                        }`}
+                        className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left ${publishConfig.wechatAppid === account.wechatAppid
+                          ? 'bg-indigo-500/20 border-indigo-500'
+                          : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                          }`}
                       >
                         {account.avatar ? (
                           <img src={account.avatar} alt="" className="w-10 h-10 rounded-full" />
@@ -869,11 +977,10 @@ export default function ArticlesPage() {
                 <div>
                   <label className="block text-xs text-slate-400 mb-1.5">文章类型</label>
                   <div className="flex gap-3">
-                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${
-                      publishConfig.articleType === 'news'
-                        ? 'bg-indigo-500/20 border-indigo-500'
-                        : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
-                    }`}>
+                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${publishConfig.articleType === 'news'
+                      ? 'bg-indigo-500/20 border-indigo-500'
+                      : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                      }`}>
                       <input
                         type="radio"
                         name="articleType"
@@ -885,11 +992,10 @@ export default function ArticlesPage() {
                       <div className="text-sm font-medium text-slate-200">普通文章</div>
                       <div className="text-xs text-slate-500 mt-0.5">适合图文混排内容</div>
                     </label>
-                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${
-                      publishConfig.articleType === 'newspic'
-                        ? 'bg-indigo-500/20 border-indigo-500'
-                        : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
-                    }`}>
+                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${publishConfig.articleType === 'newspic'
+                      ? 'bg-indigo-500/20 border-indigo-500'
+                      : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                      }`}>
                       <input
                         type="radio"
                         name="articleType"
@@ -908,11 +1014,10 @@ export default function ArticlesPage() {
                 <div>
                   <label className="block text-xs text-slate-400 mb-1.5">内容格式</label>
                   <div className="flex gap-3">
-                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${
-                      publishConfig.contentFormat === 'html'
-                        ? 'bg-indigo-500/20 border-indigo-500'
-                        : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
-                    }`}>
+                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${publishConfig.contentFormat === 'html'
+                      ? 'bg-indigo-500/20 border-indigo-500'
+                      : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                      }`}>
                       <input
                         type="radio"
                         name="contentFormat"
@@ -924,11 +1029,10 @@ export default function ArticlesPage() {
                       <div className="text-sm font-medium text-slate-200">HTML</div>
                       <div className="text-xs text-slate-500 mt-0.5">推荐，保留样式</div>
                     </label>
-                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${
-                      publishConfig.contentFormat === 'markdown'
-                        ? 'bg-indigo-500/20 border-indigo-500'
-                        : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
-                    }`}>
+                    <label className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${publishConfig.contentFormat === 'markdown'
+                      ? 'bg-indigo-500/20 border-indigo-500'
+                      : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                      }`}>
                       <input
                         type="radio"
                         name="contentFormat"
@@ -1065,6 +1169,17 @@ export default function ArticlesPage() {
           </div>
         )}
       </div>
+
+      {/* 批量操作工具栏 */}
+      <BatchActionsBar
+        selectedIds={selectedIds.map(id => parseInt(id))}
+        totalCount={filteredArticles.length}
+        onSelectAll={handleSelectAll}
+        onClearSelection={handleClearSelection}
+        onDelete={handleBatchDelete}
+        onArchive={handleBatchArchive}
+        onExport={handleBatchExport}
+      />
     </div>
   );
 }

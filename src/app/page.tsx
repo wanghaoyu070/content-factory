@@ -32,6 +32,12 @@ import {
 } from 'recharts';
 import { StatCardSkeleton, ChartSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import dynamic from 'next/dynamic';
+
+// 动态导入 QuickCreate 组件
+const QuickCreate = dynamic(() => import('@/components/dashboard/QuickCreate'), {
+  ssr: false,
+});
 
 interface DashboardData {
   stats: {
@@ -191,6 +197,9 @@ export default function DashboardPage() {
       <Header title="仪表盘" />
 
       <div className="p-6">
+        {/* 一键创作入口 */}
+        <QuickCreate className="mb-6" />
+
         {/* 统计卡片 */}
         <div className="grid grid-cols-4 gap-6 mb-6">
           <StatCard
@@ -487,9 +496,8 @@ function StatCard({
         <span className="text-3xl font-bold text-slate-100">{value}</span>
         {trend !== undefined && (
           <div
-            className={`flex items-center gap-1 text-sm ${
-              trend >= 0 ? 'text-emerald-400' : 'text-red-400'
-            }`}
+            className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'
+              }`}
           >
             {trend >= 0 ? (
               <ArrowUpRight className="w-4 h-4" />
