@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
+import { ConfirmModal } from '@/components/ui/Modal';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
 import { useArticles } from '@/hooks/useArticles';
 import { usePublish } from '@/hooks/usePublish';
@@ -14,6 +15,9 @@ import {
   CheckSquare,
   Square,
   FileText,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -25,9 +29,11 @@ import {
   XiaohongshuPublishModal,
   BatchActionsBar,
 } from '@/components/articles';
-import { type ArticleStatus, STATUS_CONFIG, formatDate } from '@/lib/utils';
+import { type ArticleStatus, STATUS_CONFIG, formatDate, debounce } from '@/lib/utils';
 
 type ViewMode = 'table' | 'card';
+type SortField = 'createdAt' | 'title' | 'status';
+type SortOrder = 'asc' | 'desc';
 
 export default function ArticlesPage() {
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后管理文章');
@@ -35,9 +41,32 @@ export default function ArticlesPage() {
   // 视图模式
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
+  // 排序状态
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // 确认对话框状态
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+    variant: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => { },
+    variant: 'danger',
+  });
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // 搜索输入（用于防抖）
+  const [searchInput, setSearchInput] = useState('');
+
   // 使用自定义 Hooks
   const {
-    filteredArticles,
+    filteredArticles: rawFilteredArticles,
     statusCounts,
     loading,
     statusFilter,
@@ -75,6 +104,61 @@ export default function ArticlesPage() {
     publishingId,
   } = usePublish();
 
+  // 防抖搜索
+  const debouncedSetSearchQuery = useMemo(
+    () => debounce((query: string) => setSearchQuery(query), 300),
+    [setSearchQuery]
+  );
+
+  // 处理搜索输入
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchInput(query);
+    debouncedSetSearchQuery(query);
+  }, [debouncedSetSearchQuery]);
+
+  // 排序后的文章列表
+  const filteredArticles = useMemo(() => {
+    const sorted = [...rawFilteredArticles].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'title':
+          comparison = a.title.localeCompare(b.title, 'zh-CN');
+          break;
+        case 'status':
+          const statusOrder = ['draft', 'pending_review', 'approved', 'published', 'failed', 'archived'];
+          comparison = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+          break;
+        case 'createdAt':
+        default:
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [rawFilteredArticles, sortField, sortOrder]);
+
+  // 切换排序
+  const toggleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  }, [sortField]);
+
+  // 获取排序图标
+  const getSortIcon = useCallback((field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
+    return sortOrder === 'asc'
+      ? <ArrowUp className="w-3 h-3 text-indigo-400" />
+      : <ArrowDown className="w-3 h-3 text-indigo-400" />;
+  }, [sortField, sortOrder]);
+
   // 下拉菜单状态
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -90,13 +174,40 @@ export default function ArticlesPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openDropdownId]);
 
+  // 显示确认对话框
+  const showConfirm = useCallback((
+    title: string,
+    message: string,
+    onConfirm: () => Promise<void>,
+    variant: 'danger' | 'warning' | 'info' = 'danger'
+  ) => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm, variant });
+  }, []);
+
+  // 处理确认
+  const handleConfirm = useCallback(async () => {
+    setConfirmLoading(true);
+    try {
+      await confirmModal.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+      setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    }
+  }, [confirmModal]);
+
   // 处理删除
   const handleDelete = useCallback(async (id: string) => {
     if (!ensureLogin()) return;
-    if (!confirm('确定要删除这篇文章吗？')) return;
-    await deleteArticle(id);
-    setOpenDropdownId(null);
-  }, [ensureLogin, deleteArticle]);
+    showConfirm(
+      '确认删除',
+      '删除后将无法恢复，确定要删除这篇文章吗？',
+      async () => {
+        await deleteArticle(id);
+        setOpenDropdownId(null);
+      },
+      'danger'
+    );
+  }, [ensureLogin, deleteArticle, showConfirm]);
 
   // 处理状态变更
   const handleStatusChange = useCallback(async (id: string, newStatus: ArticleStatus) => {
@@ -114,9 +225,16 @@ export default function ArticlesPage() {
   // 处理归档
   const handleArchive = useCallback(async (id: string) => {
     if (!ensureLogin()) return;
-    await archiveArticle(id);
-    setOpenDropdownId(null);
-  }, [ensureLogin, archiveArticle]);
+    showConfirm(
+      '确认归档',
+      '归档后文章将不在列表中显示，确定要归档吗？',
+      async () => {
+        await archiveArticle(id);
+        setOpenDropdownId(null);
+      },
+      'warning'
+    );
+  }, [ensureLogin, archiveArticle, showConfirm]);
 
   // 处理导出
   const handleExport = useCallback(async (id: string, format: 'markdown' | 'html') => {
@@ -139,13 +257,27 @@ export default function ArticlesPage() {
 
   // 处理批量删除
   const handleBatchDelete = useCallback(async (ids: number[]) => {
-    await batchDelete(ids.map(String));
-  }, [batchDelete]);
+    showConfirm(
+      '批量删除',
+      `确定要删除选中的 ${ids.length} 篇文章吗？此操作无法撤销。`,
+      async () => {
+        await batchDelete(ids.map(String));
+      },
+      'danger'
+    );
+  }, [batchDelete, showConfirm]);
 
   // 处理批量归档
   const handleBatchArchive = useCallback(async (ids: number[]) => {
-    await batchArchive(ids.map(String));
-  }, [batchArchive]);
+    showConfirm(
+      '批量归档',
+      `确定要归档选中的 ${ids.length} 篇文章吗？`,
+      async () => {
+        await batchArchive(ids.map(String));
+      },
+      'warning'
+    );
+  }, [batchArchive, showConfirm]);
 
   // 处理批量导出
   const handleBatchExport = useCallback(async (ids: number[]) => {
@@ -192,7 +324,7 @@ export default function ArticlesPage() {
           </div>
           <div className="glass-card rounded-2xl divide-y divide-white/5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-4">
+              <div key={i} className="flex items-center gap-4 px-4 py-4 animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
                 <Skeleton className="h-5 w-5 rounded" />
                 <Skeleton className="h-12 w-16 rounded-lg" />
                 <div className="flex-1 space-y-2">
@@ -220,9 +352,9 @@ export default function ArticlesPage() {
             <div className="flex items-center glass-card rounded-lg p-1">
               <button
                 onClick={() => setViewMode('table')}
-                className={`p-2 rounded-md transition-colors ${viewMode === 'table'
-                    ? 'bg-indigo-500/20 text-indigo-400'
-                    : 'text-slate-400 hover:text-slate-200'
+                className={`p-2 rounded-md transition-all ${viewMode === 'table'
+                  ? 'bg-indigo-500/20 text-indigo-400 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
                   }`}
                 title="表格视图"
               >
@@ -230,9 +362,9 @@ export default function ArticlesPage() {
               </button>
               <button
                 onClick={() => setViewMode('card')}
-                className={`p-2 rounded-md transition-colors ${viewMode === 'card'
-                    ? 'bg-indigo-500/20 text-indigo-400'
-                    : 'text-slate-400 hover:text-slate-200'
+                className={`p-2 rounded-md transition-all ${viewMode === 'card'
+                  ? 'bg-indigo-500/20 text-indigo-400 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
                   }`}
                 title="卡片视图"
               >
@@ -252,37 +384,40 @@ export default function ArticlesPage() {
       />
 
       <div className="p-6">
-        {/* 筛选器 */}
+        {/* 筛选器 - 使用防抖的搜索 */}
         <ArticleFilters
           statusFilter={statusFilter}
-          searchQuery={searchQuery}
+          searchQuery={searchInput}
           statusCounts={statusCounts}
           onStatusChange={setStatusFilter}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
         />
 
         {/* 文章列表 */}
         {filteredArticles.length === 0 ? (
-          <EmptyState
-            icon={<FileText className="w-6 h-6" />}
-            title={statusCounts.all === 0 ? '暂无文章' : '没有符合当前筛选条件的文章'}
-            description={
-              statusCounts.all === 0
-                ? '前往「选题分析」页面使用一键创作功能生成文章'
-                : '尝试调整筛选条件或关键字以查看更多文章'
-            }
-            action={
-              statusCounts.all === 0
-                ? { label: '前往选题分析', href: '/analysis' }
-                : {
-                  label: '重置筛选',
-                  onClick: () => {
-                    setStatusFilter('all');
-                    setSearchQuery('');
-                  },
-                }
-            }
-          />
+          <div className="animate-fade-in">
+            <EmptyState
+              icon={<FileText className="w-6 h-6" />}
+              title={statusCounts.all === 0 ? '暂无文章' : '没有符合当前筛选条件的文章'}
+              description={
+                statusCounts.all === 0
+                  ? '前往「选题分析」页面使用一键创作功能生成文章'
+                  : '尝试调整筛选条件或关键字以查看更多文章'
+              }
+              action={
+                statusCounts.all === 0
+                  ? { label: '前往选题分析', href: '/analysis' }
+                  : {
+                    label: '重置筛选',
+                    onClick: () => {
+                      setStatusFilter('all');
+                      setSearchInput('');
+                      setSearchQuery('');
+                    },
+                  }
+              }
+            />
+          </div>
         ) : viewMode === 'card' ? (
           /* 卡片视图 */
           <ArticleCardGrid
@@ -300,12 +435,12 @@ export default function ArticlesPage() {
           />
         ) : (
           /* 表格视图 */
-          <div className="glass-card rounded-2xl overflow-visible">
+          <div className="glass-card rounded-2xl overflow-visible animate-fade-in">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/5">
                 <tr>
                   <th className="w-12 px-4 py-3">
-                    <button onClick={toggleSelectAll} className="text-slate-500 hover:text-slate-300">
+                    <button onClick={toggleSelectAll} className="text-slate-500 hover:text-slate-300 transition-colors">
                       {selectedIds.length === filteredArticles.length && filteredArticles.length > 0 ? (
                         <CheckSquare className="w-5 h-5 text-indigo-400" />
                       ) : (
@@ -313,14 +448,38 @@ export default function ArticlesPage() {
                       )}
                     </button>
                   </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">标题</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-28">状态</th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-32">创建时间</th>
+                  <th className="text-left px-4 py-3">
+                    <button
+                      onClick={() => toggleSort('title')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      标题
+                      {getSortIcon('title')}
+                    </button>
+                  </th>
+                  <th className="text-left px-4 py-3 w-28">
+                    <button
+                      onClick={() => toggleSort('status')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      状态
+                      {getSortIcon('status')}
+                    </button>
+                  </th>
+                  <th className="text-left px-4 py-3 w-32">
+                    <button
+                      onClick={() => toggleSort('createdAt')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    >
+                      创建时间
+                      {getSortIcon('createdAt')}
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-40">操作</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredArticles.map((article) => (
+                {filteredArticles.map((article, index) => (
                   <ArticleRow
                     key={article.id}
                     article={article}
@@ -373,6 +532,19 @@ export default function ArticlesPage() {
         onClose={closeXhsPublishModal}
         isPublishing={xhsPublishing}
         result={xhsResult}
+      />
+
+      {/* 确认对话框 */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={handleConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        loading={confirmLoading}
+        confirmText="确认"
+        cancelText="取消"
       />
     </div>
   );
