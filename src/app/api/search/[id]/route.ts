@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getSearchById, getArticlesBySearchId } from '@/lib/db';
 
 // GET - 获取搜索详情和关联文章
@@ -7,6 +8,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const { id } = await params;
     const searchId = parseInt(id);
 
@@ -17,7 +23,7 @@ export async function GET(
       );
     }
 
-    const searchRecord = getSearchById(searchId);
+    const searchRecord = getSearchById(searchId, session.user.id);
 
     if (!searchRecord) {
       return NextResponse.json(

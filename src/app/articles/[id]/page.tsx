@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
+import LoginPrompt from '@/components/ui/LoginPrompt';
+import { useLoginGuard } from '@/hooks/useLoginGuard';
 import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List, Heading1, Heading2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
 
@@ -31,6 +34,7 @@ interface Article {
 export default function ArticleEditPage() {
   const params = useParams();
   const router = useRouter();
+  const { ensureLogin, isAuthenticated, status: sessionStatus } = useLoginGuard('请登录后编辑文章');
   const isNew = params.id === 'new';
 
   const [loading, setLoading] = useState(!isNew);
@@ -45,12 +49,16 @@ export default function ArticleEditPage() {
 
   // 加载文章数据
   useEffect(() => {
-    if (!isNew) {
-      fetchArticle();
+    if (isNew) {
+      setLoading(false);
+      return;
     }
-  }, [params.id, isNew]);
+    if (!isAuthenticated) return;
+    fetchArticle();
+  }, [params.id, isNew, isAuthenticated]);
 
   const fetchArticle = async () => {
+    if (!isAuthenticated) return;
     try {
       const response = await fetch(`/api/articles/${params.id}`);
       const result = await response.json();
@@ -63,12 +71,12 @@ export default function ArticleEditPage() {
         setStatus(data.status);
         setSource(data.source);
       } else {
-        alert('文章不存在');
+        toast.error('文章不存在');
         router.push('/articles');
       }
     } catch (err) {
       console.error('加载文章失败:', err);
-      alert('加载文章失败');
+      toast.error('加载文章失败');
       router.push('/articles');
     } finally {
       setLoading(false);
@@ -76,8 +84,9 @@ export default function ArticleEditPage() {
   };
 
   const handleSave = async (newStatus?: ArticleStatus) => {
+    if (!ensureLogin()) return;
     if (!title.trim()) {
-      alert('请输入文章标题');
+      toast.error('请输入文章标题');
       return;
     }
 
@@ -99,13 +108,17 @@ export default function ArticleEditPage() {
         if (newStatus) {
           setStatus(newStatus);
         }
-        alert('保存成功');
+        toast.success('保存成功');
       } else {
-        alert(result.error || '保存失败');
+        toast.error('保存失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('保存失败:', err);
-      alert('保存失败，请重试');
+      toast.error('保存失败', {
+        description: '网络异常，请稍后重试',
+      });
     } finally {
       setSaving(false);
     }
@@ -133,6 +146,17 @@ export default function ArticleEditPage() {
   const getWordCount = () => {
     return content.replace(/<[^>]*>/g, '').length;
   };
+
+  if (sessionStatus !== 'loading' && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Header title="编辑文章" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可查看和编辑你的文章" />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

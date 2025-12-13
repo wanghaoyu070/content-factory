@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getSetting, createArticle, getSearchById } from '@/lib/db';
-import { AIConfig, generateArticle, generateImagePrompts, ImageInsertPosition } from '@/lib/ai';
-import { generateImage, GeneratedImage, ImageGenConfig } from '@/lib/image-gen';
-import { getImageGenConfig } from '@/lib/config';
+import { generateArticle, generateImagePrompts, ImageInsertPosition } from '@/lib/ai';
+import { generateImage, GeneratedImage } from '@/lib/image-gen';
+import { getImageGenConfig, getAIConfig as getAIUserConfig } from '@/lib/config';
 
 interface GenerateRequest {
   insightId: number;
@@ -26,30 +27,6 @@ interface ProgressEvent {
   message: string;
   progress: number; // 0-100
   data?: unknown;
-}
-
-// 获取 AI 配置（优先环境变量，其次数据库配置）
-function getAIConfig(): AIConfig | null {
-  // 优先使用环境变量
-  if (process.env.OPENAI_API_BASE_URL && process.env.OPENAI_API_KEY) {
-    return {
-      baseUrl: process.env.OPENAI_API_BASE_URL,
-      apiKey: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_MODEL || 'gpt-4o',
-    };
-  }
-
-  // 回退到数据库配置
-  const aiConfigStr = getSetting('ai');
-  if (aiConfigStr) {
-    try {
-      return JSON.parse(aiConfigStr);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
 }
 
 // 将图片插入到文章内容中
@@ -112,8 +89,14 @@ function insertImagesIntoContent(
 
 // POST /api/articles/generate - AI生成文章（SSE流式响应）
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+  }
+
   const body: GenerateRequest = await request.json();
   const { insightId, searchId, insight, keyword, style, fetchImages = false } = body;
+  const userId = session.user.id;
 
   // 创建 SSE 流
   const encoder = new TextEncoder();
@@ -143,8 +126,19 @@ export async function POST(request: Request) {
           return;
         }
 
+        const ownerSearch = getSearchById(searchId, userId);
+        if (!ownerSearch) {
+          sendProgress({
+            step: 'error',
+            message: '搜索记录不存在或无权访问',
+            progress: 0,
+          });
+          controller.close();
+          return;
+        }
+
         // 获取 AI 配置（优先环境变量）
-        const aiConfig = getAIConfig();
+        const aiConfig = getAIUserConfig(userId);
         if (!aiConfig) {
           sendProgress({
             step: 'error',
@@ -166,7 +160,7 @@ export async function POST(request: Request) {
         }
 
         // 获取用户偏好设置
-        const preferencesStr = getSetting('preferences');
+        const preferencesStr = getSetting('preferences', userId);
         let preferences: { style?: string; minWords?: number; maxWords?: number } = {};
         if (preferencesStr) {
           try {
@@ -212,7 +206,7 @@ export async function POST(request: Request) {
 
         if (fetchImages) {
           // 获取图片生成配置
-          const imageGenConfig = getImageGenConfig();
+          const imageGenConfig = getImageGenConfig(userId);
 
           if (imageGenConfig && imageGenConfig.baseUrl && imageGenConfig.apiKey) {
             // 步骤3.1: 生成图片提示词
@@ -308,8 +302,7 @@ export async function POST(request: Request) {
         });
 
         // 获取搜索记录以获取来源信息
-        const search = searchId ? getSearchById(searchId) : null;
-        const source = search ? `${search.keyword} · ${insight.title}` : insight.title;
+        const source = ownerSearch ? `${ownerSearch.keyword} · ${insight.title}` : insight.title;
 
         // 保存文章到数据库
         const articleId = createArticle({
@@ -320,6 +313,7 @@ export async function POST(request: Request) {
           source,
           sourceInsightId: insightId,
           sourceSearchId: searchId,
+          userId,
         });
 
         // 步骤5: 完成

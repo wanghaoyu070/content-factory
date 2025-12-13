@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
+import { Skeleton, InsightCardSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import LoginPrompt from '@/components/ui/LoginPrompt';
+import { useLoginGuard } from '@/hooks/useLoginGuard';
+import { toast } from 'sonner';
 
 // 动态导入TipTap相关组件，避免SSR问题
 const ArticleEditor = dynamic(() => import('@/components/create/ArticleEditor'), {
@@ -29,6 +34,7 @@ import {
   Send,
   CheckCircle,
   ArrowLeft,
+  AlertCircle,
 } from 'lucide-react';
 
 interface TopicInsight {
@@ -84,6 +90,44 @@ interface GenerateProgress {
   progress: number;
 }
 
+function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void | Promise<void> }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a2e] border border-[#2d2d44] min-w-[120px] justify-center">
+      {status === 'idle' && (
+        <>
+          <div className="w-2 h-2 rounded-full bg-slate-500" />
+          <span className="text-xs text-slate-400">已保存</span>
+        </>
+      )}
+      {status === 'saving' && (
+        <>
+          <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
+          <span className="text-xs text-indigo-400">保存中...</span>
+        </>
+      )}
+      {status === 'saved' && (
+        <>
+          <CheckCircle className="w-3 h-3 text-emerald-400" />
+          <span className="text-xs text-emerald-400">刚刚保存</span>
+        </>
+      )}
+      {status === 'error' && (
+        <>
+          <AlertCircle className="w-3 h-3 text-red-400" />
+          <span className="text-xs text-red-400">保存失败</span>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="text-xs text-red-400 underline decoration-dotted"
+          >
+            重试
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 const styleOptions: { value: WritingStyle; label: string; description: string }[] = [
   { value: 'professional', label: '专业严谨', description: '逻辑清晰、数据支撑、适合职场人士' },
   { value: 'casual', label: '轻松活泼', description: '口语化、多用网络流行语、适当使用表情' },
@@ -91,6 +135,7 @@ const styleOptions: { value: WritingStyle; label: string; description: string }[
 ];
 
 export default function CreatePage() {
+  const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后使用内容创作功能');
   // 页面模式
   const [mode, setMode] = useState<PageMode>('select');
 
@@ -117,24 +162,28 @@ export default function CreatePage() {
 
   // 自动保存状态
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
   // 初始加载数据
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     fetchData();
-  }, []);
+  }, [isAuthenticated]);
 
   // 切换筛选时自动刷新数据
   useEffect(() => {
-    if (!loading && searchFilter !== 'all') {
-      fetchData();
-    }
-  }, [searchFilter]);
+    if (!isAuthenticated || searchFilter === 'all') return;
+    fetchData();
+  }, [searchFilter, isAuthenticated]);
 
   // 自动保存逻辑
   const autoSave = useCallback(async () => {
-    if (!articleId || mode !== 'edit') return;
+    if (!isAuthenticated || !articleId || mode !== 'edit') return;
 
     const currentState = JSON.stringify({ title: articleTitle, content: articleContent });
     if (currentState === lastSavedRef.current) return;
@@ -155,6 +204,7 @@ export default function CreatePage() {
       if (result.success) {
         lastSavedRef.current = currentState;
         setSaveStatus('saved');
+        setHasUnsavedChanges(false);
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         setSaveStatus('error');
@@ -162,11 +212,11 @@ export default function CreatePage() {
     } catch {
       setSaveStatus('error');
     }
-  }, [articleId, articleTitle, articleContent, articleImages, mode]);
+  }, [articleId, articleTitle, articleContent, articleImages, mode, isAuthenticated]);
 
   // 防抖自动保存
   useEffect(() => {
-    if (mode !== 'edit' || !articleId) return;
+    if (!isAuthenticated || mode !== 'edit' || !articleId) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -183,7 +233,29 @@ export default function CreatePage() {
     };
   }, [articleTitle, articleContent, autoSave, mode, articleId]);
 
+  useEffect(() => {
+    if (!articleId || mode !== 'edit') {
+      setHasUnsavedChanges(false);
+      return;
+    }
+    const currentState = JSON.stringify({ title: articleTitle, content: articleContent });
+    setHasUnsavedChanges(currentState !== lastSavedRef.current);
+  }, [articleId, mode, articleTitle, articleContent]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const fetchData = async () => {
+    if (!isAuthenticated) return;
     try {
       const res = await fetch('/api/insights/all');
       const data = await res.json();
@@ -215,6 +287,7 @@ export default function CreatePage() {
     : flatInsights.filter(i => i.searchId === searchFilter);
 
   const handleGenerate = async () => {
+    if (!ensureLogin()) return;
     if (!selectedInsight) return;
 
     setGenerating(true);
@@ -279,7 +352,9 @@ export default function CreatePage() {
                 lastSavedRef.current = JSON.stringify({ title: data.title, content: data.content });
                 setMode('edit');
               } else if (eventData.step === 'error') {
-                alert(eventData.message || '文章生成失败，请重试');
+                toast.error('文章生成失败', {
+                  description: eventData.message || '请稍后重试',
+                });
               }
             } catch {
               console.error('解析SSE数据失败');
@@ -289,7 +364,15 @@ export default function CreatePage() {
       }
     } catch (err) {
       console.error('生成文章失败:', err);
-      alert('文章生成失败，请检查 AI 配置');
+      toast.error('文章生成失败', {
+        description: '请检查 AI 配置是否正确',
+        action: {
+          label: '去设置',
+          onClick: () => {
+            window.location.href = '/settings';
+          },
+        },
+      });
     } finally {
       setGenerating(false);
       setGenerateProgress(null);
@@ -297,6 +380,7 @@ export default function CreatePage() {
   };
 
   const handleRegenerate = async () => {
+    if (!ensureLogin()) return;
     if (!currentInsight) return;
     setSelectedInsight(currentInsight);
     setMode('select');
@@ -307,6 +391,7 @@ export default function CreatePage() {
   };
 
   const handleSubmitReview = async () => {
+    if (!ensureLogin()) return;
     if (!articleId) return;
 
     setSaveStatus('saving');
@@ -324,14 +409,20 @@ export default function CreatePage() {
 
       const result = await response.json();
       if (result.success) {
-        alert('已提交审核');
+        toast.success('已提交审核', {
+          description: '文章已进入审核流程',
+        });
         setSaveStatus('saved');
       } else {
-        alert(result.error || '提交失败');
+        toast.error('提交失败', {
+          description: result.error || '请稍后重试',
+        });
         setSaveStatus('error');
       }
     } catch {
-      alert('提交失败，请重试');
+      toast.error('提交失败', {
+        description: '网络异常，请稍后重试',
+      });
       setSaveStatus('error');
     }
   };
@@ -346,12 +437,46 @@ export default function CreatePage() {
     });
   };
 
+  if (status !== 'loading' && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header title="内容创作" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可生成文章、管理草稿" />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f0f23]">
         <Header title="内容创作" />
-        <div className="p-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-[#16162a] rounded-2xl border border-[#2d2d44]">
+            <div className="p-6 flex flex-col gap-4 border-b border-[#2d2d44]">
+              <Skeleton className="h-10 w-full" />
+              <div className="flex gap-4">
+                <Skeleton className="h-10 w-28" />
+                <Skeleton className="h-10 flex-1" />
+              </div>
+            </div>
+            <div>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <InsightCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6 space-y-4">
+            <Skeleton className="h-6 w-32" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-48 w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -365,25 +490,7 @@ export default function CreatePage() {
           title="内容创作"
           action={
             <div className="flex items-center gap-3">
-              {/* 保存状态 */}
-              <div className="flex items-center gap-2 text-sm">
-                {saveStatus === 'saving' && (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-                    <span className="text-slate-400">保存中...</span>
-                  </>
-                )}
-                {saveStatus === 'saved' && (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    <span className="text-emerald-400">已保存</span>
-                  </>
-                )}
-                {saveStatus === 'error' && (
-                  <span className="text-red-400">保存失败</span>
-                )}
-              </div>
-
+              <SaveIndicator status={saveStatus} onRetry={autoSave} />
               <button
                 onClick={autoSave}
                 className="px-4 py-2 border border-[#2d2d44] text-slate-300 rounded-lg hover:bg-[#1a1a2e] transition-colors flex items-center gap-2"
@@ -517,13 +624,12 @@ export default function CreatePage() {
               </div>
 
               {filteredInsights.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Sparkles className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                  <p className="text-slate-400">暂无选题洞察</p>
-                  <p className="text-sm text-slate-500 mt-2">
-                    前往「选题分析」页面搜索关键词，生成选题洞察
-                  </p>
-                </div>
+                <EmptyState
+                  icon={<Sparkles className="w-6 h-6" />}
+                  title="暂无选题洞察"
+                  description="前往「选题分析」页面搜索关键词，生成可用的选题洞察"
+                  action={{ label: '前往选题分析', href: '/analysis' }}
+                />
               ) : (
                 <div className="divide-y divide-[#2d2d44] max-h-[600px] overflow-y-auto">
                   {filteredInsights.map((insight) => {

@@ -1,28 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSetting } from '@/lib/db';
-
-// 获取公众号文章API配置
-function getWechatArticleConfig(): { endpoint: string; apiKey: string } | null {
-  // 优先使用环境变量
-  if (process.env.WECHAT_ARTICLE_ENDPOINT && process.env.WECHAT_ARTICLE_API_KEY) {
-    return {
-      endpoint: process.env.WECHAT_ARTICLE_ENDPOINT,
-      apiKey: process.env.WECHAT_ARTICLE_API_KEY,
-    };
-  }
-
-  // 回退到数据库配置
-  const configStr = getSetting('wechatArticle');
-  if (configStr) {
-    try {
-      return JSON.parse(configStr);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
+import { auth } from '@/auth';
+import { getWechatArticleConfig } from '@/lib/config';
 
 export interface WechatArticle {
   avatar: string;
@@ -60,6 +38,11 @@ export interface WechatApiResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { keyword, page = 1, period = 7 } = body;
 
@@ -71,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取API配置
-    const config = getWechatArticleConfig();
+    const config = getWechatArticleConfig(session.user.id);
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
         { error: '请先配置公众号文章API（环境变量或设置页面）' },

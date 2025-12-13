@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import {
   getDashboardStats,
   getAnalysisTrend,
@@ -10,11 +11,18 @@ import {
 // GET /api/dashboard - 获取仪表盘数据
 export async function GET() {
   try {
-    const stats = getDashboardStats();
-    const trend = getAnalysisTrend(7);
-    const statusDistribution = getArticleStatusDistribution();
-    const topKeywords = getTopKeywords(10);
-    const recentActivities = getRecentActivities(10);
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    const stats = getDashboardStats(userId);
+    const trend = getAnalysisTrend(7, userId);
+    const statusDistribution = getArticleStatusDistribution(userId);
+    const topKeywords = getTopKeywords(10, userId);
+    const recentActivities = getRecentActivities(10, userId);
 
     // 补全近7天的日期数据（没有数据的日期填0）
     const today = new Date();

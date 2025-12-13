@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
+import { useSession } from 'next-auth/react';
+import LoginPrompt from '@/components/ui/LoginPrompt';
 import {
   BarChart3,
   FileText,
@@ -11,7 +13,6 @@ import {
   TrendingUp,
   Search,
   PenTool,
-  Loader2,
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
@@ -29,6 +30,8 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
+import { StatCardSkeleton, ChartSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface DashboardData {
   stats: {
@@ -67,14 +70,22 @@ const statusColors: Record<string, string> = {
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated' && !!session?.user && !session.user.isPending;
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      setData(null);
+      return;
+    }
     fetchDashboardData();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchDashboardData = async () => {
+    if (!isAuthenticated) return;
     try {
       const response = await fetch('/api/dashboard');
       const result = await response.json();
@@ -121,12 +132,42 @@ export default function DashboardPage() {
     }
   };
 
+  if (!isAuthenticated && status !== 'loading') {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header title="仪表盘" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可查看专属仪表盘与数据统计" />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f0f23]">
         <Header title="仪表盘" />
-        <div className="p-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartSkeleton />
+            <ChartSkeleton />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <ChartSkeleton />
+            </div>
+            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
+              <div className="h-6 w-24 bg-[#1a1a2e] rounded mb-4" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <ListItemSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -230,45 +271,56 @@ export default function DashboardPage() {
             </h3>
             <div className="h-64 flex items-center">
               {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1a1a2e',
-                        border: '1px solid #2d2d44',
-                        borderRadius: '8px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="w-full text-center text-slate-500">暂无数据</div>
-              )}
-              <div className="space-y-2 ml-4">
-                {pieData.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-sm text-slate-400">{item.name}</span>
-                    <span className="text-sm text-slate-300 font-medium">{item.value}</span>
+                <>
+                  <div className="flex-1 h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1a1a2e',
+                            border: '1px solid #2d2d44',
+                            borderRadius: '8px',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2 ml-4">
+                    {pieData.map((item, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm text-slate-400">{item.name}</span>
+                        <span className="text-sm text-slate-300 font-medium">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1">
+                  <EmptyState
+                    icon={<FileText className="w-6 h-6" />}
+                    title="暂无文章数据"
+                    description="完成一次内容创作后即可查看文章状态分布"
+                    action={{ label: '去创作', href: '/create' }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -310,8 +362,13 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-64 flex items-center justify-center text-slate-500">
-                暂无数据，开始分析关键词吧
+              <div className="h-64 flex items-center justify-center">
+                <EmptyState
+                  icon={<Search className="w-6 h-6" />}
+                  title="暂无关键词数据"
+                  description="完成一次选题分析，系统将展示热门关键词走势"
+                  action={{ label: '开始分析', href: '/analysis' }}
+                />
               </div>
             )}
           </div>
@@ -340,8 +397,13 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="h-64 flex items-center justify-center text-slate-500">
-                暂无活动记录
+              <div className="h-64 flex items-center justify-center">
+                <EmptyState
+                  icon={<Clock className="w-6 h-6" />}
+                  title="暂无活动记录"
+                  description="完成一次分析或创作后即可在此查看动态"
+                  action={{ label: '新建任务', href: '/create' }}
+                />
               </div>
             )}
           </div>

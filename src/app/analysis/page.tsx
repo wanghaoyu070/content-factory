@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
+import LoginPrompt from '@/components/ui/LoginPrompt';
+import { useLoginGuard } from '@/hooks/useLoginGuard';
 import {
   Search,
   Loader2,
@@ -22,6 +24,8 @@ import {
   AlertCircle,
   User,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Skeleton, StatCardSkeleton, InsightCardSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
 
 type SearchMode = 'keyword' | 'account';
 
@@ -83,6 +87,7 @@ const hotTopics = [
 
 export default function AnalysisPage() {
   const router = useRouter();
+  const { ensureLogin, isAuthenticated, status } = useLoginGuard('请先登录后再开始分析');
   const [keyword, setKeyword] = useState('');
   const [step, setStep] = useState<AnalysisStep>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -94,12 +99,30 @@ export default function AnalysisPage() {
   const [searchId, setSearchId] = useState<number | null>(null);
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    fetchRecentSearches();
-  }, []);
+    let active = true;
+    if (!isAuthenticated) {
+      setRecentSearches([]);
+      setInitialLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+    (async () => {
+      await fetchRecentSearches();
+      if (active) {
+        setInitialLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
 
   const fetchRecentSearches = async () => {
+    if (!isAuthenticated) return;
     try {
       const response = await fetch('/api/search?limit=5');
       const result = await response.json();
@@ -112,6 +135,7 @@ export default function AnalysisPage() {
   };
 
   const handleSearch = async (searchKeyword?: string) => {
+    if (!ensureLogin()) return;
     const kw = searchKeyword || keyword;
     if (!kw.trim()) return;
 
@@ -224,6 +248,7 @@ export default function AnalysisPage() {
   };
 
   const handleGenerateArticle = async (insight: Insight) => {
+    if (!ensureLogin()) return;
     if (!searchId) return;
     setGeneratingId(insight.id);
 
@@ -251,15 +276,74 @@ export default function AnalysisPage() {
       if (result.success && result.data?.articleId) {
         router.push(`/articles/${result.data.articleId}`);
       } else {
-        alert(result.error || '文章生成失败，请重试');
+        toast.error('文章生成失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('Generate article failed:', err);
-      alert('文章生成失败，请检查 AI 配置');
+      toast.error('文章生成失败', {
+        description: '请检查 AI 配置是否正确',
+        action: {
+          label: '去设置',
+          onClick: () => {
+            window.location.href = '/settings';
+          },
+        },
+      });
     } finally {
       setGeneratingId(null);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header title="选题分析" />
+        <div className="p-6 space-y-6">
+          <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6 space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <StatCardSkeleton key={i} />
+                ))}
+              </div>
+              <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] divide-y divide-[#2d2d44]">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <InsightCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6">
+              <Skeleton className="h-6 w-32 mb-4" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <ListItemSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status !== 'loading' && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header title="选题分析" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可使用选题分析、洞察生成等功能" />
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

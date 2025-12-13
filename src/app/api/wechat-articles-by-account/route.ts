@@ -1,32 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSetting } from '@/lib/db';
-
-// 获取公众号文章API配置
-function getWechatArticleConfig(): { endpoint: string; apiKey: string } | null {
-  // 优先使用环境变量
-  if (process.env.WECHAT_ARTICLE_ENDPOINT && process.env.WECHAT_ARTICLE_API_KEY) {
-    return {
-      endpoint: process.env.WECHAT_ARTICLE_ENDPOINT.replace('/kw_search', ''), // 获取基础URL
-      apiKey: process.env.WECHAT_ARTICLE_API_KEY,
-    };
-  }
-
-  // 回退到数据库配置
-  const configStr = getSetting('wechatArticle');
-  if (configStr) {
-    try {
-      const config = JSON.parse(configStr);
-      return {
-        endpoint: config.endpoint?.replace('/kw_search', '') || '',
-        apiKey: config.apiKey,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
+import { auth } from '@/auth';
+import { getWechatArticleConfig } from '@/lib/config';
 
 // post_condition API 返回的文章数据
 interface PostConditionArticle {
@@ -142,6 +116,11 @@ async function fetchArticleStats(
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { accountName, page = 1 } = body;
 
@@ -153,7 +132,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取API配置
-    const config = getWechatArticleConfig();
+    const baseConfig = getWechatArticleConfig(session.user.id);
+    const config = baseConfig
+      ? {
+          endpoint: baseConfig.endpoint.replace('/kw_search', ''),
+          apiKey: baseConfig.apiKey,
+        }
+      : null;
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
         { success: false, error: '请先配置公众号文章API（环境变量或设置页面）' },

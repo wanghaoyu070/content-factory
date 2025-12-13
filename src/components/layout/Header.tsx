@@ -1,11 +1,14 @@
 'use client';
 
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 interface HeaderProps {
   title: string;
   action?: React.ReactNode;
 }
+
+const UserMenu = dynamic(() => import('@/components/ui/UserMenu'), { ssr: false });
 
 export default function Header({ title, action }: HeaderProps) {
   return (
@@ -14,9 +17,7 @@ export default function Header({ title, action }: HeaderProps) {
 
       <div className="flex items-center gap-4">
         {action}
-        <button className="p-2 text-slate-400 hover:text-slate-200 hover:bg-[#1a1a2e] rounded-lg transition-colors">
-          <Bell className="w-5 h-5" />
-        </button>
+        <UserMenu />
       </div>
     </header>
   );

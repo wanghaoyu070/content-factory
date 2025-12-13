@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import {
   createSearchRecord,
   saveArticles,
@@ -10,16 +11,21 @@ import {
 // GET - 获取搜索历史
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get('limit');
     const all = searchParams.get('all');
 
     if (all === 'true') {
-      const records = getAllSearches();
+      const records = getAllSearches(session.user.id);
       return NextResponse.json({ success: true, data: records });
     }
 
-    const records = getRecentSearches(limit ? parseInt(limit) : 5);
+    const records = getRecentSearches(limit ? parseInt(limit) : 5, session.user.id);
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
     console.error('Error fetching search records:', error);
@@ -33,6 +39,11 @@ export async function GET(request: NextRequest) {
 // POST - 保存搜索记录和文章
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { keyword, articles, searchType, accountInfo } = body;
 
@@ -44,11 +55,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Create search record with optional search type and account info
-    const searchId = createSearchRecord(keyword, articles.length, {
-      searchType: searchType || 'keyword',
-      accountName: accountInfo?.name,
-      accountAvatar: accountInfo?.avatar,
-    });
+    const searchId = createSearchRecord(
+      keyword,
+      articles.length,
+      {
+        searchType: searchType || 'keyword',
+        accountName: accountInfo?.name,
+        accountAvatar: accountInfo?.avatar,
+      },
+      session.user.id
+    );
 
     // Save articles
     const articlesToSave = articles.map((article: any) => ({
@@ -86,6 +102,11 @@ export async function POST(request: NextRequest) {
 // DELETE - 删除搜索记录
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -96,7 +117,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    deleteSearch(parseInt(id));
+    deleteSearch(parseInt(id), session.user.id);
 
     return NextResponse.json({
       success: true,

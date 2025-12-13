@@ -12,10 +12,80 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(dbPath);
 
+function columnExists(table: string, column: string): boolean {
+  try {
+    const stmt = db.prepare(`PRAGMA table_info(${table})`);
+    const columns = stmt.all() as { name: string }[];
+    return columns.some((col) => col.name === column);
+  } catch (error) {
+    console.error(`检查列 ${table}.${column} 失败:`, error);
+    return false;
+  }
+}
+
+function ensureSettingsTable() {
+  const hasUserId = columnExists('settings', 'user_id');
+  if (!hasUserId) {
+    db.transaction(() => {
+      db.exec('ALTER TABLE settings RENAME TO settings_old');
+      db.exec(`
+        CREATE TABLE settings (
+          user_id INTEGER NOT NULL,
+          key TEXT NOT NULL,
+          value TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (user_id, key)
+        );
+      `);
+      db.exec(`
+        INSERT INTO settings (user_id, key, value, updated_at)
+        SELECT 1 as user_id, key, value, updated_at FROM settings_old;
+      `);
+      db.exec('DROP TABLE settings_old');
+    })();
+  }
+}
+
+function ensureColumn(
+  table: string,
+  column: string,
+  definition: string,
+  onAdd?: () => void
+) {
+  if (!columnExists(table, column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    if (onAdd) onAdd();
+  }
+}
+
 // Initialize tables
 db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    github_id TEXT NOT NULL UNIQUE,
+    github_login TEXT,
+    name TEXT,
+    email TEXT,
+    avatar_url TEXT,
+    role TEXT DEFAULT 'user',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS invite_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    created_by INTEGER,
+    used_by INTEGER,
+    used_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL
+  );
+
   CREATE TABLE IF NOT EXISTS search_records (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL DEFAULT 1,
     keyword TEXT NOT NULL,
     article_count INTEGER DEFAULT 0,
     search_type TEXT DEFAULT 'keyword',
@@ -45,9 +115,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_articles_search_id ON source_articles(search_id);
 
   CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    key TEXT NOT NULL,
     value TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, key)
   );
 
   CREATE TABLE IF NOT EXISTS article_summaries (
@@ -82,6 +154,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS articles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL DEFAULT 1,
     title TEXT NOT NULL,
     content TEXT,
     cover_image TEXT,
@@ -100,9 +173,20 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
 `);
 
+ensureSettingsTable();
+ensureColumn('search_records', 'user_id', 'INTEGER DEFAULT 1', () => {
+  db.exec('UPDATE search_records SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
+});
+ensureColumn('articles', 'user_id', 'INTEGER DEFAULT 1', () => {
+  db.exec('UPDATE articles SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
+});
+db.exec('CREATE INDEX IF NOT EXISTS idx_search_user ON search_records(user_id)');
+db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
+
 // Types
 export interface SearchRecord {
   id: number;
+  user_id: number;
   keyword: string;
   article_count: number;
   search_type: 'keyword' | 'account';
@@ -153,6 +237,7 @@ export interface TopicInsightRecord {
 
 export interface ArticleRecord {
   id: number;
+  user_id: number;
   title: string;
   content: string;
   cover_image: string;
@@ -165,6 +250,32 @@ export interface ArticleRecord {
   updated_at: string;
 }
 
+export interface UserRecord {
+  id: number;
+  github_id: string;
+  github_login: string | null;
+  name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  role: 'admin' | 'user' | 'pending';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InviteCodeRecord {
+  id: number;
+  code: string;
+  created_by: number | null;
+  used_by: number | null;
+  used_at: string | null;
+  created_at: string;
+}
+
+export interface InviteCodeDetail extends InviteCodeRecord {
+  creator_login: string | null;
+  used_login: string | null;
+}
+
 // Database operations
 export function createSearchRecord(
   keyword: string,
@@ -173,17 +284,19 @@ export function createSearchRecord(
     searchType?: 'keyword' | 'account';
     accountName?: string;
     accountAvatar?: string;
-  }
+  },
+  userId: number = 1
 ): number {
   const stmt = db.prepare(
-    'INSERT INTO search_records (keyword, article_count, search_type, account_name, account_avatar) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO search_records (keyword, article_count, search_type, account_name, account_avatar, user_id) VALUES (?, ?, ?, ?, ?, ?)'
   );
   const result = stmt.run(
     keyword,
     articleCount,
     options?.searchType || 'keyword',
     options?.accountName || null,
-    options?.accountAvatar || null
+    options?.accountAvatar || null,
+    userId
   );
   return result.lastInsertRowid as number;
 }
@@ -218,19 +331,129 @@ export function saveArticles(searchId: number, articles: Omit<SourceArticle, 'id
   insertMany(articles);
 }
 
-export function getRecentSearches(limit: number = 5): SearchRecord[] {
-  const stmt = db.prepare('SELECT * FROM search_records ORDER BY created_at DESC LIMIT ?');
+export function getUserByGithubId(githubId: string): UserRecord | null {
+  const stmt = db.prepare('SELECT * FROM users WHERE github_id = ?');
+  return (stmt.get(githubId) as UserRecord | undefined) ?? null;
+}
+
+export function getUserById(id: number): UserRecord | null {
+  const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
+  return (stmt.get(id) as UserRecord | undefined) ?? null;
+}
+
+export function getUsersCount(): number {
+  const stmt = db.prepare('SELECT COUNT(*) as count FROM users');
+  const row = stmt.get() as { count: number } | undefined;
+  return row?.count ?? 0;
+}
+
+export function createUser(user: {
+  githubId: string;
+  githubLogin?: string | null;
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  role?: 'admin' | 'user' | 'pending';
+}): number {
+  const stmt = db.prepare(`
+    INSERT INTO users (github_id, github_login, name, email, avatar_url, role)
+    VALUES (@githubId, @githubLogin, @name, @email, @avatarUrl, @role)
+  `);
+  const result = stmt.run({
+    githubId: user.githubId,
+    githubLogin: user.githubLogin ?? null,
+    name: user.name ?? null,
+    email: user.email ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    role: user.role ?? 'user',
+  });
+  return result.lastInsertRowid as number;
+}
+
+export function upsertInviteCode(code: string, createdBy: number | null) {
+  const stmt = db.prepare(`
+    INSERT INTO invite_codes (code, created_by)
+    VALUES (?, ?)
+    ON CONFLICT(code) DO UPDATE SET created_by = excluded.created_by
+  `);
+  stmt.run(code, createdBy);
+}
+
+export function getInviteCode(code: string): InviteCodeRecord | null {
+  const stmt = db.prepare('SELECT * FROM invite_codes WHERE code = ?');
+  return (stmt.get(code) as InviteCodeRecord | undefined) ?? null;
+}
+
+export function markInviteCodeUsed(code: string, userId: number) {
+  const stmt = db.prepare(`
+    UPDATE invite_codes
+    SET used_by = ?, used_at = CURRENT_TIMESTAMP
+    WHERE code = ?
+  `);
+  stmt.run(userId, code);
+}
+
+export function updateUserRole(userId: number, role: 'admin' | 'user' | 'pending') {
+  const stmt = db.prepare('UPDATE users SET role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+  stmt.run(role, userId);
+}
+
+export function createInviteCodeRecord(code: string, createdBy: number | null): number {
+  const stmt = db.prepare(`
+    INSERT INTO invite_codes (code, created_by)
+    VALUES (?, ?)
+  `);
+  const result = stmt.run(code, createdBy);
+  return result.lastInsertRowid as number;
+}
+
+export function getInviteCodes(): InviteCodeDetail[] {
+  const stmt = db.prepare(`
+    SELECT
+      ic.*,
+      creator.github_login AS creator_login,
+      used.github_login AS used_login
+    FROM invite_codes ic
+    LEFT JOIN users creator ON ic.created_by = creator.id
+    LEFT JOIN users used ON ic.used_by = used.id
+    ORDER BY ic.created_at DESC
+  `);
+  return stmt.all() as InviteCodeDetail[];
+}
+
+export function deleteInviteCode(id: number): boolean {
+  const stmt = db.prepare('DELETE FROM invite_codes WHERE id = ? AND used_by IS NULL');
+  const result = stmt.run(id);
+  return result.changes > 0;
+}
+
+export function getRecentSearches(limit: number = 5, userId?: number): SearchRecord[] {
+  const base = 'SELECT * FROM search_records';
+  const order = ' ORDER BY created_at DESC LIMIT ?';
+  if (userId) {
+    const stmt = db.prepare(`${base} WHERE user_id = ?${order}`);
+    return stmt.all(userId, limit) as SearchRecord[];
+  }
+  const stmt = db.prepare(`${base}${order}`);
   return stmt.all(limit) as SearchRecord[];
 }
 
-export function getAllSearches(): SearchRecord[] {
-  const stmt = db.prepare('SELECT * FROM search_records ORDER BY created_at DESC');
+export function getAllSearches(userId?: number): SearchRecord[] {
+  const base = 'SELECT * FROM search_records';
+  const order = ' ORDER BY created_at DESC';
+  if (userId) {
+    const stmt = db.prepare(`${base} WHERE user_id = ?${order}`);
+    return stmt.all(userId) as SearchRecord[];
+  }
+  const stmt = db.prepare(`${base}${order}`);
   return stmt.all() as SearchRecord[];
 }
 
-export function getSearchById(id: number): SearchRecord | undefined {
-  const stmt = db.prepare('SELECT * FROM search_records WHERE id = ?');
-  return stmt.get(id) as SearchRecord | undefined;
+export function getSearchById(id: number, userId?: number): SearchRecord | undefined {
+  const stmt = userId
+    ? db.prepare('SELECT * FROM search_records WHERE id = ? AND user_id = ?')
+    : db.prepare('SELECT * FROM search_records WHERE id = ?');
+  return userId ? (stmt.get(id, userId) as SearchRecord | undefined) : (stmt.get(id) as SearchRecord | undefined);
 }
 
 export function getArticlesBySearchId(searchId: number): SourceArticle[] {
@@ -238,36 +461,46 @@ export function getArticlesBySearchId(searchId: number): SourceArticle[] {
   return stmt.all(searchId) as SourceArticle[];
 }
 
-export function deleteSearch(id: number) {
-  const deleteArticles = db.prepare('DELETE FROM source_articles WHERE search_id = ?');
-  const deleteRecord = db.prepare('DELETE FROM search_records WHERE id = ?');
+export function deleteSearch(id: number, userId?: number) {
+  if (userId && !getSearchById(id, userId)) {
+    return;
+  }
 
-  const deleteAll = db.transaction((id: number) => {
-    deleteArticles.run(id);
-    deleteRecord.run(id);
+  const deleteArticles = db.prepare('DELETE FROM source_articles WHERE search_id = ?');
+  const deleteRecord = userId
+    ? db.prepare('DELETE FROM search_records WHERE id = ? AND user_id = ?')
+    : db.prepare('DELETE FROM search_records WHERE id = ?');
+
+  const deleteAll = db.transaction((searchId: number) => {
+    deleteArticles.run(searchId);
+    if (userId) {
+      deleteRecord.run(searchId, userId);
+    } else {
+      deleteRecord.run(searchId);
+    }
   });
 
   deleteAll(id);
 }
 
 // Settings operations
-export function getSetting(key: string): string | undefined {
-  const stmt = db.prepare('SELECT value FROM settings WHERE key = ?');
-  const result = stmt.get(key) as { value: string } | undefined;
+export function getSetting(key: string, userId: number = 1): string | undefined {
+  const stmt = db.prepare('SELECT value FROM settings WHERE user_id = ? AND key = ?');
+  const result = stmt.get(userId, key) as { value: string } | undefined;
   return result?.value;
 }
 
-export function setSetting(key: string, value: string): void {
+export function setSetting(key: string, value: string, userId: number = 1): void {
   const stmt = db.prepare(`
-    INSERT INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+    INSERT INTO settings (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
   `);
-  stmt.run(key, value);
+  stmt.run(userId, key, value);
 }
 
-export function getAllSettings(): Record<string, string> {
-  const stmt = db.prepare('SELECT key, value FROM settings');
-  const rows = stmt.all() as { key: string; value: string }[];
+export function getAllSettings(userId: number): Record<string, string> {
+  const stmt = db.prepare('SELECT key, value FROM settings WHERE user_id = ?');
+  const rows = stmt.all(userId) as { key: string; value: string }[];
   const settings: Record<string, string> = {};
   for (const row of rows) {
     settings[row.key] = row.value;
@@ -368,10 +601,11 @@ export function createArticle(article: {
   source?: string;
   sourceInsightId?: number;
   sourceSearchId?: number;
+  userId?: number;
 }): number {
   const stmt = db.prepare(`
-    INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id, user_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     article.title,
@@ -380,24 +614,25 @@ export function createArticle(article: {
     JSON.stringify(article.images || []),
     article.source || '',
     article.sourceInsightId || null,
-    article.sourceSearchId || null
+    article.sourceSearchId || null,
+    article.userId || 1
   );
   return result.lastInsertRowid as number;
 }
 
-export function getArticleById(id: number): ArticleRecord | undefined {
-  const stmt = db.prepare('SELECT * FROM articles WHERE id = ?');
-  return stmt.get(id) as ArticleRecord | undefined;
+export function getArticleById(id: number, userId: number): ArticleRecord | undefined {
+  const stmt = db.prepare('SELECT * FROM articles WHERE id = ? AND user_id = ?');
+  return stmt.get(id, userId) as ArticleRecord | undefined;
 }
 
-export function getAllArticles(): ArticleRecord[] {
-  const stmt = db.prepare('SELECT * FROM articles ORDER BY created_at DESC');
-  return stmt.all() as ArticleRecord[];
+export function getAllArticles(userId: number): ArticleRecord[] {
+  const stmt = db.prepare('SELECT * FROM articles WHERE user_id = ? ORDER BY created_at DESC');
+  return stmt.all(userId) as ArticleRecord[];
 }
 
-export function getArticlesByStatus(status: string): ArticleRecord[] {
-  const stmt = db.prepare('SELECT * FROM articles WHERE status = ? ORDER BY created_at DESC');
-  return stmt.all(status) as ArticleRecord[];
+export function getArticlesByStatus(status: string, userId: number): ArticleRecord[] {
+  const stmt = db.prepare('SELECT * FROM articles WHERE status = ? AND user_id = ? ORDER BY created_at DESC');
+  return stmt.all(status, userId) as ArticleRecord[];
 }
 
 export function updateArticle(
@@ -408,7 +643,8 @@ export function updateArticle(
     coverImage?: string;
     images?: string[];
     status?: string;
-  }
+  },
+  userId?: number
 ): void {
   const fields: string[] = [];
   const values: (string | number)[] = [];
@@ -438,26 +674,33 @@ export function updateArticle(
 
   fields.push('updated_at = CURRENT_TIMESTAMP');
   values.push(id);
+  if (userId) {
+    values.push(userId);
+  }
 
-  const stmt = db.prepare(`UPDATE articles SET ${fields.join(', ')} WHERE id = ?`);
+  const stmt = db.prepare(
+    `UPDATE articles SET ${fields.join(', ')} WHERE id = ?${userId ? ' AND user_id = ?' : ''}`
+  );
   stmt.run(...values);
 }
 
-export function deleteArticle(id: number): void {
-  const stmt = db.prepare('DELETE FROM articles WHERE id = ?');
-  stmt.run(id);
+export function deleteArticle(id: number, userId?: number): void {
+  const stmt = userId
+    ? db.prepare('DELETE FROM articles WHERE id = ? AND user_id = ?')
+    : db.prepare('DELETE FROM articles WHERE id = ?');
+  userId ? stmt.run(id, userId) : stmt.run(id);
 }
 
 // 复制文章
-export function copyArticle(id: number): number {
-  const article = getArticleById(id);
+export function copyArticle(id: number, userId: number): number {
+  const article = getArticleById(id, userId);
   if (!article) {
     throw new Error('文章不存在');
   }
 
   const stmt = db.prepare(`
-    INSERT INTO articles (title, content, cover_image, images, status, source, source_insight_id, source_search_id)
-    VALUES (?, ?, ?, ?, 'draft', ?, ?, ?)
+    INSERT INTO articles (title, content, cover_image, images, status, source, source_insight_id, source_search_id, user_id)
+    VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?)
   `);
   const result = stmt.run(
     `${article.title} (副本)`,
@@ -466,34 +709,50 @@ export function copyArticle(id: number): number {
     article.images,
     article.source,
     article.source_insight_id,
-    article.source_search_id
+    article.source_search_id,
+    article.user_id
   );
   return result.lastInsertRowid as number;
 }
 
 // 归档文章
-export function archiveArticle(id: number): void {
-  const stmt = db.prepare("UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-  stmt.run(id);
+export function archiveArticle(id: number, userId?: number): void {
+  const stmt = userId
+    ? db.prepare(
+        "UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+      )
+    : db.prepare("UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+  userId ? stmt.run(id, userId) : stmt.run(id);
 }
 
 // 获取非归档文章
-export function getActiveArticles(): ArticleRecord[] {
-  const stmt = db.prepare("SELECT * FROM articles WHERE status != 'archived' ORDER BY created_at DESC");
-  return stmt.all() as ArticleRecord[];
+export function getActiveArticles(userId?: number): ArticleRecord[] {
+  const stmt = userId
+    ? db.prepare("SELECT * FROM articles WHERE status != 'archived' AND user_id = ? ORDER BY created_at DESC")
+    : db.prepare("SELECT * FROM articles WHERE status != 'archived' ORDER BY created_at DESC");
+  return userId ? (stmt.all(userId) as ArticleRecord[]) : (stmt.all() as ArticleRecord[]);
 }
 
 // Get all search records with insight counts
-export function getAllSearchesWithInsightCounts(): (SearchRecord & { insight_count: number })[] {
-  const stmt = db.prepare(`
+export function getAllSearchesWithInsightCounts(
+  userId?: number
+): (SearchRecord & { insight_count: number })[] {
+  const base = `
     SELECT
       sr.*,
       COUNT(ti.id) as insight_count
     FROM search_records sr
     LEFT JOIN topic_insights ti ON sr.id = ti.search_id
+  `;
+  const suffix = `
     GROUP BY sr.id
     ORDER BY sr.created_at DESC
-  `);
+  `;
+  if (userId) {
+    const stmt = db.prepare(`${base} WHERE sr.user_id = ?${suffix}`);
+    return stmt.all(userId) as (SearchRecord & { insight_count: number })[];
+  }
+  const stmt = db.prepare(`${base}${suffix}`);
   return stmt.all() as (SearchRecord & { insight_count: number })[];
 }
 
@@ -513,17 +772,35 @@ export interface DashboardStats {
   pendingArticles: number;
 }
 
-export function getDashboardStats(): DashboardStats {
-  const analysisStmt = db.prepare('SELECT COUNT(*) as count FROM search_records');
-  const articlesStmt = db.prepare('SELECT COUNT(*) as count FROM articles');
-  const publishedStmt = db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published'");
-  const pendingStmt = db.prepare("SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review')");
+export function getDashboardStats(userId?: number): DashboardStats {
+  const analysisStmt = userId
+    ? db.prepare('SELECT COUNT(*) as count FROM search_records WHERE user_id = ?')
+    : db.prepare('SELECT COUNT(*) as count FROM search_records');
+  const articlesStmt = userId
+    ? db.prepare('SELECT COUNT(*) as count FROM articles WHERE user_id = ?')
+    : db.prepare('SELECT COUNT(*) as count FROM articles');
+  const publishedStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published' AND user_id = ?")
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published'");
+  const pendingStmt = userId
+    ? db.prepare(
+        "SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review') AND user_id = ?"
+      )
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review')");
 
   return {
-    totalAnalysis: (analysisStmt.get() as { count: number }).count,
-    totalArticles: (articlesStmt.get() as { count: number }).count,
-    publishedArticles: (publishedStmt.get() as { count: number }).count,
-    pendingArticles: (pendingStmt.get() as { count: number }).count,
+    totalAnalysis: (userId
+      ? (analysisStmt.get(userId) as { count: number })
+      : (analysisStmt.get() as { count: number })).count,
+    totalArticles: (userId
+      ? (articlesStmt.get(userId) as { count: number })
+      : (articlesStmt.get() as { count: number })).count,
+    publishedArticles: (userId
+      ? (publishedStmt.get(userId) as { count: number })
+      : (publishedStmt.get() as { count: number })).count,
+    pendingArticles: (userId
+      ? (pendingStmt.get(userId) as { count: number })
+      : (pendingStmt.get() as { count: number })).count,
   };
 }
 
@@ -533,14 +810,21 @@ export interface DailyAnalysis {
   count: number;
 }
 
-export function getAnalysisTrend(days: number = 7): DailyAnalysis[] {
-  const stmt = db.prepare(`
+export function getAnalysisTrend(days: number = 7, userId?: number): DailyAnalysis[] {
+  const base = `
     SELECT DATE(created_at) as date, COUNT(*) as count
     FROM search_records
     WHERE created_at >= DATE('now', '-' || ? || ' days')
+  `;
+  const suffix = `
     GROUP BY DATE(created_at)
     ORDER BY date ASC
-  `);
+  `;
+  if (userId) {
+    const stmt = db.prepare(`${base} AND user_id = ?${suffix}`);
+    return stmt.all(days, userId) as DailyAnalysis[];
+  }
+  const stmt = db.prepare(`${base}${suffix}`);
   return stmt.all(days) as DailyAnalysis[];
 }
 
@@ -550,12 +834,19 @@ export interface StatusDistribution {
   count: number;
 }
 
-export function getArticleStatusDistribution(): StatusDistribution[] {
-  const stmt = db.prepare(`
+export function getArticleStatusDistribution(userId?: number): StatusDistribution[] {
+  const base = `
     SELECT status, COUNT(*) as count
     FROM articles
+  `;
+  const suffix = `
     GROUP BY status
-  `);
+  `;
+  if (userId) {
+    const stmt = db.prepare(`${base} WHERE user_id = ?${suffix}`);
+    return stmt.all(userId) as StatusDistribution[];
+  }
+  const stmt = db.prepare(`${base}${suffix}`);
   return stmt.all() as StatusDistribution[];
 }
 
@@ -565,14 +856,21 @@ export interface KeywordRank {
   count: number;
 }
 
-export function getTopKeywords(limit: number = 10): KeywordRank[] {
-  const stmt = db.prepare(`
+export function getTopKeywords(limit: number = 10, userId?: number): KeywordRank[] {
+  const base = `
     SELECT keyword, COUNT(*) as count
     FROM search_records
+  `;
+  const suffix = `
     GROUP BY keyword
     ORDER BY count DESC
     LIMIT ?
-  `);
+  `;
+  if (userId) {
+    const stmt = db.prepare(`${base} WHERE user_id = ?${suffix}`);
+    return stmt.all(userId, limit) as KeywordRank[];
+  }
+  const stmt = db.prepare(`${base}${suffix}`);
   return stmt.all(limit) as KeywordRank[];
 }
 
@@ -584,15 +882,23 @@ export interface RecentActivity {
   id: number;
 }
 
-export function getRecentActivities(limit: number = 10): RecentActivity[] {
+export function getRecentActivities(limit: number = 10, userId?: number): RecentActivity[] {
   const activities: RecentActivity[] = [];
 
   // 获取最近的分析
-  const analysisStmt = db.prepare(`
-    SELECT id, keyword, created_at FROM search_records
-    ORDER BY created_at DESC LIMIT ?
-  `);
-  const analyses = analysisStmt.all(limit) as { id: number; keyword: string; created_at: string }[];
+  const analysisStmt = userId
+    ? db.prepare(`
+        SELECT id, keyword, created_at FROM search_records
+        WHERE user_id = ?
+        ORDER BY created_at DESC LIMIT ?
+      `)
+    : db.prepare(`
+        SELECT id, keyword, created_at FROM search_records
+        ORDER BY created_at DESC LIMIT ?
+      `);
+  const analyses = userId
+    ? (analysisStmt.all(userId, limit) as { id: number; keyword: string; created_at: string }[])
+    : (analysisStmt.all(limit) as { id: number; keyword: string; created_at: string }[]);
   analyses.forEach((a) => {
     activities.push({
       type: 'analysis',
@@ -603,11 +909,31 @@ export function getRecentActivities(limit: number = 10): RecentActivity[] {
   });
 
   // 获取最近的文章
-  const articleStmt = db.prepare(`
-    SELECT id, title, status, created_at, updated_at FROM articles
-    ORDER BY updated_at DESC LIMIT ?
-  `);
-  const articles = articleStmt.all(limit) as { id: number; title: string; status: string; created_at: string; updated_at: string }[];
+  const articleStmt = userId
+    ? db.prepare(`
+        SELECT id, title, status, created_at, updated_at FROM articles
+        WHERE user_id = ?
+        ORDER BY updated_at DESC LIMIT ?
+      `)
+    : db.prepare(`
+        SELECT id, title, status, created_at, updated_at FROM articles
+        ORDER BY updated_at DESC LIMIT ?
+      `);
+  const articles = userId
+    ? (articleStmt.all(userId, limit) as {
+        id: number;
+        title: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }[])
+    : (articleStmt.all(limit) as {
+        id: number;
+        title: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      }[]);
   articles.forEach((a) => {
     if (a.status === 'published') {
       activities.push({

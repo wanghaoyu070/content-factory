@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getSetting, getArticleById, updateArticle } from '@/lib/db';
-
-// 公众号发布API配置
-interface WechatPublishConfig {
-  endpoint: string;
-  apiKey: string;
-}
+import { auth } from '@/auth';
+import { getArticleById, updateArticle } from '@/lib/db';
+import { getWechatPublishConfig } from '@/lib/config';
 
 // 获取公众号列表请求
 interface GetAccountsRequest {
@@ -24,35 +20,17 @@ interface PublishArticleRequest {
 
 type RequestBody = GetAccountsRequest | PublishArticleRequest;
 
-// 获取公众号发布配置
-function getWechatPublishConfig(): WechatPublishConfig | null {
-  // 优先使用环境变量
-  if (process.env.WECHAT_PUBLISH_ENDPOINT && process.env.WECHAT_PUBLISH_API_KEY) {
-    return {
-      endpoint: process.env.WECHAT_PUBLISH_ENDPOINT,
-      apiKey: process.env.WECHAT_PUBLISH_API_KEY,
-    };
-  }
-
-  // 回退到数据库配置
-  const configStr = getSetting('wechatPublish');
-  if (configStr) {
-    try {
-      return JSON.parse(configStr);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
-
 // POST /api/publish/wechat - 公众号发布相关操作
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body: RequestBody = await request.json();
 
-    const config = getWechatPublishConfig();
+    const config = getWechatPublishConfig(session.user.id);
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
         { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
@@ -91,7 +69,7 @@ export async function POST(request: Request) {
       }
 
       // 获取文章内容
-      const article = getArticleById(articleId);
+      const article = getArticleById(articleId, session.user.id);
       if (!article) {
         return NextResponse.json(
           { success: false, error: '文章不存在' },
@@ -122,7 +100,7 @@ export async function POST(request: Request) {
 
       if (publishData.success) {
         // 更新文章状态为已发布
-        updateArticle(articleId, { status: 'published' });
+        updateArticle(articleId, { status: 'published' }, session.user.id);
 
         return NextResponse.json({
           success: true,

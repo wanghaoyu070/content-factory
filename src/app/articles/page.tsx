@@ -3,11 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
+import LoginPrompt from '@/components/ui/LoginPrompt';
+import { useLoginGuard } from '@/hooks/useLoginGuard';
 import {
   Plus, Search, MoreHorizontal, Edit, Eye, Trash2, ChevronDown, CheckSquare, Square, Loader2,
   Copy, Download, Archive, Send, FileText, ExternalLink
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed' | 'archived';
 
@@ -52,6 +57,7 @@ interface PublishConfig {
 const PUBLISH_CONFIG_STORAGE_KEY = 'wechat_publish_config';
 
 export default function ArticlesPage() {
+  const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后管理文章');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -86,8 +92,12 @@ export default function ArticlesPage() {
 
   // 加载文章列表
   useEffect(() => {
+    if (!isAuthenticated) {
+      setArticles([]);
+      setLoading(false);
+      return;
+    }
     fetchArticles();
-    // 从localStorage加载上次的发布配置
     const savedConfig = localStorage.getItem(PUBLISH_CONFIG_STORAGE_KEY);
     if (savedConfig) {
       try {
@@ -97,7 +107,7 @@ export default function ArticlesPage() {
         console.error('Failed to parse saved publish config:', e);
       }
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
@@ -111,6 +121,7 @@ export default function ArticlesPage() {
   }, [openDropdownId]);
 
   const fetchArticles = async () => {
+    if (!isAuthenticated) return;
     try {
       const response = await fetch('/api/articles');
       const result = await response.json();
@@ -154,6 +165,7 @@ export default function ArticlesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!ensureLogin()) return;
     if (!confirm('确定要删除这篇文章吗？')) return;
 
     try {
@@ -165,15 +177,20 @@ export default function ArticlesPage() {
         setArticles((prev) => prev.filter((a) => a.id !== id));
         setSelectedIds((prev) => prev.filter((i) => i !== id));
       } else {
-        alert(result.error || '删除失败');
+        toast.error('删除失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('删除文章失败:', err);
-      alert('删除失败，请重试');
+      toast.error('删除失败', {
+        description: '网络异常，请稍后重试',
+      });
     }
   };
 
   const handleStatusChange = async (id: string, newStatus: ArticleStatus) => {
+    if (!ensureLogin()) return;
     try {
       const response = await fetch('/api/articles', {
         method: 'PUT',
@@ -186,11 +203,15 @@ export default function ArticlesPage() {
           prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
         );
       } else {
-        alert(result.error || '更新失败');
+        toast.error('更新失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('更新状态失败:', err);
-      alert('更新失败，请重试');
+      toast.error('更新失败', {
+        description: '网络异常，请稍后重试',
+      });
     }
   };
 
@@ -230,6 +251,7 @@ export default function ArticlesPage() {
 
   // 发布到小红书 - 打开弹窗
   const handlePublishToXiaohongshu = (articleId: string) => {
+    if (!ensureLogin()) return;
     setSelectedArticleForXhs(articleId);
     setOpenDropdownId(null);
     setXhsTags([]);
@@ -240,6 +262,7 @@ export default function ArticlesPage() {
 
   // 确认发布到小红书
   const confirmPublishToXiaohongshu = async () => {
+    if (!ensureLogin()) return;
     if (!selectedArticleForXhs) return;
 
     setXhsPublishing(true);
@@ -272,11 +295,15 @@ export default function ArticlesPage() {
           prev.map((a) => (a.id === selectedArticleForXhs ? { ...a, status: 'published' as ArticleStatus } : a))
         );
       } else {
-        alert(result.error || '发布失败');
+        toast.error('发布失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('发布失败:', err);
-      alert('发布失败，请检查API配置');
+      toast.error('发布失败', {
+        description: '请检查API配置是否正确',
+      });
     } finally {
       setXhsPublishing(false);
     }
@@ -298,6 +325,7 @@ export default function ArticlesPage() {
 
   // 复制文章
   const handleCopy = async (id: string) => {
+    if (!ensureLogin()) return;
     try {
       const response = await fetch('/api/articles', {
         method: 'POST',
@@ -306,20 +334,25 @@ export default function ArticlesPage() {
       });
       const result = await response.json();
       if (result.success) {
-        alert('复制成功！');
+        toast.success('复制成功');
         fetchArticles();
       } else {
-        alert(result.error || '复制失败');
+        toast.error('复制失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('复制文章失败:', err);
-      alert('复制失败，请重试');
+      toast.error('复制失败', {
+        description: '网络异常，请稍后重试',
+      });
     }
     setOpenDropdownId(null);
   };
 
   // 归档文章
   const handleArchive = async (id: string) => {
+    if (!ensureLogin()) return;
     if (!confirm('确定要归档这篇文章吗？归档后将不在列表中显示。')) return;
     try {
       const response = await fetch('/api/articles', {
@@ -330,13 +363,17 @@ export default function ArticlesPage() {
       const result = await response.json();
       if (result.success) {
         setArticles((prev) => prev.filter((a) => a.id !== id));
-        alert('归档成功！');
+        toast.success('归档成功');
       } else {
-        alert(result.error || '归档失败');
+        toast.error('归档失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('归档文章失败:', err);
-      alert('归档失败，请重试');
+      toast.error('归档失败', {
+        description: '网络异常，请稍后重试',
+      });
     }
     setOpenDropdownId(null);
   };
@@ -349,6 +386,7 @@ export default function ArticlesPage() {
 
   // 发布到公众号
   const handlePublishToWechat = async (articleId: string) => {
+    if (!ensureLogin()) return;
     setSelectedArticleForPublish(articleId);
     setOpenDropdownId(null);
     await fetchWechatAccounts();
@@ -357,8 +395,9 @@ export default function ArticlesPage() {
 
   // 确认发布到选定的公众号
   const confirmPublishToWechat = async () => {
+    if (!ensureLogin()) return;
     if (!selectedArticleForPublish || !publishConfig.wechatAppid) {
-      alert('请选择要发布的公众号');
+      toast.error('请选择要发布的公众号');
       return;
     }
 
@@ -384,29 +423,80 @@ export default function ArticlesPage() {
       const result = await response.json();
 
       if (result.success) {
-        alert(result.data?.message || '发布成功！文章已添加到公众号草稿箱');
+        toast.success('发布成功', {
+          description: result.data?.message || '文章已添加到公众号草稿箱',
+        });
         // 更新文章状态
         setArticles((prev) =>
           prev.map((a) => (a.id === selectedArticleForPublish ? { ...a, status: 'published' as ArticleStatus } : a))
         );
       } else {
-        alert(result.error || '发布失败');
+        toast.error('发布失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('发布失败:', err);
-      alert('发布失败，请检查API配置');
+      toast.error('发布失败', {
+        description: '请检查API配置是否正确',
+      });
     } finally {
       setPublishingId(null);
       setSelectedArticleForPublish(null);
     }
   };
 
-  if (loading) {
+  if (status !== 'loading' && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#0f0f23]">
         <Header title="发布管理" />
-        <div className="p-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可查看、编辑和发布文章" />
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header
+          title="发布管理"
+          action={
+            <Link
+              href="/articles/new"
+              className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              新建文章
+            </Link>
+          }
+        />
+        <div className="p-6 space-y-6">
+          <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44] space-y-4">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-10 w-full" />
+            <div className="flex gap-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 flex-1" />
+              ))}
+            </div>
+          </div>
+          <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] divide-y divide-[#2d2d44]">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-4">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-12 w-16 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-8 w-32 rounded-lg" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -686,16 +776,26 @@ export default function ArticlesPage() {
           </table>
 
           {filteredArticles.length === 0 && (
-            <div className="py-12 text-center text-slate-500">
-              {articles.length === 0 ? (
-                <div>
-                  <p>暂无文章</p>
-                  <p className="text-sm mt-2">前往「选题分析」页面，使用「一键创作」生成文章</p>
-                </div>
-              ) : (
-                '没有符合条件的文章'
-              )}
-            </div>
+            <EmptyState
+              icon={<FileText className="w-6 h-6" />}
+              title={articles.length === 0 ? '暂无文章' : '没有符合当前筛选条件的文章'}
+              description={
+                articles.length === 0
+                  ? '前往「选题分析」页面使用一键创作功能生成文章'
+                  : '尝试调整筛选条件或关键字以查看更多文章'
+              }
+              action={
+                articles.length === 0
+                  ? { label: '前往选题分析', href: '/analysis' }
+                  : {
+                      label: '重置筛选',
+                      onClick: () => {
+                        setStatusFilter('all');
+                        setSearchQuery('');
+                      },
+                    }
+              }
+            />
           )}
         </div>
 
@@ -1045,7 +1145,7 @@ export default function ArticlesPage() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(xhsResult.publishUrl);
-                          alert('链接已复制');
+                          toast.success('链接已复制');
                         }}
                         className="px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 hover:text-slate-200 text-xs"
                       >

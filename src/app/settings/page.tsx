@@ -2,43 +2,57 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { Eye, EyeOff, Save, CheckCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Save, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
+import { useForm, type Resolver } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { cn } from '@/lib/utils';
+import LoginPrompt from '@/components/ui/LoginPrompt';
+import { useLoginGuard } from '@/hooks/useLoginGuard';
 
-interface Settings {
-  ai: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  };
-  wechatArticle: {
-    endpoint: string;
-    apiKey: string;
-  };
-  unsplash: {
-    accessKey: string;
-  };
-  imageGen: {
-    baseUrl: string;
-    apiKey: string;
-    model: string;
-  };
-  xiaohongshu: {
-    endpoint: string;
-    apiKey: string;
-  };
-  wechatPublish: {
-    endpoint: string;
-    apiKey: string;
-  };
-  preferences: {
-    imageCount: number;
-    style: string;
-    minWords: number;
-    maxWords: number;
-  };
-}
+const settingsSchema = z.object({
+  ai: z.object({
+    baseUrl: z.string().url('请输入有效的 API Base URL'),
+    apiKey: z.string().min(1, 'API Key 不能为空'),
+    model: z.string().min(1, '请选择模型'),
+  }),
+  wechatArticle: z.object({
+    endpoint: z.string().url('请输入有效的接口地址'),
+    apiKey: z.string().min(1, 'API Key 不能为空'),
+  }),
+  unsplash: z.object({
+    accessKey: z.string().optional(),
+  }),
+  imageGen: z.object({
+    baseUrl: z.string().url('请输入有效的接口地址'),
+    apiKey: z.string().min(1, 'API Key 不能为空'),
+    model: z.string().min(1, '请选择模型'),
+  }),
+  xiaohongshu: z.object({
+    endpoint: z.string().url('请输入有效的接口地址'),
+    apiKey: z.string().min(1, 'API Key 不能为空'),
+  }),
+  wechatPublish: z.object({
+    endpoint: z.string().url('请输入有效的接口地址'),
+    apiKey: z.string().min(1, 'API Key 不能为空'),
+  }),
+  preferences: z
+    .object({
+      imageCount: z.coerce.number().min(1, '至少生成 1 张图片').max(10, '最多生成 10 张图片'),
+      style: z.string().min(1, '请选择创作风格'),
+      minWords: z.coerce.number().min(300, '字数需不低于 300'),
+      maxWords: z.coerce.number().max(5000, '字数需不超过 5000'),
+    })
+    .refine((val) => val.maxWords >= val.minWords, {
+      message: '最大字数需大于或等于最小字数',
+      path: ['maxWords'],
+    }),
+});
 
-const defaultSettings: Settings = {
+type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const defaultSettings: SettingsFormValues = {
   ai: {
     baseUrl: 'https://api.openai.com/v1',
     apiKey: '',
@@ -72,12 +86,31 @@ const defaultSettings: Settings = {
   },
 };
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+      <AlertCircle className="w-3 h-3" />
+      {message}
+    </p>
+  );
+}
+
 export default function SettingsPage() {
+  const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后配置接口');
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting, isDirty, isValid },
+  } = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema) as Resolver<SettingsFormValues>,
+    mode: 'onBlur',
+    defaultValues: defaultSettings,
+  });
 
   // 加载设置
   useEffect(() => {
@@ -86,15 +119,15 @@ export default function SettingsPage() {
         const response = await fetch('/api/settings');
         const result = await response.json();
         if (result.success && result.data) {
-          setSettings((prev) => ({
-            ai: result.data.ai || prev.ai,
-            wechatArticle: result.data.wechatArticle || prev.wechatArticle,
-            unsplash: result.data.unsplash || prev.unsplash,
-            imageGen: result.data.imageGen || prev.imageGen,
-            xiaohongshu: result.data.xiaohongshu || prev.xiaohongshu,
-            wechatPublish: result.data.wechatPublish || prev.wechatPublish,
-            preferences: result.data.preferences || prev.preferences,
-          }));
+          reset({
+            ai: { ...defaultSettings.ai, ...result.data.ai },
+            wechatArticle: { ...defaultSettings.wechatArticle, ...result.data.wechatArticle },
+            unsplash: { ...defaultSettings.unsplash, ...result.data.unsplash },
+            imageGen: { ...defaultSettings.imageGen, ...result.data.imageGen },
+            xiaohongshu: { ...defaultSettings.xiaohongshu, ...result.data.xiaohongshu },
+            wechatPublish: { ...defaultSettings.wechatPublish, ...result.data.wechatPublish },
+            preferences: { ...defaultSettings.preferences, ...result.data.preferences },
+          });
         }
       } catch (err) {
         console.error('加载设置失败:', err);
@@ -102,35 +135,56 @@ export default function SettingsPage() {
         setLoading(false);
       }
     };
-    loadSettings();
-  }, []);
+    if (isAuthenticated) {
+      loadSettings();
+    } else {
+      setLoading(false);
+    }
+  }, [reset, isAuthenticated]);
 
   const toggleShowKey = (key: string) => {
     setShowKeys((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = async () => {
-    setSaving(true);
+  const inputBaseClass = 'w-full px-4 py-2 bg-[#1a1a2e] rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 transition-colors';
+  const normalInputClass = 'border-[#2d2d44] focus:border-indigo-500 focus:ring-indigo-500/20';
+  const errorInputClass = 'border-red-500 focus:border-red-500 focus:ring-red-500/20';
+
+  const onSubmit = async (values: SettingsFormValues) => {
+    if (!ensureLogin()) return;
     try {
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(values),
       });
       const result = await response.json();
       if (result.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
-        alert('保存失败: ' + result.error);
+        toast.error('保存失败', {
+          description: result.error,
+        });
       }
     } catch (err) {
       console.error('保存设置失败:', err);
-      alert('保存失败，请重试');
-    } finally {
-      setSaving(false);
+      toast.error('保存失败', {
+        description: '网络异常，请稍后重试',
+      });
     }
   };
+
+  if (status !== 'loading' && !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0f0f23]">
+        <Header title="设置" />
+        <div className="p-6">
+          <LoginPrompt description="登录后即可配置各类 API 和偏好设置" />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -147,7 +201,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#0f0f23]">
       <Header title="设置" />
 
-      <div className="p-6 max-w-4xl">
+      <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl space-y-6">
         {/* API Configuration */}
         <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
           <h2 className="text-lg font-semibold text-slate-200 mb-6">API 配置</h2>
@@ -160,43 +214,50 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Base URL</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Base URL <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.ai.baseUrl}
-                  onChange={(e) => setSettings({ ...settings, ai: { ...settings.ai, baseUrl: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('ai.baseUrl')}
+                  className={cn(inputBaseClass, errors.ai?.baseUrl ? errorInputClass : normalInputClass)}
                 />
+                <FieldError message={errors.ai?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">Model</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  Model <span className="text-red-400">*</span>
+                </label>
                 <select
-                  value={settings.ai.model}
-                  onChange={(e) => setSettings({ ...settings, ai: { ...settings.ai, model: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('ai.model')}
+                  className={cn(inputBaseClass, errors.ai?.model ? errorInputClass : normalInputClass)}
                 >
                   <option value="gpt-4o">gpt-4o</option>
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
                   <option value="gpt-4-turbo">gpt-4-turbo</option>
                   <option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
                 </select>
+                <FieldError message={errors.ai?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Key <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showKeys['ai'] ? 'text' : 'password'}
-                    value={settings.ai.apiKey}
-                    onChange={(e) => setSettings({ ...settings, ai: { ...settings.ai, apiKey: e.target.value } })}
-                    className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    {...register('ai.apiKey')}
+                    className={cn(inputBaseClass, 'pr-10', errors.ai?.apiKey ? errorInputClass : normalInputClass)}
                   />
                   <button
+                    type="button"
                     onClick={() => toggleShowKey('ai')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showKeys['ai'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.ai?.apiKey?.message} />
               </div>
             </div>
           </div>
@@ -209,30 +270,35 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Endpoint <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.wechatArticle.endpoint}
-                  onChange={(e) => setSettings({ ...settings, wechatArticle: { ...settings.wechatArticle, endpoint: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('wechatArticle.endpoint')}
+                  className={cn(inputBaseClass, errors.wechatArticle?.endpoint ? errorInputClass : normalInputClass)}
                 />
+                <FieldError message={errors.wechatArticle?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Key <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatArticle'] ? 'text' : 'password'}
-                    value={settings.wechatArticle.apiKey}
-                    onChange={(e) => setSettings({ ...settings, wechatArticle: { ...settings.wechatArticle, apiKey: e.target.value } })}
-                    className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    {...register('wechatArticle.apiKey')}
+                    className={cn(inputBaseClass, 'pr-10', errors.wechatArticle?.apiKey ? errorInputClass : normalInputClass)}
                   />
                   <button
+                    type="button"
                     onClick={() => toggleShowKey('wechatArticle')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showKeys['wechatArticle'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.wechatArticle?.apiKey?.message} />
               </div>
             </div>
           </div>
@@ -248,17 +314,18 @@ export default function SettingsPage() {
               <div className="relative">
                 <input
                   type={showKeys['unsplash'] ? 'text' : 'password'}
-                  value={settings.unsplash.accessKey}
-                  onChange={(e) => setSettings({ ...settings, unsplash: { ...settings.unsplash, accessKey: e.target.value } })}
-                  className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('unsplash.accessKey')}
+                  className={cn(inputBaseClass, 'pr-10', errors.unsplash?.accessKey ? errorInputClass : normalInputClass)}
                 />
                 <button
+                  type="button"
                   onClick={() => toggleShowKey('unsplash')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 >
                   {showKeys['unsplash'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <FieldError message={errors.unsplash?.accessKey?.message} />
             </div>
           </div>
 
@@ -270,41 +337,48 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API URL</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API URL <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.imageGen.baseUrl}
-                  onChange={(e) => setSettings({ ...settings, imageGen: { ...settings.imageGen, baseUrl: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('imageGen.baseUrl')}
+                  className={cn(inputBaseClass, errors.imageGen?.baseUrl ? errorInputClass : normalInputClass)}
                   placeholder="https://api.siliconflow.cn/v1/images/generations"
                 />
+                <FieldError message={errors.imageGen?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">Model</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  Model <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.imageGen.model}
-                  onChange={(e) => setSettings({ ...settings, imageGen: { ...settings.imageGen, model: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('imageGen.model')}
+                  className={cn(inputBaseClass, errors.imageGen?.model ? errorInputClass : normalInputClass)}
                   placeholder="Kwai-Kolors/Kolors"
                 />
+                <FieldError message={errors.imageGen?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Key <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showKeys['imageGen'] ? 'text' : 'password'}
-                    value={settings.imageGen.apiKey}
-                    onChange={(e) => setSettings({ ...settings, imageGen: { ...settings.imageGen, apiKey: e.target.value } })}
-                    className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    {...register('imageGen.apiKey')}
+                    className={cn(inputBaseClass, 'pr-10', errors.imageGen?.apiKey ? errorInputClass : normalInputClass)}
                   />
                   <button
+                    type="button"
                     onClick={() => toggleShowKey('imageGen')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showKeys['imageGen'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.imageGen?.apiKey?.message} />
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-2">
@@ -320,30 +394,35 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Endpoint <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.xiaohongshu.endpoint}
-                  onChange={(e) => setSettings({ ...settings, xiaohongshu: { ...settings.xiaohongshu, endpoint: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('xiaohongshu.endpoint')}
+                  className={cn(inputBaseClass, errors.xiaohongshu?.endpoint ? errorInputClass : normalInputClass)}
                 />
+                <FieldError message={errors.xiaohongshu?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Key <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showKeys['xiaohongshu'] ? 'text' : 'password'}
-                    value={settings.xiaohongshu.apiKey}
-                    onChange={(e) => setSettings({ ...settings, xiaohongshu: { ...settings.xiaohongshu, apiKey: e.target.value } })}
-                    className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    {...register('xiaohongshu.apiKey')}
+                    className={cn(inputBaseClass, 'pr-10', errors.xiaohongshu?.apiKey ? errorInputClass : normalInputClass)}
                   />
                   <button
+                    type="button"
                     onClick={() => toggleShowKey('xiaohongshu')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showKeys['xiaohongshu'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.xiaohongshu?.apiKey?.message} />
               </div>
             </div>
           </div>
@@ -356,30 +435,35 @@ export default function SettingsPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Endpoint <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
-                  value={settings.wechatPublish.endpoint}
-                  onChange={(e) => setSettings({ ...settings, wechatPublish: { ...settings.wechatPublish, endpoint: e.target.value } })}
-                  className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('wechatPublish.endpoint')}
+                  className={cn(inputBaseClass, errors.wechatPublish?.endpoint ? errorInputClass : normalInputClass)}
                 />
+                <FieldError message={errors.wechatPublish?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-slate-500 mb-1">
+                  API Key <span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatPublish'] ? 'text' : 'password'}
-                    value={settings.wechatPublish.apiKey}
-                    onChange={(e) => setSettings({ ...settings, wechatPublish: { ...settings.wechatPublish, apiKey: e.target.value } })}
-                    className="w-full px-4 py-2 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                    {...register('wechatPublish.apiKey')}
+                    className={cn(inputBaseClass, 'pr-10', errors.wechatPublish?.apiKey ? errorInputClass : normalInputClass)}
                   />
                   <button
+                    type="button"
                     onClick={() => toggleShowKey('wechatPublish')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showKeys['wechatPublish'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <FieldError message={errors.wechatPublish?.apiKey?.message} />
               </div>
             </div>
           </div>
@@ -391,11 +475,12 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">默认插入图片数量</label>
+              <label className="block text-sm text-slate-500 mb-1">
+                默认插入图片数量 <span className="text-red-400">*</span>
+              </label>
               <select
-                value={settings.preferences.imageCount}
-                onChange={(e) => setSettings({ ...settings, preferences: { ...settings.preferences, imageCount: Number(e.target.value) } })}
-                className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                {...register('preferences.imageCount', { valueAsNumber: true })}
+                className={cn(inputBaseClass, errors.preferences?.imageCount ? errorInputClass : normalInputClass)}
               >
                 <option value={1}>1 张</option>
                 <option value={2}>2 张</option>
@@ -403,38 +488,45 @@ export default function SettingsPage() {
                 <option value={4}>4 张</option>
                 <option value={5}>5 张</option>
               </select>
+              <FieldError message={errors.preferences?.imageCount?.message} />
             </div>
 
             <div>
-              <label className="block text-sm text-slate-500 mb-1">文章风格偏好</label>
+              <label className="block text-sm text-slate-500 mb-1">
+                文章风格偏好 <span className="text-red-400">*</span>
+              </label>
               <select
-                value={settings.preferences.style}
-                onChange={(e) => setSettings({ ...settings, preferences: { ...settings.preferences, style: e.target.value } })}
-                className="w-full px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                {...register('preferences.style')}
+                className={cn(inputBaseClass, errors.preferences?.style ? errorInputClass : normalInputClass)}
               >
                 <option value="casual">轻松活泼</option>
                 <option value="professional">专业严谨</option>
                 <option value="storytelling">故事化</option>
               </select>
+              <FieldError message={errors.preferences?.style?.message} />
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm text-slate-500 mb-1">目标字数范围</label>
+              <label className="block text-sm text-slate-500 mb-1">
+                目标字数范围 <span className="text-red-400">*</span>
+              </label>
               <div className="flex items-center gap-4">
                 <input
                   type="number"
-                  value={settings.preferences.minWords}
-                  onChange={(e) => setSettings({ ...settings, preferences: { ...settings.preferences, minWords: Number(e.target.value) } })}
-                  className="w-32 px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('preferences.minWords', { valueAsNumber: true })}
+                  className={cn('w-32', inputBaseClass, errors.preferences?.minWords ? errorInputClass : normalInputClass)}
                 />
                 <span className="text-slate-500">-</span>
                 <input
                   type="number"
-                  value={settings.preferences.maxWords}
-                  onChange={(e) => setSettings({ ...settings, preferences: { ...settings.preferences, maxWords: Number(e.target.value) } })}
-                  className="w-32 px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  {...register('preferences.maxWords', { valueAsNumber: true })}
+                  className={cn('w-32', inputBaseClass, errors.preferences?.maxWords ? errorInputClass : normalInputClass)}
                 />
                 <span className="text-slate-500 text-sm">字</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <FieldError message={errors.preferences?.minWords?.message} />
+                <FieldError message={errors.preferences?.maxWords?.message} />
               </div>
             </div>
           </div>
@@ -443,11 +535,11 @@ export default function SettingsPage() {
         {/* Save Button */}
         <div className="flex justify-end">
           <button
-            onClick={handleSave}
-            disabled={saving}
+            type="submit"
+            disabled={isSubmitting || !isValid || !isDirty}
             className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
           >
-            {saving ? (
+            {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 保存中...
@@ -465,7 +557,7 @@ export default function SettingsPage() {
             )}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

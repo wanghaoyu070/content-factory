@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import {
   getActiveArticles,
   getArticlesByStatus,
@@ -12,15 +13,20 @@ import {
 // GET /api/articles - 获取文章列表
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
     let articles;
     if (status && status !== 'all') {
-      articles = getArticlesByStatus(status);
+      articles = getArticlesByStatus(status, session.user.id);
     } else {
       // 默认获取非归档文章
-      articles = getActiveArticles();
+      articles = getActiveArticles(session.user.id);
     }
 
     // 转换数据格式
@@ -54,6 +60,11 @@ export async function GET(request: NextRequest) {
 // PUT /api/articles - 更新文章
 export async function PUT(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -64,7 +75,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const article = getArticleById(parseInt(id));
+    const article = getArticleById(parseInt(id), session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },
@@ -72,13 +83,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    updateArticle(parseInt(id), {
-      title: updates.title,
-      content: updates.content,
-      coverImage: updates.coverImage,
-      images: updates.images,
-      status: updates.status,
-    });
+    updateArticle(
+      parseInt(id),
+      {
+        title: updates.title,
+        content: updates.content,
+        coverImage: updates.coverImage,
+        images: updates.images,
+        status: updates.status,
+      },
+      session.user.id
+    );
 
     return NextResponse.json({
       success: true,
@@ -96,6 +111,11 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/articles - 删除文章
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -106,7 +126,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const article = getArticleById(parseInt(id));
+    const article = getArticleById(parseInt(id), session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },
@@ -114,7 +134,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    deleteArticle(parseInt(id));
+    deleteArticle(parseInt(id), session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -132,6 +152,11 @@ export async function DELETE(request: NextRequest) {
 // POST /api/articles - 文章操作（复制、归档）
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { action, id } = body;
 
@@ -142,7 +167,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const article = getArticleById(parseInt(id));
+    const article = getArticleById(parseInt(id), session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },
@@ -152,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'copy': {
-        const newId = copyArticle(parseInt(id));
+        const newId = copyArticle(parseInt(id), session.user.id);
         return NextResponse.json({
           success: true,
           data: { newId },
@@ -161,7 +186,7 @@ export async function POST(request: NextRequest) {
       }
 
       case 'archive': {
-        archiveArticle(parseInt(id));
+        archiveArticle(parseInt(id), session.user.id);
         return NextResponse.json({
           success: true,
           message: '归档成功',

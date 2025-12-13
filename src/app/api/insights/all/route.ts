@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import {
   getAllSearchesWithInsightCounts,
   getTopicInsightsBySearchIdOrdered,
@@ -7,8 +8,13 @@ import {
 // GET /api/insights/all - 获取所有搜索记录及其洞察
 export async function GET() {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     // 获取所有搜索记录及洞察数量
-    const searches = getAllSearchesWithInsightCounts();
+    const searches = getAllSearchesWithInsightCounts(session.user.id);
 
     // 过滤出有洞察的搜索记录
     const searchesWithInsights = searches.filter((s) => s.insight_count > 0);

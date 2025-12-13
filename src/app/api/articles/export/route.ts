@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getArticleById } from '@/lib/db';
 
 // 将HTML转换为Markdown的简单实现
@@ -71,6 +72,11 @@ function htmlToMarkdown(html: string): string {
 // GET /api/articles/export?id=xxx&format=markdown|html
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const format = searchParams.get('format') || 'markdown';
@@ -82,7 +88,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const article = getArticleById(parseInt(id));
+    const article = getArticleById(parseInt(id), session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },

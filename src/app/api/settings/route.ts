@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getAllSettings, setSetting } from '@/lib/db';
 
 // 从环境变量获取默认配置
@@ -35,7 +36,12 @@ function getEnvDefaults() {
 // GET /api/settings - 获取所有设置
 export async function GET() {
   try {
-    const settings = getAllSettings();
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
+    const settings = getAllSettings(session.user.id);
     const envDefaults = getEnvDefaults();
 
     // 解析 JSON 格式的设置值
@@ -80,12 +86,16 @@ export async function GET() {
 // POST /api/settings - 保存设置
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
     const body = await request.json();
 
     // 遍历所有设置项并保存
     for (const [key, value] of Object.entries(body)) {
       const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
-      setSetting(key, valueStr);
+      setSetting(key, valueStr, session.user.id);
     }
 
     return NextResponse.json({ success: true });

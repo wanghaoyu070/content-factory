@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import {
-  getSetting,
   getArticlesBySearchId,
   saveArticleSummary,
   saveTopicInsights,
@@ -8,14 +8,10 @@ import {
   getArticleSummariesBySearchId,
   deleteInsightsBySearchId,
   deleteSummariesBySearchId,
+  getSearchById,
 } from '@/lib/db';
-import {
-  AIConfig,
-  batchExtractSummaries,
-  generateTopicInsights,
-  ArticleSummary,
-  TopicInsight,
-} from '@/lib/ai';
+import { batchExtractSummaries, generateTopicInsights, ArticleSummary, TopicInsight } from '@/lib/ai';
+import { getAIConfig } from '@/lib/config';
 
 interface InsightRequest {
   searchId: number;
@@ -23,33 +19,14 @@ interface InsightRequest {
   forceRegenerate?: boolean;
 }
 
-// 获取 AI 配置（优先环境变量，其次数据库配置）
-function getAIConfig(): AIConfig | null {
-  // 优先使用环境变量
-  if (process.env.OPENAI_API_BASE_URL && process.env.OPENAI_API_KEY) {
-    return {
-      baseUrl: process.env.OPENAI_API_BASE_URL,
-      apiKey: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_MODEL || 'gpt-4o',
-    };
-  }
-
-  // 回退到数据库配置
-  const aiConfigStr = getSetting('ai');
-  if (aiConfigStr) {
-    try {
-      return JSON.parse(aiConfigStr);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
-
 // POST /api/insights - 生成选题洞察
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body: InsightRequest = await request.json();
     const { searchId, keyword, forceRegenerate = false } = body;
 
@@ -96,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     // 获取 AI 配置（优先环境变量）
-    const aiConfig = getAIConfig();
+    const aiConfig = getAIConfig(session.user.id);
     if (!aiConfig) {
       return NextResponse.json(
         { success: false, error: '请先配置 AI 接口（环境变量或设置页面）' },
@@ -189,6 +166,11 @@ export async function POST(request: Request) {
 // GET /api/insights?searchId=xxx - 获取已有洞察
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const searchId = searchParams.get('searchId');
 
@@ -196,6 +178,14 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { success: false, error: '缺少 searchId 参数' },
         { status: 400 }
+      );
+    }
+
+    const ownerSearch = getSearchById(parseInt(searchId), session.user.id);
+    if (!ownerSearch) {
+      return NextResponse.json(
+        { success: false, error: '搜索记录不存在或无权访问' },
+        { status: 404 }
       );
     }
 

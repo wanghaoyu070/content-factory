@@ -33,7 +33,7 @@ export interface ImageGenConfig {
 }
 
 // 获取 AI 配置（优先环境变量，其次数据库配置）
-export function getAIConfig(): AIConfig | null {
+export function getAIConfig(userId?: number): AIConfig | null {
   // 优先使用环境变量
   if (process.env.OPENAI_API_BASE_URL && process.env.OPENAI_API_KEY) {
     return {
@@ -44,7 +44,7 @@ export function getAIConfig(): AIConfig | null {
   }
 
   // 回退到数据库配置
-  const aiConfigStr = getSetting('ai');
+  const aiConfigStr = getSetting('ai', userId ?? 1);
   if (aiConfigStr) {
     try {
       return JSON.parse(aiConfigStr);
@@ -57,7 +57,7 @@ export function getAIConfig(): AIConfig | null {
 }
 
 // 获取公众号文章API配置
-export function getWechatArticleConfig(): WechatArticleConfig | null {
+export function getWechatArticleConfig(userId?: number): WechatArticleConfig | null {
   // 优先使用环境变量
   if (process.env.WECHAT_ARTICLE_ENDPOINT && process.env.WECHAT_ARTICLE_API_KEY) {
     return {
@@ -67,7 +67,7 @@ export function getWechatArticleConfig(): WechatArticleConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('wechatArticle');
+  const configStr = getSetting('wechatArticle', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -80,7 +80,7 @@ export function getWechatArticleConfig(): WechatArticleConfig | null {
 }
 
 // 获取公众号发布API配置
-export function getWechatPublishConfig(): WechatPublishConfig | null {
+export function getWechatPublishConfig(userId?: number): WechatPublishConfig | null {
   // 优先使用环境变量
   if (process.env.WECHAT_PUBLISH_ENDPOINT && process.env.WECHAT_PUBLISH_API_KEY) {
     return {
@@ -90,7 +90,7 @@ export function getWechatPublishConfig(): WechatPublishConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('wechatPublish');
+  const configStr = getSetting('wechatPublish', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -109,7 +109,7 @@ export interface XiaohongshuPublishConfig {
 }
 
 // 获取小红书发布API配置
-export function getXiaohongshuPublishConfig(): XiaohongshuPublishConfig | null {
+export function getXiaohongshuPublishConfig(userId?: number): XiaohongshuPublishConfig | null {
   // 优先使用环境变量
   if (process.env.XIAOHONGSHU_PUBLISH_ENDPOINT && process.env.XIAOHONGSHU_PUBLISH_API_KEY) {
     return {
@@ -119,7 +119,7 @@ export function getXiaohongshuPublishConfig(): XiaohongshuPublishConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('xiaohongshu');
+  const configStr = getSetting('xiaohongshu', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -132,7 +132,7 @@ export function getXiaohongshuPublishConfig(): XiaohongshuPublishConfig | null {
 }
 
 // 获取Unsplash配置
-export function getUnsplashConfig(): UnsplashConfig | null {
+export function getUnsplashConfig(userId?: number): UnsplashConfig | null {
   // 优先使用环境变量
   if (process.env.UNSPLASH_ACCESS_KEY) {
     return {
@@ -141,7 +141,7 @@ export function getUnsplashConfig(): UnsplashConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('unsplash');
+  const configStr = getSetting('unsplash', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -154,7 +154,7 @@ export function getUnsplashConfig(): UnsplashConfig | null {
 }
 
 // 获取 AI 图片生成配置（优先环境变量，其次数据库配置）
-export function getImageGenConfig(): ImageGenConfig | null {
+export function getImageGenConfig(userId?: number): ImageGenConfig | null {
   // 优先使用环境变量
   if (process.env.IMAGE_GEN_API_URL && process.env.IMAGE_GEN_API_KEY) {
     return {
@@ -165,7 +165,7 @@ export function getImageGenConfig(): ImageGenConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('imageGen');
+  const configStr = getSetting('imageGen', userId ?? 1);
   if (configStr) {
     try {
       return JSON.parse(configStr);

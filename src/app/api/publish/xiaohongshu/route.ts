@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import { getArticleById, updateArticle } from '@/lib/db';
 import { getXiaohongshuPublishConfig } from '@/lib/config';
 
@@ -43,6 +44,11 @@ function extractContentAndImages(htmlContent: string): { text: string; images: s
 // POST /api/publish/xiaohongshu - 发布到小红书
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    }
+
     const body: PublishRequest = await request.json();
     const { articleId, tags = [] } = body;
 
@@ -55,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     // 获取配置
-    const config = getXiaohongshuPublishConfig();
+    const config = getXiaohongshuPublishConfig(session.user.id);
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
         { success: false, error: '请先配置小红书发布API（环境变量或设置页面）' },
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
     }
 
     // 获取文章内容
-    const article = getArticleById(articleId);
+    const article = getArticleById(articleId, session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },
@@ -131,7 +137,7 @@ export async function POST(request: Request) {
 
     if (publishData.success) {
       // 更新文章状态为已发布
-      updateArticle(articleId, { status: 'published' });
+      updateArticle(articleId, { status: 'published' }, session.user.id);
 
       // 根据API文档，publish_url 是发布页面URL，用于生成二维码
       const publishUrl = publishData.data?.publish_url;

@@ -17,6 +17,7 @@ import {
   Loader2,
   Hash,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SearchRecord {
   id: number;
@@ -206,11 +207,21 @@ export default function AnalysisHistoryDetailPage() {
       if (result.success && result.data?.articleId) {
         window.location.href = `/articles/${result.data.articleId}`;
       } else {
-        alert(result.error || '文章生成失败，请重试');
+        toast.error('文章生成失败', {
+          description: result.error || '请稍后重试',
+        });
       }
     } catch (err) {
       console.error('Generate article failed:', err);
-      alert('文章生成失败，请检查 AI 配置');
+      toast.error('文章生成失败', {
+        description: '请检查 AI 配置是否正确',
+        action: {
+          label: '去设置',
+          onClick: () => {
+            window.location.href = '/settings';
+          },
+        },
+      });
     } finally {
       setGeneratingId(null);
     }
