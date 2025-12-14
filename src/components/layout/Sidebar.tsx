@@ -25,7 +25,7 @@ const navItems = [
 ];
 
 const SIDEBAR_STORAGE_KEY = 'sidebar-collapsed';
-const SidebarUser = dynamic(() => import('./SidebarUser'), { ssr: false });
+const SidebarFooter = dynamic(() => import('./SidebarUser'), { ssr: false });
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -116,7 +116,7 @@ export default function Sidebar() {
       </button>
 
       <div className="p-4 border-t border-[#2d2d44]">
-        <SidebarUser collapsed={collapsed} />
+        <SidebarFooter collapsed={collapsed} />
       </div>
     </aside>
   );

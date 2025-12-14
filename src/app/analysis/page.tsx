@@ -544,6 +544,111 @@ function AnalysisPageContent() {
               </div>
             </div>
           )}
+
+          {/* 热门公众号推荐（仅公众号搜索模式下显示） */}
+          {searchMode === 'account' && !hasResults && !isSearching && (
+            <div className="mt-4 pt-4 border-t border-[#2d2d44]">
+              <div className="flex items-center gap-2 text-sm text-slate-400 mb-4">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                热门公众号推荐
+              </div>
+
+              {/* 分类推荐 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 商业财经 */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    💼 商业财经
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['刘润', '吴晓波频道', '混沌学园', '36氪', '虎嗅APP'].map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          setKeyword(name);
+                          handleSearch(name);
+                        }}
+                        disabled={isSearching}
+                        className="px-2.5 py-1 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-xs text-slate-300 hover:border-amber-500/50 hover:text-amber-400 transition-colors disabled:opacity-50"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 科技数码 */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    🔬 科技数码
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['少数派', '差评', '极客公园', '爱范儿', '品玩'].map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          setKeyword(name);
+                          handleSearch(name);
+                        }}
+                        disabled={isSearching}
+                        className="px-2.5 py-1 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-xs text-slate-300 hover:border-cyan-500/50 hover:text-cyan-400 transition-colors disabled:opacity-50"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 职场成长 */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    📈 职场成长
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['LinkedIn', '脉脉', '猎聘', '职场蛙', 'L先生说'].map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          setKeyword(name);
+                          handleSearch(name);
+                        }}
+                        disabled={isSearching}
+                        className="px-2.5 py-1 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-xs text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors disabled:opacity-50"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 创意营销 */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                    🎨 创意营销
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['广告门', '梅花网', '鸟哥笔记', '增长黑盒', '刀法研究所'].map((name) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          setKeyword(name);
+                          handleSearch(name);
+                        }}
+                        disabled={isSearching}
+                        className="px-2.5 py-1 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-xs text-slate-300 hover:border-pink-500/50 hover:text-pink-400 transition-colors disabled:opacity-50"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-4 text-xs text-slate-600">
+                💡 点击公众号名称即可快速分析其最新文章
+              </p>
+            </div>
+          )}
         </div>
 
         {/* 分析进度 */}
