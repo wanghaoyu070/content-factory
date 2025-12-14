@@ -124,7 +124,8 @@ export default function ArticleEditPage() {
     }
   };
 
-  const unsplashImages = [
+  // AI 生成的示例图片（未来将支持本地上传和 AI 生成）
+  const sampleImages = [
     'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
     'https://images.unsplash.com/photo-1684163761883-8a1e3f3e3e3e?w=400',
     'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400',
@@ -340,7 +341,7 @@ export default function ArticleEditPage() {
                 className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                从 Unsplash 添加
+                添加图片
               </button>
             </div>
 
@@ -387,7 +388,7 @@ export default function ArticleEditPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-800">从 Unsplash 选择图片</h3>
+              <h3 className="text-lg font-semibold text-slate-800">选择图片</h3>
               <button
                 onClick={() => setShowImageModal(false)}
                 className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
@@ -396,7 +397,7 @@ export default function ArticleEditPage() {
               </button>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              {unsplashImages.map((img, index) => (
+              {sampleImages.map((img, index) => (
                 <button
                   key={index}
                   onClick={() => addImage(img)}

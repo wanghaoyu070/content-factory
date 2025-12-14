@@ -66,7 +66,8 @@ interface FlatInsight extends TopicInsight {
   keyword: string;
 }
 
-interface UnsplashImage {
+// AI 生成的图片
+interface GeneratedImage {
   id: string;
   url: string;
   thumbUrl: string;
@@ -80,7 +81,7 @@ interface GeneratedArticle {
   content: string;
   summary: string;
   imageKeywords: string[];
-  images: UnsplashImage[];
+  images: GeneratedImage[];
   coverImage: string;
 }
 
@@ -378,7 +379,7 @@ export default function CreatePage() {
                 setArticleId(data.articleId);
                 setArticleTitle(data.title);
                 setArticleContent(data.content);
-                setArticleImages(data.images.map((img: UnsplashImage) => img.url));
+                setArticleImages(data.images.map((img: GeneratedImage) => img.url));
                 setCoverImage(data.coverImage);
                 setCurrentInsight(selectedInsight);
                 lastSavedRef.current = JSON.stringify({ title: data.title, content: data.content });
@@ -872,7 +873,7 @@ export default function CreatePage() {
                   <div className="p-3 bg-[#1a1a2e] rounded-xl space-y-2">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <ImageIcon className="w-4 h-4 text-emerald-400" />
-                      自动从 Unsplash 获取配图并插入文章
+                      AI 自动生成配图并插入文章
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <FileText className="w-4 h-4 text-amber-400" />
