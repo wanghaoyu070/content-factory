@@ -314,6 +314,7 @@ export async function POST(request: Request) {
           sourceInsightId: insightId,
           sourceSearchId: searchId,
           userId,
+          xhsTags: generated.xhsTags,
         });
 
         // 步骤5: 完成

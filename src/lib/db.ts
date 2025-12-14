@@ -705,10 +705,11 @@ export function createArticle(article: {
   sourceInsightId?: number;
   sourceSearchId?: number;
   userId?: number;
+  xhsTags?: string[];
 }): number {
   const stmt = db.prepare(`
-    INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id, user_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id, user_id, xhs_tags)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     article.title,
@@ -718,7 +719,8 @@ export function createArticle(article: {
     article.source || '',
     article.sourceInsightId || null,
     article.sourceSearchId || null,
-    article.userId || 1
+    article.userId || 1,
+    article.xhsTags ? JSON.stringify(article.xhsTags) : null
   );
   return result.lastInsertRowid as number;
 }

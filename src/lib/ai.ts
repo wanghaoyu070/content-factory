@@ -236,6 +236,7 @@ export interface GeneratedArticle {
   content: string;
   summary: string;
   imageKeywords: string[];
+  xhsTags: string[];  // 小红书话题标签
 }
 
 // 图片插入位置信息
@@ -293,12 +294,18 @@ export async function generateArticle(
 - 图片描述关键词应该是英文，便于从图库搜索，如: technology, business meeting, data analysis
 - 配图标记应该单独占一行，放在段落之间
 
+【小红书话题标签】
+- 请根据文章内容，生成 5 个适合小红书平台的话题标签
+- 标签要热门、蟒蜘，与内容相关
+- 例如: 干货分享、职场成长、自律打卡、效率提升、知识分享
+
 请返回以下 JSON 格式（不要包含 markdown 代码块标记）:
 {
   "title": "文章标题，要吸引眼球，可以使用数字、疑问句等技巧",
   "content": "文章正文内容，使用 HTML 格式，包含 <p>、<h2>、<h3>、<strong>、<ul>、<li> 等标签，并在合适位置插入 [INSERT_IMAGE:keyword] 标记",
   "summary": "文章摘要，100字以内，用于预览展示",
-  "imageKeywords": ["配图关键词1(英文)", "配图关键词2(英文)", "配图关键词3(英文)"]
+  "imageKeywords": ["配图关键词1(英文)", "配图关键词2(英文)", "配图关键词3(英文)"],
+  "xhsTags": ["干货分享", "职场成长", "自律打卡", "效率提升", "知识分享"]
 }`;
 
   const messages: ChatMessage[] = [
@@ -326,6 +333,7 @@ export async function generateArticle(
       content: parsed.content || '',
       summary: parsed.summary || '',
       imageKeywords: parsed.imageKeywords || [],
+      xhsTags: parsed.xhsTags || [],
     };
   } catch {
     // 解析失败时返回基础内容
@@ -334,6 +342,7 @@ export async function generateArticle(
       content: `<p>文章生成失败，请重试。</p>`,
       summary: '文章生成失败',
       imageKeywords: [keyword],
+      xhsTags: ['干货分享', '知识分享'],
     };
   }
 }

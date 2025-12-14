@@ -10,6 +10,7 @@ import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List,
 import { toast } from 'sonner';
 import { ImageUploadModal } from '@/components/ui/ImageUploadModal';
 import { XhsTagsManager } from '@/components/editor/XhsTagsManager';
+import { XhsContentChecker } from '@/components/editor/XhsContentChecker';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
 
@@ -354,6 +355,18 @@ export default function ArticleEditPage() {
                 tags={xhsTags}
                 onChange={setXhsTags}
                 className="[&_*]:!bg-transparent [&_input]:!bg-slate-50 [&>div:first-child]:!bg-slate-50 [&>div:first-child]:!border-slate-200 [&_span]:!text-slate-600 [&_p]:!text-slate-500 [&>div:last-child]:!bg-slate-50"
+              />
+            </div>
+
+            {/* 小红书字数检测 */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+              <h3 className="font-medium text-slate-800 mb-4 flex items-center gap-2">
+                <span className="text-red-500">📏</span>
+                小红书字数检测
+              </h3>
+              <XhsContentChecker
+                content={content}
+                className="[&_div]:!bg-slate-50 [&_div]:!border-slate-200 [&_p]:!text-slate-500"
               />
             </div>
 
