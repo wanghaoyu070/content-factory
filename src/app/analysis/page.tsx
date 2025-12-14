@@ -335,8 +335,8 @@ function AnalysisPageContent() {
             <button
               onClick={() => setSearchMode('keyword')}
               className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${searchMode === 'keyword'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-slate-400 hover:text-slate-200'
                 }`}
             >
               关键词分析
@@ -344,8 +344,8 @@ function AnalysisPageContent() {
             <button
               onClick={() => setSearchMode('account')}
               className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${searchMode === 'account'
-                  ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                : 'text-slate-400 hover:text-slate-200'
                 }`}
             >
               公众号分析
@@ -420,66 +420,228 @@ function AnalysisPageContent() {
         {/* Status: Results */}
         {hasResults && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* 1. 核心洞察卡片 (Insights) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {insights.map((insight, idx) => (
-                <div key={idx} className="bg-[#16162a] border border-[#2d2d44] hover:border-indigo-500/50 transition-all rounded-2xl p-6 group flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">
-                      {idx + 1}
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400">
-                      AI 洞察
-                    </span>
+
+            {/* 0. 数据统计概览卡片 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 rounded-2xl p-5 border border-indigo-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-indigo-400" />
                   </div>
-
-                  <h3 className="text-lg font-bold text-slate-100 mb-3 group-hover:text-indigo-400 transition-colors line-clamp-2">
-                    {insight.title}
-                  </h3>
-
-                  <p className="text-sm text-slate-400 mb-4 flex-1 line-clamp-3">
-                    {insight.description}
-                  </p>
-
-                  <div className="border-t border-[#2d2d44] pt-4 mt-auto">
-                    <button
-                      onClick={() => handleGenerateArticle(insight)}
-                      disabled={generatingId === insight.id}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                    >
-                      {generatingId === insight.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                      {generatingId === insight.id ? '生成中...' : '使用此洞察写文章'}
-                    </button>
-                  </div>
+                  <span className="text-sm text-slate-400">分析文章</span>
                 </div>
-              ))}
+                <div className="text-3xl font-bold text-slate-100">{articles.length}</div>
+                <div className="text-xs text-slate-500 mt-1">篇热门内容</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-2xl p-5 border border-emerald-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <span className="text-sm text-slate-400">总阅读量</span>
+                </div>
+                <div className="text-3xl font-bold text-slate-100">
+                  {articles.reduce((sum, a) => sum + (a.readCount || a.reads || 0), 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">累计阅读</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-rose-500/20 to-rose-600/10 rounded-2xl p-5 border border-rose-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                    <ThumbsUp className="w-5 h-5 text-rose-400" />
+                  </div>
+                  <span className="text-sm text-slate-400">互动数据</span>
+                </div>
+                <div className="text-3xl font-bold text-slate-100">
+                  {articles.reduce((sum, a) => sum + (a.likeCount || a.likes || 0), 0).toLocaleString()}
+                </div>
+                <div className="text-xs text-slate-500 mt-1">累计点赞</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-2xl p-5 border border-amber-500/20">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <span className="text-sm text-slate-400">AI 洞察</span>
+                </div>
+                <div className="text-3xl font-bold text-slate-100">{insights.length}</div>
+                <div className="text-xs text-slate-500 mt-1">写作建议</div>
+              </div>
             </div>
 
-            {/* 2. 热门文章列表 (Articles) */}
+            {/* 1. 核心洞察卡片 (Insights) */}
+            <div>
+              <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                AI 深度洞察
+                <span className="text-sm font-normal text-slate-500 ml-2">基于 {articles.length} 篇热门文章智能分析</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {insights.map((insight, idx) => (
+                  <div key={idx} className="bg-[#16162a] border border-[#2d2d44] hover:border-indigo-500/50 transition-all rounded-2xl p-6 group flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                        {idx + 1}
+                      </div>
+                      <span className="text-xs px-2 py-1 rounded bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/20">
+                        AI 洞察
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-100 mb-3 group-hover:text-indigo-400 transition-colors line-clamp-2">
+                      {insight.title}
+                    </h3>
+
+                    <p className="text-sm text-slate-400 mb-4 flex-1 line-clamp-3">
+                      {insight.description}
+                    </p>
+
+                    {/* 数据支撑 */}
+                    {insight.evidence && (
+                      <div className="mb-4 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="text-xs text-emerald-400 flex items-center gap-1">
+                          <BarChart3 className="w-3 h-3" />
+                          {insight.evidence}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 推荐选题标签 */}
+                    {insight.suggestedTopics && insight.suggestedTopics.length > 0 && (
+                      <div className="mb-4">
+                        <div className="text-xs text-slate-500 mb-2">推荐选题</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {insight.suggestedTopics.slice(0, 3).map((topic, i) => (
+                            <span key={i} className="text-xs px-2 py-1 rounded-md bg-[#0f0f23] text-slate-400 border border-[#2d2d44]">
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border-t border-[#2d2d44] pt-4 mt-auto">
+                      <button
+                        onClick={() => handleGenerateArticle(insight)}
+                        disabled={generatingId === insight.id}
+                        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-indigo-500/20"
+                      >
+                        {generatingId === insight.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                        {generatingId === insight.id ? '生成中...' : '使用此洞察写文章'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. 热门文章列表 (Articles) - 增强版 */}
             <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6">
               <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
                 <Flame className="w-5 h-5 text-orange-400" />
                 热门文章参考
+                <span className="text-sm font-normal text-slate-500 ml-2">点击可查看详情</span>
               </h2>
               <div className="space-y-4">
-                {articles.slice(0, 5).map((article, idx) => (
-                  <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-[#0f0f23]/50 hover:bg-[#0f0f23] transition-colors border border-transparent hover:border-[#2d2d44]">
-                    <div className="text-slate-500 font-mono text-sm mt-1">
-                      {(idx + 1).toString().padStart(2, '0')}
+                {articles.slice(0, 8).map((article, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-4 p-4 rounded-xl bg-[#0f0f23]/50 hover:bg-[#0f0f23] transition-all border border-transparent hover:border-[#2d2d44] cursor-pointer group"
+                  >
+                    {/* 排名标识 */}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${idx < 3
+                        ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20 text-amber-400 border border-amber-500/30'
+                        : 'bg-[#1a1a2e] text-slate-500 border border-[#2d2d44]'
+                      }`}>
+                      {idx + 1}
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-base font-medium text-slate-200 mb-1 truncate">
+                      {/* 标题 */}
+                      <h4 className="text-base font-medium text-slate-200 mb-2 group-hover:text-indigo-400 transition-colors line-clamp-2">
                         {article.title}
                       </h4>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        {(article.readCount || article.reads) && (
-                          <span>阅读: {(article.readCount || article.reads)?.toLocaleString()}</span>
+
+                      {/* 数据指标 */}
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                        {/* 作者 */}
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <User className="w-3 h-3" />
+                          {article.author || (article as any).wxName || (article as any).wx_name || '匿名作者'}
+                        </span>
+
+                        {/* 阅读量 */}
+                        {(article.readCount || article.reads || (article as any).read_count) && (
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-500" />
+                            <span className="text-emerald-400">{((article.readCount || article.reads || (article as any).read_count) as number).toLocaleString()}</span>
+                            <span>阅读</span>
+                          </span>
                         )}
-                        <span>{(article.author || (article as any).wxName) || '未知作者'}</span>
-                        <span>{article.publishTime?.split(' ')[0]}</span>
+
+                        {/* 点赞 */}
+                        {(article.likeCount || article.likes || (article as any).like_count) && (
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="w-3 h-3 text-rose-500" />
+                            <span className="text-rose-400">{((article.likeCount || article.likes || (article as any).like_count) as number).toLocaleString()}</span>
+                          </span>
+                        )}
+
+                        {/* 在看 */}
+                        {((article as any).wowCount || (article as any).wow_count) && (
+                          <span className="flex items-center gap-1">
+                            <Sparkles className="w-3 h-3 text-amber-500" />
+                            <span className="text-amber-400">{(((article as any).wowCount || (article as any).wow_count) as number).toLocaleString()}</span>
+                            <span>在看</span>
+                          </span>
+                        )}
+
+                        {/* 发布时间 */}
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {(article.publishTime || (article as any).publish_time)?.split(' ')[0]}
+                        </span>
                       </div>
                     </div>
+
+                    {/* 箭头 */}
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. 热门话题推荐 */}
+            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6">
+              <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
+                相关热门话题
+                <span className="text-sm font-normal text-slate-500 ml-2">发现更多写作机会</span>
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {hotTopics.slice(0, 8).map((topic, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { setKeyword(topic.keyword); }}
+                    className="p-4 rounded-xl bg-[#0f0f23]/50 hover:bg-[#0f0f23] border border-[#2d2d44] hover:border-indigo-500/30 transition-all text-left group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-slate-300 group-hover:text-indigo-400 transition-colors">{topic.keyword}</span>
+                      <Flame className={`w-4 h-4 ${topic.heat >= 90 ? 'text-red-400' : topic.heat >= 80 ? 'text-orange-400' : 'text-amber-400'}`} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-[#2d2d44] rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${topic.heat >= 90 ? 'bg-gradient-to-r from-red-500 to-orange-500' : topic.heat >= 80 ? 'bg-gradient-to-r from-orange-500 to-amber-500' : 'bg-gradient-to-r from-amber-500 to-yellow-500'}`}
+                          style={{ width: `${topic.heat}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-500">{topic.heat}°</span>
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
