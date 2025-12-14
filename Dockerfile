@@ -9,7 +9,7 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # 复制源代码
 COPY . .
