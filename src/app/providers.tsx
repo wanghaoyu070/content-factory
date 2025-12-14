@@ -10,6 +10,12 @@ const OnboardingModal = dynamic(() => import('@/components/ui/OnboardingModal'),
   ssr: false,
 });
 
+// 动态导入 KeyboardShortcuts
+const KeyboardShortcuts = dynamic(
+  () => import('@/components/ui/KeyboardShortcuts').then((mod) => ({ default: mod.KeyboardShortcuts })),
+  { ssr: false }
+);
+
 function OnboardingManager({ children }: { children: ReactNode }) {
   const { data: session, status, update } = useSession();
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -36,6 +42,7 @@ function OnboardingManager({ children }: { children: ReactNode }) {
     <>
       {children}
       {showOnboarding && <OnboardingModal onComplete={handleComplete} />}
+      <KeyboardShortcuts />
     </>
   );
 }
