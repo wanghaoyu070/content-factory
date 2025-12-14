@@ -62,16 +62,10 @@ export function XiaohongshuPublishModal({
                         请使用小红书APP扫描二维码完成发布
                     </p>
 
-                    {/* 二维码 */}
+                    {/* 二维码 - 始终使用 QRCodeSVG 生成 */}
                     <div className="flex justify-center mb-6">
                         <div className="bg-white p-4 rounded-xl">
-                            {result.qrImageUrl ? (
-                                <img
-                                    src={result.qrImageUrl}
-                                    alt="小红书二维码"
-                                    className="w-48 h-48 object-contain"
-                                />
-                            ) : result.publishUrl ? (
+                            {result.publishUrl ? (
                                 <QRCodeSVG
                                     value={result.publishUrl}
                                     size={192}
