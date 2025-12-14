@@ -147,19 +147,17 @@ export function usePublish() {
             const result = await response.json();
 
             if (result.success) {
-                toast.success('发布成功', {
-                    description: '文章已成功发布到微信公众号',
-                });
-                closeWechatPublishModal();
+                // 不再显示 toast，让 Modal 展示成功状态
+                // Modal 会在显示成功状态后自动关闭
                 return true;
             } else {
-                toast.error('发布失败', { description: result.error });
-                return false;
+                // 不再显示 toast，让 Modal 展示错误状态
+                throw new Error(result.error || '发布失败');
             }
         } catch (error) {
             console.error('发布到微信失败:', error);
-            toast.error('发布失败', { description: '网络异常' });
-            return false;
+            // 将错误抛出，让 Modal 处理并展示错误状态
+            throw error;
         } finally {
             setPublishingToWechat(false);
             setPublishingId(null);

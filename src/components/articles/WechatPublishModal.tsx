@@ -88,55 +88,109 @@ export function WechatPublishModal({
         switch (step) {
             case 'publishing':
                 return (
-                    <div className="py-12 flex flex-col items-center justify-center">
+                    <div className="py-8 flex flex-col items-center justify-center">
                         {/* 发布动画 */}
                         <div className="relative mb-6">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-500/30 to-emerald-500/30 flex items-center justify-center animate-pulse">
-                                    <Send className="w-8 h-8 text-green-400 animate-bounce" />
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                                <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500/30 to-emerald-500/30 flex items-center justify-center animate-pulse">
+                                    <Send className="w-10 h-10 text-green-400 animate-bounce" />
                                 </div>
                             </div>
                             {/* 旋转光圈 */}
-                            <div className="absolute inset-0 w-20 h-20 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
+                            <div className="absolute inset-0 w-24 h-24 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
                         </div>
 
-                        <h3 className="text-lg font-semibold text-slate-200 mb-2">
+                        <h3 className="text-xl font-semibold text-slate-200 mb-2">
                             正在发布到微信公众号
                         </h3>
-                        <p className="text-sm text-slate-400 text-center max-w-xs">
+                        <p className="text-sm text-slate-400 text-center max-w-xs mb-6">
                             正在将文章同步到公众号草稿箱，请稍候...
                         </p>
 
-                        {/* 进度提示 */}
-                        <div className="mt-6 flex items-center gap-2 text-xs text-slate-500">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>处理中，请勿关闭页面</span>
+                        {/* 发布步骤进度 */}
+                        <div className="w-full max-w-xs space-y-3 px-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm text-slate-300">准备文章内容</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
+                                    <Loader2 className="w-3 h-3 text-green-400 animate-spin" />
+                                </div>
+                                <span className="text-sm text-green-400">上传到微信服务器...</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center">
+                                    <div className="w-2 h-2 rounded-full bg-slate-500" />
+                                </div>
+                                <span className="text-sm text-slate-500">完成发布</span>
+                            </div>
+                        </div>
+
+                        {/* 底部提示 */}
+                        <div className="mt-8 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                            <p className="text-xs text-amber-400 flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                处理中，请勿关闭页面
+                            </p>
                         </div>
                     </div>
                 );
 
             case 'success':
                 return (
-                    <div className="py-12 flex flex-col items-center justify-center">
+                    <div className="py-8 flex flex-col items-center justify-center">
                         {/* 成功动画 */}
                         <div className="relative mb-6">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center animate-scale-in">
-                                <CheckCircle2 className="w-12 h-12 text-green-400" />
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center animate-scale-in">
+                                <div className="w-20 h-20 rounded-full bg-green-500/30 flex items-center justify-center">
+                                    <CheckCircle2 className="w-12 h-12 text-green-400" />
+                                </div>
+                            </div>
+                            {/* 成功光环 */}
+                            <div className="absolute inset-0 w-24 h-24 rounded-full border-2 border-green-500/50 animate-ping" />
+                        </div>
+
+                        <h3 className="text-xl font-semibold text-green-400 mb-2">
+                            发布成功！
+                        </h3>
+                        <p className="text-sm text-slate-300 text-center max-w-xs">
+                            文章已成功发布到微信公众号草稿箱
+                        </p>
+
+                        {/* 完成的步骤 */}
+                        <div className="w-full max-w-xs space-y-3 px-4 mt-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm text-slate-300">准备文章内容</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm text-slate-300">上传到微信服务器</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm text-slate-300">完成发布</span>
                             </div>
                         </div>
 
-                        <h3 className="text-lg font-semibold text-green-400 mb-2">
-                            发布成功！
-                        </h3>
-                        <p className="text-sm text-slate-400 text-center max-w-xs">
-                            文章已成功发布到微信公众号草稿箱
-                        </p>
-                        <p className="text-xs text-slate-500 mt-2">
-                            请前往公众号后台进行最终发布
-                        </p>
+                        {/* 提示信息 */}
+                        <div className="mt-6 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <p className="text-xs text-green-400">
+                                请前往公众号后台进行最终发布
+                            </p>
+                        </div>
 
                         {/* 自动关闭提示 */}
-                        <div className="mt-6 text-xs text-slate-500">
+                        <div className="mt-4 text-xs text-slate-500">
                             窗口将在 2 秒后自动关闭...
                         </div>
                     </div>
@@ -144,33 +198,39 @@ export function WechatPublishModal({
 
             case 'error':
                 return (
-                    <div className="py-12 flex flex-col items-center justify-center">
+                    <div className="py-8 flex flex-col items-center justify-center">
                         {/* 失败动画 */}
                         <div className="relative mb-6">
-                            <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center">
-                                <XCircle className="w-12 h-12 text-red-400" />
+                            <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center">
+                                <div className="w-20 h-20 rounded-full bg-red-500/30 flex items-center justify-center animate-pulse">
+                                    <XCircle className="w-12 h-12 text-red-400" />
+                                </div>
                             </div>
                         </div>
 
-                        <h3 className="text-lg font-semibold text-red-400 mb-2">
+                        <h3 className="text-xl font-semibold text-red-400 mb-2">
                             发布失败
                         </h3>
-                        <p className="text-sm text-slate-400 text-center max-w-xs">
-                            {errorMessage || '发布过程中出现错误，请稍后重试'}
-                        </p>
+
+                        {/* 错误信息 */}
+                        <div className="w-full max-w-xs px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg mt-2">
+                            <p className="text-sm text-red-300 text-center">
+                                {errorMessage || '发布过程中出现错误，请稍后重试'}
+                            </p>
+                        </div>
 
                         {/* 操作按钮 */}
-                        <div className="mt-6 flex items-center gap-3">
+                        <div className="mt-8 flex items-center gap-3">
                             <button
                                 onClick={handleRetry}
-                                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors flex items-center gap-2"
+                                className="px-5 py-2.5 text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                重试
+                                重新发布
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-4 py-2 text-sm text-white bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors"
+                                className="px-5 py-2.5 text-sm text-slate-300 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
                             >
                                 关闭
                             </button>
