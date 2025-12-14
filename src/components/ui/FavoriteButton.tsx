@@ -74,18 +74,27 @@ export default function FavoriteButton({
         }
     };
 
+    // 触摸目标尺寸 - 确保至少 44x44px
+    const touchTargetClasses = {
+        sm: 'p-2.5 sm:p-2',
+        md: 'p-2.5 sm:p-2',
+        lg: 'p-2',
+    };
+
     return (
         <button
             onClick={handleToggle}
             disabled={loading}
             className={cn(
-                'flex items-center gap-1.5 transition-all duration-200',
+                'flex items-center gap-1.5 transition-all duration-200 rounded-lg hover:bg-white/5 active:scale-95',
+                touchTargetClasses[size],
                 favorited
                     ? 'text-amber-400 hover:text-amber-300'
                     : 'text-slate-500 hover:text-amber-400',
                 loading && 'opacity-50 cursor-not-allowed'
             )}
             title={favorited ? '取消收藏' : '收藏'}
+            aria-label={favorited ? '取消收藏' : '收藏'}
         >
             {loading ? (
                 <Loader2 className={cn(sizeClasses[size], 'animate-spin')} />

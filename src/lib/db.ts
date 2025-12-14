@@ -232,6 +232,9 @@ ensureColumn('articles', 'user_id', 'INTEGER DEFAULT 1', () => {
 db.exec('CREATE INDEX IF NOT EXISTS idx_search_user ON search_records(user_id)');
 db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
 
+// Add status column to search_records
+ensureColumn('search_records', 'status', "TEXT DEFAULT 'completed'");
+
 // Add onboarding_completed column to users table
 ensureColumn('users', 'onboarding_completed', 'INTEGER DEFAULT 0');
 
@@ -265,6 +268,7 @@ export interface SearchRecord {
   search_type: 'keyword' | 'account';
   account_name: string | null;
   account_avatar: string | null;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
 }
 
@@ -365,13 +369,16 @@ export interface InsightFavorite {
 export function createSearchRecord(
   keyword: string,
   articleCount: number,
+  userId: number,
   options?: {
     searchType?: 'keyword' | 'account';
     accountName?: string;
     accountAvatar?: string;
-  },
-  userId: number = 1
+  }
 ): number {
+  if (!userId) {
+    throw new Error('createSearchRecord: userId is required');
+  }
   const stmt = db.prepare(
     'INSERT INTO search_records (keyword, article_count, search_type, account_name, account_avatar, user_id) VALUES (?, ?, ?, ?, ?, ?)'
   );
@@ -573,14 +580,39 @@ export function deleteSearch(id: number, userId?: number) {
   deleteAll(id);
 }
 
+export function updateSearchStatus(
+  id: number,
+  status: 'pending' | 'processing' | 'completed' | 'failed',
+  articleCount?: number
+) {
+  const fields = ['status = ?'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const params: any[] = [status];
+
+  if (articleCount !== undefined) {
+    fields.push('article_count = ?');
+    params.push(articleCount);
+  }
+
+  params.push(id);
+
+  // Use try-catch to prevent crashing if something is wrong with the DB update
+  try {
+    const stmt = db.prepare(`UPDATE search_records SET ${fields.join(', ')} WHERE id = ?`);
+    stmt.run(...params);
+  } catch (err) {
+    console.error(`Failed to update search status for id ${id}:`, err);
+  }
+}
+
 // Settings operations
-export function getSetting(key: string, userId: number = 1): string | undefined {
+export function getSetting(key: string, userId: number): string | undefined {
   const stmt = db.prepare('SELECT value FROM settings WHERE user_id = ? AND key = ?');
   const result = stmt.get(userId, key) as { value: string } | undefined;
   return result?.value;
 }
 
-export function setSetting(key: string, value: string, userId: number = 1): void {
+export function setSetting(key: string, value: string, userId: number): void {
   const stmt = db.prepare(`
     INSERT INTO settings (user_id, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
@@ -753,9 +785,12 @@ export function createArticle(article: {
   source?: string;
   sourceInsightId?: number;
   sourceSearchId?: number;
-  userId?: number;
+  userId: number;
   xhsTags?: string[];
 }): number {
+  if (!article.userId) {
+    throw new Error('createArticle: userId is required');
+  }
   const stmt = db.prepare(`
     INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id, user_id, xhs_tags)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -768,7 +803,7 @@ export function createArticle(article: {
     article.source || '',
     article.sourceInsightId || null,
     article.sourceSearchId || null,
-    article.userId || 1,
+    article.userId,
     article.xhsTags ? JSON.stringify(article.xhsTags) : null
   );
   return result.lastInsertRowid as number;

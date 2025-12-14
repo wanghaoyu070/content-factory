@@ -58,12 +58,12 @@ export async function POST(request: NextRequest) {
     const searchId = createSearchRecord(
       keyword,
       articles.length,
+      session.user.id,
       {
         searchType: searchType || 'keyword',
         accountName: accountInfo?.name,
         accountAvatar: accountInfo?.avatar,
-      },
-      session.user.id
+      }
     );
 
     // Save articles

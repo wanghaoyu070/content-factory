@@ -557,48 +557,66 @@ function CreatePageContent() {
         <Header
           title="内容创作"
           action={
-            <div className="flex items-center gap-3">
-              <SaveIndicator status={saveStatus} onRetry={autoSave} />
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* 移动端只显示状态指示器 */}
+              <div className="hidden sm:block">
+                <SaveIndicator status={saveStatus} onRetry={autoSave} />
+              </div>
+              {/* 移动端显示简化的状态点 */}
+              <div className="sm:hidden">
+                {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+                {saveStatus === 'saved' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                {saveStatus === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
+              </div>
+              {/* 保存按钮 - 移动端只显示图标 */}
               <button
                 onClick={autoSave}
-                className="px-4 py-2 border border-[#2d2d44] text-slate-300 rounded-lg hover:bg-[#1a1a2e] transition-colors flex items-center gap-2"
+                className="p-2 sm:px-4 sm:py-2 border border-[#2d2d44] text-slate-300 rounded-lg hover:bg-[#1a1a2e] transition-colors flex items-center gap-2 active:scale-95"
+                title="保存草稿"
               >
                 <Save className="w-4 h-4" />
-                保存草稿
+                <span className="hidden sm:inline">保存草稿</span>
               </button>
+              {/* 提交按钮 - 移动端只显示图标 */}
               <button
                 onClick={handleSubmitReview}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2"
+                className="p-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 active:scale-95"
+                title="提交审核"
               >
                 <Send className="w-4 h-4" />
-                提交审核
+                <span className="hidden sm:inline">提交审核</span>
               </button>
             </div>
           }
         />
 
-        {/* 当前选题信息栏 */}
-        <div className="px-6 py-3 bg-[#16162a] border-b border-[#2d2d44] flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* 当前选题信息栏 - 移动端优化 */}
+        <div className="px-4 sm:px-6 py-3 bg-[#16162a] border-b border-[#2d2d44]">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <button
+                onClick={() => setMode('select')}
+                className="p-1 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <span className="hidden sm:inline text-slate-500 flex-shrink-0">当前选题:</span>
+              <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full flex-shrink-0">
+                {currentInsight?.keyword}
+              </span>
+              <span className="text-slate-200 font-medium truncate text-sm sm:text-base">
+                {currentInsight?.title}
+              </span>
+            </div>
             <button
-              onClick={() => setMode('select')}
-              className="text-slate-400 hover:text-slate-200 transition-colors"
+              onClick={handleRegenerate}
+              className="p-2 sm:px-3 sm:py-1.5 text-sm text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg flex items-center gap-1 flex-shrink-0 active:scale-95"
+              title="重新生成"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">重新生成</span>
             </button>
-            <span className="text-slate-500">当前选题:</span>
-            <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
-              {currentInsight?.keyword}
-            </span>
-            <span className="text-slate-200 font-medium">{currentInsight?.title}</span>
           </div>
-          <button
-            onClick={handleRegenerate}
-            className="text-sm text-slate-400 hover:text-indigo-400 flex items-center gap-1"
-          >
-            <RefreshCw className="w-4 h-4" />
-            重新生成
-          </button>
         </div>
 
         {/* 编辑器和预览区域 */}
@@ -633,17 +651,17 @@ function CreatePageContent() {
     <div className="min-h-screen bg-[#0f0f23]">
       <Header title="内容创作" />
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* 自由创作入口 */}
-        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-5 border border-indigo-500/30 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
-                <PenTool className="w-6 h-6 text-white" />
+        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-indigo-500/30 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-1">自由创作模式</h3>
-                <p className="text-sm text-slate-400">已有想法？跳过选题，直接开始 AI 创作</p>
+                <h3 className="font-semibold text-white text-sm sm:text-base mb-0.5 sm:mb-1">自由创作模式</h3>
+                <p className="text-xs sm:text-sm text-slate-400">已有想法？跳过选题，直接开始 AI 创作</p>
               </div>
             </div>
             <button
@@ -662,7 +680,7 @@ function CreatePageContent() {
                 });
                 setShowFreeCreateModal(true);
               }}
-              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+              className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 text-sm sm:text-base"
             >
               <Zap className="w-4 h-4" />
               开始创作
@@ -672,9 +690,9 @@ function CreatePageContent() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* 左侧：选题列表 */}
-          <div className="lg:col-span-2 space-y-4 lg:space-y-6 order-2 lg:order-1">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4 lg:space-y-6 order-2 lg:order-1">
             {/* 筛选器 */}
-            <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
+            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#2d2d44]">
               <div className="flex items-center justify-between gap-4 mb-3">
                 {/* 视图模式切换 */}
                 <div className="flex items-center gap-2">
@@ -734,13 +752,14 @@ function CreatePageContent() {
             </div>
 
             {/* 选题洞察列表 */}
-            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44]">
-              <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl border border-[#2d2d44]">
+              <div className="p-3 sm:p-4 border-b border-[#2d2d44] flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-400" />
-                  选题洞察库
-                  <span className="text-sm font-normal text-slate-500">
-                    ({filteredInsights.length} 条可用)
+                  <span className="hidden sm:inline">选题洞察库</span>
+                  <span className="sm:hidden">洞察库</span>
+                  <span className="text-xs sm:text-sm font-normal text-slate-500">
+                    ({filteredInsights.length})
                   </span>
                 </h3>
                 <button
@@ -760,7 +779,7 @@ function CreatePageContent() {
                   action={{ label: '前往选题分析', href: '/analysis' }}
                 />
               ) : (
-                <div className="divide-y divide-[#2d2d44] max-h-[600px] overflow-y-auto">
+                <div className="divide-y divide-[#2d2d44] max-h-[50vh] sm:max-h-[600px] overflow-y-auto">
                   {filteredInsights.map((insight) => {
                     const isExpanded = expandedId === insight.id;
                     const isSelected = selectedInsight?.id === insight.id;
@@ -768,27 +787,27 @@ function CreatePageContent() {
                     return (
                       <div
                         key={insight.id}
-                        className={`p-4 transition-colors cursor-pointer ${isSelected ? 'bg-indigo-500/10' : 'hover:bg-[#1a1a2e]'
+                        className={`p-3 sm:p-4 transition-colors cursor-pointer active:bg-[#1a1a2e] ${isSelected ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'hover:bg-[#1a1a2e]'
                           }`}
                         onClick={() => setSelectedInsight(insight)}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                        <div className="flex items-start justify-between gap-2 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 flex-wrap">
+                              <span className="px-1.5 sm:px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
                                 {insight.keyword}
                               </span>
                               <span className="text-xs text-slate-500">
                                 {formatDate(insight.createdAt)}
                               </span>
                             </div>
-                            <h4 className="font-medium text-slate-200 flex items-center gap-2">
+                            <h4 className="font-medium text-slate-200 flex items-center gap-2 text-sm sm:text-base">
                               {isSelected && (
-                                <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                                <span className="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0" />
                               )}
-                              {insight.title}
+                              <span className="line-clamp-2">{insight.title}</span>
                             </h4>
-                            <p className="text-sm text-slate-400 mt-1 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">
                               {insight.description}
                             </p>
 
@@ -831,7 +850,7 @@ function CreatePageContent() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-0.5 sm:gap-1">
                             {/* 收藏按钮 */}
                             <FavoriteButton
                               insightId={insight.id}
@@ -846,13 +865,14 @@ function CreatePageContent() {
                               size="sm"
                             />
 
-                            {/* 展开按钮 */}
+                            {/* 展开按钮 - 增大触摸目标 */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedId(isExpanded ? null : insight.id);
                               }}
-                              className="p-1 text-slate-500 hover:text-slate-300"
+                              className="p-2.5 sm:p-2 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors active:scale-95"
+                              aria-label={isExpanded ? '收起详情' : '展开详情'}
                             >
                               {isExpanded ? (
                                 <ChevronUp className="w-4 h-4" />
@@ -871,10 +891,10 @@ function CreatePageContent() {
           </div>
 
           {/* 右侧：创作面板 */}
-          <div className="space-y-4 lg:space-y-6 order-1 lg:order-2">
+          <div className="space-y-3 sm:space-y-4 lg:space-y-6 order-1 lg:order-2">
             {/* 创作设置 */}
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-              <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2d2d44]">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-200 mb-3 sm:mb-4 flex items-center gap-2">
                 <PenTool className="w-5 h-5 text-indigo-400" />
                 创作设置
               </h3>
@@ -986,8 +1006,8 @@ function CreatePageContent() {
               )}
             </div>
 
-            {/* 快速入口 */}
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
+            {/* 快速入口 - 移动端隐藏 */}
+            <div className="hidden sm:block bg-[#16162a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2d2d44]">
               <h3 className="text-sm font-medium text-slate-400 mb-3">快速入口</h3>
               <div className="space-y-2">
                 <a

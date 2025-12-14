@@ -78,6 +78,13 @@ body.sidebar-collapsed {
   body.sidebar-collapsed {
     --sidebar-width: 0px;
   }
+
+  /* 移动端性能优化：简化背景效果 */
+  body {
+    background-image: none;
+    background-attachment: scroll;
+    background-color: var(--background);
+  }
 }
 
 .main-content {

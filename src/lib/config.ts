@@ -39,7 +39,8 @@ export function getAIConfig(userId?: number): AIConfig | null {
   }
 
   // 回退到数据库配置
-  const aiConfigStr = getSetting('ai', userId ?? 1);
+  if (!userId) return null;
+  const aiConfigStr = getSetting('ai', userId);
   if (aiConfigStr) {
     try {
       return JSON.parse(aiConfigStr);
@@ -62,7 +63,8 @@ export function getWechatArticleConfig(userId?: number): WechatArticleConfig | n
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('wechatArticle', userId ?? 1);
+  if (!userId) return null;
+  const configStr = getSetting('wechatArticle', userId);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -85,7 +87,8 @@ export function getWechatPublishConfig(userId?: number): WechatPublishConfig | n
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('wechatPublish', userId ?? 1);
+  if (!userId) return null;
+  const configStr = getSetting('wechatPublish', userId);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -114,7 +117,8 @@ export function getXiaohongshuPublishConfig(userId?: number): XiaohongshuPublish
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('xiaohongshu', userId ?? 1);
+  if (!userId) return null;
+  const configStr = getSetting('xiaohongshu', userId);
   if (configStr) {
     try {
       return JSON.parse(configStr);
@@ -138,7 +142,8 @@ export function getImageGenConfig(userId?: number): ImageGenConfig | null {
   }
 
   // 回退到数据库配置
-  const configStr = getSetting('imageGen', userId ?? 1);
+  if (!userId) return null;
+  const configStr = getSetting('imageGen', userId);
   if (configStr) {
     try {
       return JSON.parse(configStr);

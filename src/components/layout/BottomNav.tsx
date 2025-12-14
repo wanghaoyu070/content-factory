@@ -19,11 +19,27 @@ const navItems = [
   { href: '/settings', label: '设置', icon: Settings },
 ];
 
+// 主入口页面（显示底部导航）
+const primaryPages = ['/', '/analysis', '/create', '/articles', '/settings'];
+
+// 二级页面模式（隐藏底部导航）
+const secondaryPatterns = [
+  /^\/admin$/,
+  /^\/articles\/[^/]+$/,
+  /^\/analysis\/history/,
+];
+
 export default function BottomNav() {
   const pathname = usePathname();
 
   // 登录相关页面不显示底部导航
   if (pathname.startsWith('/login') || pathname.startsWith('/invite') || pathname.startsWith('/post-login')) {
+    return null;
+  }
+
+  // 二级页面不显示底部导航
+  const isSecondaryPage = secondaryPatterns.some(pattern => pattern.test(pathname));
+  if (isSecondaryPage) {
     return null;
   }
 

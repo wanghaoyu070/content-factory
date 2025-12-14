@@ -3,6 +3,23 @@ import { auth } from '@/auth';
 import { getArticleById, updateArticle } from '@/lib/db';
 import { getWechatPublishConfig } from '@/lib/config';
 
+interface RemoteWechatAccount {
+  name: string;
+  wechatAppid: string;
+  username?: string;
+  avatar?: string;
+  type?: string;
+  verified?: boolean;
+  status?: string;
+}
+
+interface RemoteWechatAccountsResponse {
+  code: number;
+  data?: RemoteWechatAccount[];
+  error?: string;
+  message?: string;
+}
+
 // 获取公众号列表请求
 interface GetAccountsRequest {
   action: 'get_accounts';
@@ -48,13 +65,29 @@ export async function POST(request: Request) {
         },
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`获取公众号列表失败: ${response.status} - ${error}`);
+      const raw = await response.text();
+      let data: RemoteWechatAccountsResponse | null = null;
+      try {
+        data = JSON.parse(raw) as RemoteWechatAccountsResponse;
+      } catch (error) {
+        console.error('解析公众号列表响应失败:', error, raw);
       }
 
-      const data = await response.json();
-      return NextResponse.json(data);
+      if (!response.ok || !data) {
+        return NextResponse.json(
+          { success: false, error: raw || '获取公众号列表失败' },
+          { status: 502 }
+        );
+      }
+
+      if (data.code !== 0) {
+        return NextResponse.json(
+          { success: false, error: data.error || data.message || '获取公众号列表失败' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true, data: data.data || [] });
     }
 
     // 发布文章
@@ -98,7 +131,7 @@ export async function POST(request: Request) {
 
       const publishData = await publishResponse.json();
 
-      if (publishData.success) {
+      if (publishResponse.ok && publishData.success) {
         // 更新文章状态为已发布
         updateArticle(articleId, { status: 'published' }, session.user.id);
 
@@ -111,13 +144,13 @@ export async function POST(request: Request) {
             message: publishData.data?.message || '文章已成功发布到公众号草稿箱',
           },
         });
-      } else {
-        return NextResponse.json({
-          success: false,
-          error: publishData.error || '发布失败',
-          code: publishData.code,
-        });
       }
+
+      return NextResponse.json({
+        success: false,
+        error: publishData.error || '发布失败',
+        code: publishData.code,
+      });
     }
 
     return NextResponse.json(

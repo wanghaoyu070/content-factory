@@ -81,30 +81,17 @@ export function usePublish() {
     const fetchWechatAccounts = useCallback(async () => {
         setLoadingAccounts(true);
         try {
-            const response = await fetch('/api/settings');
+            const response = await fetch('/api/publish/wechat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_accounts' }),
+            });
             const result = await response.json();
 
-            // 正确读取设置：wechatPublish.endpoint 和 wechatPublish.apiKey
-            const wechatPublishConfig = result.data?.wechatPublish;
-
-            if (result.success && wechatPublishConfig?.endpoint && wechatPublishConfig?.apiKey) {
-                const accountsResponse = await fetch(
-                    `${wechatPublishConfig.endpoint}/wechat/accounts`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${wechatPublishConfig.apiKey}`,
-                        },
-                    }
-                );
-                const accountsResult = await accountsResponse.json();
-
-                if (accountsResult.code === 0 && accountsResult.data) {
-                    setWechatAccounts(accountsResult.data);
-                } else {
-                    console.error('获取公众号列表失败:', accountsResult);
-                }
+            if (result.success) {
+                setWechatAccounts(result.data || []);
             } else {
-                console.log('微信公众号发布 API 未配置');
+                toast.error(result.error || '获取公众号列表失败');
             }
         } catch (error) {
             console.error('获取公众号列表失败:', error);
@@ -131,6 +118,12 @@ export function usePublish() {
             return false;
         }
 
+        const numericArticleId = Number(selectedArticleForWechat);
+        if (Number.isNaN(numericArticleId)) {
+            toast.error('文章信息异常，请刷新后重试');
+            return false;
+        }
+
         setPublishingToWechat(true);
         setPublishingId(selectedArticleForWechat);
 
@@ -139,7 +132,8 @@ export function usePublish() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    articleId: selectedArticleForWechat,
+                    action: 'publish',
+                    articleId: numericArticleId,
                     ...wechatConfig,
                 }),
             });
@@ -167,13 +161,6 @@ export function usePublish() {
     }, [selectedArticleForWechat, wechatConfig, closeWechatPublishModal]);
 
     // ===== 小红书相关 =====
-    const openXhsPublishModal = useCallback((articleId: string) => {
-        setSelectedArticleForXhs(articleId);
-        setShowXhsModal(true);
-        setXhsResult(null);
-        publishToXiaohongshu(articleId);
-    }, []);
-
     const closeXhsPublishModal = useCallback(() => {
         setShowXhsModal(false);
         setSelectedArticleForXhs(null);
@@ -215,6 +202,13 @@ export function usePublish() {
             setPublishingId(null);
         }
     }, [closeXhsPublishModal]);
+
+    const openXhsPublishModal = useCallback((articleId: string) => {
+        setSelectedArticleForXhs(articleId);
+        setShowXhsModal(true);
+        setXhsResult(null);
+        publishToXiaohongshu(articleId);
+    }, [publishToXiaohongshu]);
 
     return {
         // 微信发布
