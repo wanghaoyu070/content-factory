@@ -338,6 +338,78 @@ export default function SettingsPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl space-y-6">
+        {/* 配置状态概览 */}
+        <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
+          <h2 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <span className="text-xl">⚙️</span>
+            配置状态
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              {
+                name: 'AI 接口',
+                icon: '🤖',
+                configured: !!(getValues('ai.apiKey')),
+                required: true,
+              },
+              {
+                name: '图片生成',
+                icon: '🎨',
+                configured: !!(getValues('imageGen.apiKey')),
+                required: false,
+              },
+              {
+                name: '公众号文章',
+                icon: '📰',
+                configured: !!(getValues('wechatArticle.apiKey')),
+                required: false,
+              },
+              {
+                name: '微信发布',
+                icon: '📗',
+                configured: !!(getValues('wechatPublish.apiKey')),
+                required: false,
+              },
+              {
+                name: '小红书发布',
+                icon: '📕',
+                configured: !!(getValues('xiaohongshu.apiKey')),
+                required: false,
+              },
+            ].map((item) => (
+              <div
+                key={item.name}
+                className={`relative px-3 py-3 rounded-xl border transition-colors ${item.configured
+                    ? 'bg-emerald-500/10 border-emerald-500/30'
+                    : item.required
+                      ? 'bg-amber-500/10 border-amber-500/30'
+                      : 'bg-[#1a1a2e] border-[#2d2d44]'
+                  }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-xs font-medium text-slate-300">{item.name}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {item.configured ? (
+                    <>
+                      <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      <span className="text-xs text-emerald-400">已配置</span>
+                    </>
+                  ) : item.required ? (
+                    <>
+                      <AlertCircle className="w-3 h-3 text-amber-400" />
+                      <span className="text-xs text-amber-400">必填</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-500">可选</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* API Configuration */}
         <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
           <h2 className="text-lg font-semibold text-slate-200 mb-6">API 配置</h2>

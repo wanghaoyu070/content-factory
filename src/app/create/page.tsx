@@ -161,6 +161,10 @@ export default function CreatePage() {
   const [generateProgress, setGenerateProgress] = useState<GenerateProgress | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
+  // 自由创作状态
+  const [showFreeCreateModal, setShowFreeCreateModal] = useState(false);
+  const [freeCreateTopic, setFreeCreateTopic] = useState('');
+
   // 收藏状态
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'all' | 'favorites'>('all');
@@ -602,6 +606,42 @@ export default function CreatePage() {
       <Header title="内容创作" />
 
       <div className="p-6">
+        {/* 自由创作入口 */}
+        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-5 border border-indigo-500/30 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
+                <PenTool className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-1">自由创作模式</h3>
+                <p className="text-sm text-slate-400">已有想法？跳过选题，直接开始 AI 创作</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // 创建一个自由创作的虚拟洞察
+                setSelectedInsight({
+                  id: -1,
+                  searchId: -1,
+                  keyword: '自由创作',
+                  title: '自由创作',
+                  description: '',
+                  evidence: '',
+                  suggestedTopics: [],
+                  relatedArticles: [],
+                  createdAt: new Date().toISOString(),
+                });
+                setShowFreeCreateModal(true);
+              }}
+              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+            >
+              <Zap className="w-4 h-4" />
+              开始创作
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 gap-6">
           {/* 左侧：选题列表 */}
           <div className="col-span-2 space-y-6">
@@ -983,6 +1023,115 @@ export default function CreatePage() {
           articleId={articleId}
           onClose={() => setGenerateProgress(null)}
         />
+      )}
+
+      {/* 自由创作模态框 */}
+      {showFreeCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowFreeCreateModal(false)}
+          />
+          <div className="relative w-full max-w-lg bg-[#16162a] rounded-2xl border border-[#2d2d44] shadow-2xl overflow-hidden">
+            {/* 头部 */}
+            <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+            <div className="p-6 border-b border-[#2d2d44]">
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <PenTool className="w-5 h-5 text-purple-400" />
+                自由创作
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                输入你想写的主题，AI 将为你生成完整文章
+              </p>
+            </div>
+
+            {/* 内容 */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  创作主题 <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={freeCreateTopic}
+                  onChange={(e) => setFreeCreateTopic(e.target.value)}
+                  placeholder="例如：2024年AI行业发展趋势分析"
+                  className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  写作风格
+                </label>
+                <div className="flex gap-2">
+                  {styleOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setStyle(opt.value)}
+                      className={`flex-1 px-3 py-2 rounded-xl text-sm transition-colors ${style === opt.value
+                          ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
+                          : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-[#1a1a2e] rounded-xl p-4">
+                <p className="text-xs text-slate-500 mb-2">💡 创作提示</p>
+                <ul className="text-xs text-slate-400 space-y-1">
+                  <li>• 主题越具体，生成效果越好</li>
+                  <li>• 可以包含关键词、行业、角度等</li>
+                  <li>• AI 会自动组织结构和内容</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* 底部操作 */}
+            <div className="px-6 py-4 border-t border-[#2d2d44] flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowFreeCreateModal(false);
+                  setFreeCreateTopic('');
+                }}
+                className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  if (!freeCreateTopic.trim()) {
+                    return;
+                  }
+                  // 使用自由创作主题创建洞察
+                  setSelectedInsight({
+                    id: -1,
+                    searchId: -1,
+                    keyword: freeCreateTopic,
+                    title: freeCreateTopic,
+                    description: `用户自由创作：${freeCreateTopic}`,
+                    evidence: '',
+                    suggestedTopics: [freeCreateTopic],
+                    relatedArticles: [],
+                    createdAt: new Date().toISOString(),
+                  });
+                  setShowFreeCreateModal(false);
+                  // 触发生成
+                  handleGenerate();
+                }}
+                disabled={!freeCreateTopic.trim() || generating}
+                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                开始创作
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
