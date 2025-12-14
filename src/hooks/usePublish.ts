@@ -84,12 +84,15 @@ export function usePublish() {
             const response = await fetch('/api/settings');
             const result = await response.json();
 
-            if (result.success && result.data?.wechatPublishApiUrl) {
+            // 正确读取设置：wechatPublish.endpoint 和 wechatPublish.apiKey
+            const wechatPublishConfig = result.data?.wechatPublish;
+
+            if (result.success && wechatPublishConfig?.endpoint && wechatPublishConfig?.apiKey) {
                 const accountsResponse = await fetch(
-                    `${result.data.wechatPublishApiUrl}/wechat/accounts`,
+                    `${wechatPublishConfig.endpoint}/wechat/accounts`,
                     {
                         headers: {
-                            Authorization: `Bearer ${result.data.wechatPublishApiKey}`,
+                            Authorization: `Bearer ${wechatPublishConfig.apiKey}`,
                         },
                     }
                 );
@@ -97,7 +100,11 @@ export function usePublish() {
 
                 if (accountsResult.code === 0 && accountsResult.data) {
                     setWechatAccounts(accountsResult.data);
+                } else {
+                    console.error('获取公众号列表失败:', accountsResult);
                 }
+            } else {
+                console.log('微信公众号发布 API 未配置');
             }
         } catch (error) {
             console.error('获取公众号列表失败:', error);
