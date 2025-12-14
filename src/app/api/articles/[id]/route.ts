@@ -35,6 +35,9 @@ export async function GET(
         source: article.source,
         sourceInsightId: article.source_insight_id,
         sourceSearchId: article.source_search_id,
+        xhsTags: article.xhs_tags,
+        xhsContent: article.xhs_content,
+        xhsTitle: article.xhs_title,
         createdAt: article.created_at,
         updatedAt: article.updated_at,
       },
@@ -78,6 +81,9 @@ export async function PUT(
         coverImage: body.coverImage,
         images: body.images,
         status: body.status,
+        xhsTags: body.xhsTags,
+        xhsContent: body.xhsContent,
+        xhsTitle: body.xhsTitle,
       },
       session.user.id
     );

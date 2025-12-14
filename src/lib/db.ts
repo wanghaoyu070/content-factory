@@ -186,6 +186,11 @@ db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
 // Add onboarding_completed column to users table
 ensureColumn('users', 'onboarding_completed', 'INTEGER DEFAULT 0');
 
+// Add Xiaohongshu related fields to articles
+ensureColumn('articles', 'xhs_tags', 'TEXT'); // 小红书话题标签 JSON 数组
+ensureColumn('articles', 'xhs_content', 'TEXT'); // 小红书版本内容（精简版）
+ensureColumn('articles', 'xhs_title', 'TEXT'); // 小红书版本标题（可选不同标题）
+
 // Create insight_favorites table for user favorites
 db.exec(`
   CREATE TABLE IF NOT EXISTS insight_favorites (
@@ -265,6 +270,9 @@ export interface ArticleRecord {
   source: string;
   source_insight_id: number | null;
   source_search_id: number | null;
+  xhs_tags: string | null;
+  xhs_content: string | null;
+  xhs_title: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -738,6 +746,9 @@ export function updateArticle(
     coverImage?: string;
     images?: string[];
     status?: string;
+    xhsTags?: string;
+    xhsContent?: string;
+    xhsTitle?: string;
   },
   userId?: number
 ): void {
@@ -763,6 +774,18 @@ export function updateArticle(
   if (updates.status !== undefined) {
     fields.push('status = ?');
     values.push(updates.status);
+  }
+  if (updates.xhsTags !== undefined) {
+    fields.push('xhs_tags = ?');
+    values.push(updates.xhsTags);
+  }
+  if (updates.xhsContent !== undefined) {
+    fields.push('xhs_content = ?');
+    values.push(updates.xhsContent);
+  }
+  if (updates.xhsTitle !== undefined) {
+    fields.push('xhs_title = ?');
+    values.push(updates.xhsTitle);
   }
 
   if (fields.length === 0) return;
