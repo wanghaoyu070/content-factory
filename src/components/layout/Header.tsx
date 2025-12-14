@@ -35,10 +35,21 @@ export default function Header({ title, action }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [enableSwipe, setEnableSwipe] = useState(false);
   const touchStartRef = useRef<{ x: number; y: number; isEdge: boolean } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const handleChange = () => setEnableSwipe(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // 全局手势监听：从屏幕左边缘向右滑动打开抽屉
   useEffect(() => {
+    if (!enableSwipe) return undefined;
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
       const isEdge = touch.clientX <= EDGE_THRESHOLD;
@@ -67,19 +78,17 @@ export default function Header({ title, action }: HeaderProps) {
       touchStartRef.current = null;
     };
 
-    // 只在移动端添加监听
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      document.addEventListener('touchstart', handleTouchStart, { passive: true });
-      document.addEventListener('touchmove', handleTouchMove, { passive: true });
-      document.addEventListener('touchend', handleTouchEnd, { passive: true });
-    }
+    const listenerOptions: AddEventListenerOptions = { passive: true };
+    document.addEventListener('touchstart', handleTouchStart, listenerOptions);
+    document.addEventListener('touchmove', handleTouchMove, listenerOptions);
+    document.addEventListener('touchend', handleTouchEnd, listenerOptions);
 
     return () => {
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchstart', handleTouchStart, listenerOptions);
+      document.removeEventListener('touchmove', handleTouchMove, listenerOptions);
+      document.removeEventListener('touchend', handleTouchEnd, listenerOptions);
     };
-  }, []);
+  }, [enableSwipe]);
 
   // 判断是否为二级页面
   const getSecondaryPageFallback = useCallback(() => {

@@ -5,25 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import {
-  LayoutDashboard,
-  Search,
-  FileText,
-  Settings,
-  PenTool,
   Shield,
   LogOut,
   X,
 } from 'lucide-react';
 import Logo from '@/components/icons/Logo';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { href: '/', label: '仪表盘', icon: LayoutDashboard },
-  { href: '/analysis', label: '选题分析', icon: Search },
-  { href: '/create', label: '内容创作', icon: PenTool },
-  { href: '/articles', label: '发布管理', icon: FileText },
-  { href: '/settings', label: '设置', icon: Settings },
-];
+import { MOBILE_NAV_ITEMS } from '@/components/layout/mobileNavConfig';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -34,33 +22,59 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchCurrent, setTouchCurrent] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const previousOverflow = useRef<string>('');
+  const previouslyFocusedElement = useRef<HTMLElement | null>(null);
 
   const user = session?.user;
   const isAdmin = user?.role === 'admin';
 
   // 关闭抽屉时重置状态
-  useEffect(() => {
-    if (!isOpen) {
-      setTouchStart(null);
-      setTouchCurrent(null);
-      setIsDragging(false);
-    }
-  }, [isOpen]);
+// 关闭时重置滑动状态，避免残留偏移
+// eslint-disable-next-line react-hooks/set-state-in-effect
+useEffect(() => {
+  if (!isOpen) {
+    setTouchStart(null);
+    setTouchCurrent(null);
+    setIsDragging(false);
+  }
+}, [isOpen]);
 
   // 禁止背景滚动
   useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const body = document.body;
+
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      previouslyFocusedElement.current = document.activeElement as HTMLElement;
+      previousOverflow.current = body.style.overflow;
+      body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        closeButtonRef.current?.focus({ preventScroll: true });
+      });
     } else {
-      document.body.style.overflow = '';
+      body.style.overflow = previousOverflow.current;
+      previouslyFocusedElement.current?.focus({ preventScroll: true });
     }
+
     return () => {
-      document.body.style.overflow = '';
+      body.style.overflow = previousOverflow.current;
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   // 手势处理：开始触摸
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -113,7 +127,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   if (!isOpen && !isDragging) return null;
 
   return (
-    <div className="lg:hidden fixed inset-0 z-50">
+    <div className="lg:hidden fixed inset-0 z-50" aria-hidden={!isOpen}>
       {/* 遮罩层 */}
       <div
         className={cn(
@@ -134,6 +148,10 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        role="dialog"
+        aria-modal="true"
+        aria-label="移动导航"
+        tabIndex={-1}
       >
         {/* 头部：Logo + 关闭按钮 */}
         <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
@@ -145,6 +163,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           </Link>
           <button
             onClick={onClose}
+            ref={closeButtonRef}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#1a1a2e] transition-colors"
             aria-label="关闭菜单"
           >
@@ -157,6 +176,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           <div className="p-4 border-b border-[#2d2d44]">
             <div className="flex items-center gap-3">
               {user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.image}
                   alt={user.name || 'avatar'}
@@ -190,7 +210,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         {/* 导航列表 */}
         <nav className="flex-1 p-3 overflow-y-auto">
           <ul className="space-y-1">
-            {navItems.map((item) => {
+            {MOBILE_NAV_ITEMS.map((item) => {
               const isActive =
                 pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
               const Icon = item.icon;
