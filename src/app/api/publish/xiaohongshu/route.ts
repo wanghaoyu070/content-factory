@@ -45,6 +45,13 @@ function extractContentAndImages(htmlContent: string): { text: string; images: s
 export async function POST(request: Request) {
   try {
     const session = await auth();
+
+    console.log('[Xiaohongshu API] Session check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id
+    });
+
     if (!session?.user) {
       return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
     }
@@ -62,7 +69,18 @@ export async function POST(request: Request) {
     }
 
     // 获取配置
+    console.log('[Xiaohongshu API] Environment variables:', {
+      XIAOHONGSHU_PUBLISH_ENDPOINT: process.env.XIAOHONGSHU_PUBLISH_ENDPOINT ? 'SET' : 'NOT SET',
+      XIAOHONGSHU_PUBLISH_API_KEY: process.env.XIAOHONGSHU_PUBLISH_API_KEY ? 'SET' : 'NOT SET',
+    });
+
     const config = getXiaohongshuPublishConfig(session.user.id);
+    console.log('[Xiaohongshu API] Config result:', {
+      hasConfig: !!config,
+      hasEndpoint: !!config?.endpoint,
+      hasApiKey: !!config?.apiKey,
+    });
+
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
         { success: false, error: '请先配置小红书发布API（环境变量或设置页面）' },

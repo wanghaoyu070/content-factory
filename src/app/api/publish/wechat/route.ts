@@ -45,22 +45,35 @@ type RequestBody = GetAccountsRequest | PublishArticleRequest;
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
-    }
-
     const body: RequestBody = await request.json();
 
-    const config = getWechatPublishConfig(session.user.id);
-    if (!config || !config.endpoint || !config.apiKey) {
-      return NextResponse.json(
-        { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
-        { status: 400 }
-      );
-    }
+    console.log('[Wechat API] Session check:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      action: body.action
+    });
 
-    // 获取公众号列表
+    // 获取配置 - 优先环境变量，其次用户数据库配置
+    const config = getWechatPublishConfig(session?.user?.id);
+    console.log('[Wechat API] Config check:', {
+      hasConfig: !!config,
+      hasEndpoint: !!config?.endpoint,
+      hasApiKey: !!config?.apiKey,
+      endpoint: config?.endpoint
+    });
+
+    // 获取账号列表 - 只要有配置就可以，不强制登录
     if (body.action === 'get_accounts') {
+      if (!config || !config.endpoint || !config.apiKey) {
+        return NextResponse.json(
+          { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
+          { status: 400 }
+        );
+      }
+
+      console.log('[Wechat API] Fetching accounts from:', `${config.endpoint}/api/openapi/wechat-accounts`);
+
       const response = await fetch(`${config.endpoint}/api/openapi/wechat-accounts`, {
         method: 'POST',
         headers: {
@@ -70,6 +83,8 @@ export async function POST(request: Request) {
       });
 
       const raw = await response.text();
+      console.log('[Wechat API] Remote response:', { status: response.status, raw: raw.substring(0, 500) });
+
       let data: RemoteWechatAccountsResponse | null = null;
       try {
         data = JSON.parse(raw) as RemoteWechatAccountsResponse;
@@ -92,12 +107,27 @@ export async function POST(request: Request) {
         );
       }
 
+      console.log('[Wechat API] Accounts found:', data.data?.accounts?.length || 0);
+
       // 正确提取accounts数组
       return NextResponse.json({ success: true, data: data.data?.accounts || [] });
     }
 
-    // 发布文章
+    // 发布文章 - 需要登录和配置
     if (body.action === 'publish') {
+      // 发布操作必须登录
+      if (!session?.user?.id) {
+        return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      }
+
+      // 发布操作必须有配置
+      if (!config || !config.endpoint || !config.apiKey) {
+        return NextResponse.json(
+          { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
+          { status: 400 }
+        );
+      }
+
       const {
         articleId,
         wechatAppid,

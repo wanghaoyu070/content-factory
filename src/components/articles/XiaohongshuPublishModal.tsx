@@ -9,6 +9,7 @@ interface XhsResult {
     title: string;
     imageCount: number;
     publishUrl: string;
+    qrImageUrl?: string;
 }
 
 interface XiaohongshuPublishModalProps {
