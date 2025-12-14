@@ -8,6 +8,7 @@ import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
 import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List, Heading1, Heading2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ImageUploadModal } from '@/components/ui/ImageUploadModal';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
 
@@ -122,21 +123,6 @@ export default function ArticleEditPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  // AI 生成的示例图片（未来将支持本地上传和 AI 生成）
-  const sampleImages = [
-    'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
-    'https://images.unsplash.com/photo-1684163761883-8a1e3f3e3e3e?w=400',
-    'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400',
-    'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400',
-    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400',
-    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400',
-  ];
-
-  const addImage = (url: string) => {
-    setImages([...images, url]);
-    setShowImageModal(false);
   };
 
   const removeImage = (index: number) => {
@@ -383,36 +369,15 @@ export default function ArticleEditPage() {
         </div>
       </div>
 
-      {/* Image Modal */}
-      {showImageModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-800">选择图片</h3>
-              <button
-                onClick={() => setShowImageModal(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {sampleImages.map((img, index) => (
-                <button
-                  key={index}
-                  onClick={() => addImage(img)}
-                  className="relative group overflow-hidden rounded-lg"
-                >
-                  <img src={img} alt="" className="w-full h-32 object-cover" />
-                  <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/30 transition-colors flex items-center justify-center">
-                    <Plus className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 图片上传模态框 */}
+      <ImageUploadModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        onImageSelect={(url) => {
+          setImages([...images, url]);
+        }}
+        existingImages={images}
+      />
     </div>
   );
 }
