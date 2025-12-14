@@ -16,6 +16,7 @@ interface XiaohongshuPublishModalProps {
     onClose: () => void;
     isPublishing: boolean;
     result: XhsResult | null;
+    error?: string | null;
 }
 
 export function XiaohongshuPublishModal({
@@ -23,6 +24,7 @@ export function XiaohongshuPublishModal({
     onClose,
     isPublishing,
     result,
+    error,
 }: XiaohongshuPublishModalProps) {
     const handleCopyLink = () => {
         if (result?.publishUrl) {
@@ -62,7 +64,13 @@ export function XiaohongshuPublishModal({
                     {/* 二维码 */}
                     <div className="flex justify-center mb-6">
                         <div className="bg-white p-4 rounded-xl">
-                            {result.publishUrl ? (
+                            {result.qrImageUrl ? (
+                                <img
+                                    src={result.qrImageUrl}
+                                    alt="小红书二维码"
+                                    className="w-48 h-48 object-contain"
+                                />
+                            ) : result.publishUrl ? (
                                 <QRCodeSVG
                                     value={result.publishUrl}
                                     size={192}
@@ -113,13 +121,14 @@ export function XiaohongshuPublishModal({
                         <div className="flex gap-2">
                             <input
                                 type="text"
-                                value={result.publishUrl}
+                                value={result.publishUrl || '未返回链接'}
                                 readOnly
                                 className="flex-1 px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 text-xs"
                             />
                             <button
                                 onClick={handleCopyLink}
-                                className="px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 hover:text-slate-200 text-xs"
+                                disabled={!result.publishUrl}
+                                className="px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 hover:text-slate-200 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 复制
                             </button>
@@ -134,6 +143,18 @@ export function XiaohongshuPublishModal({
                         完成
                     </button>
                 </>
+            ) : error ? (
+                <div className="py-10 text-center">
+                    <div className="text-4xl mb-3">😥</div>
+                    <h3 className="text-lg font-semibold text-slate-200 mb-2">生成失败</h3>
+                    <p className="text-sm text-slate-400 mb-6">{error}</p>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm text-white bg-red-500/80 hover:bg-red-500 rounded-lg"
+                    >
+                        关闭
+                    </button>
+                </div>
             ) : null}
         </Modal>
     );

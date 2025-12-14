@@ -5,7 +5,7 @@ import { getXiaohongshuPublishConfig } from '@/lib/config';
 
 // 请求参数
 interface PublishRequest {
-  articleId: number;
+  articleId: number | string;
   tags?: string[];
 }
 
@@ -51,9 +51,10 @@ export async function POST(request: Request) {
 
     const body: PublishRequest = await request.json();
     const { articleId, tags = [] } = body;
+    const numericArticleId = Number(articleId);
 
     // 验证参数
-    if (!articleId) {
+    if (!numericArticleId || Number.isNaN(numericArticleId)) {
       return NextResponse.json(
         { success: false, error: '缺少必要参数: articleId' },
         { status: 400 }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     }
 
     // 获取文章内容
-    const article = getArticleById(articleId, session.user.id);
+    const article = getArticleById(numericArticleId, session.user.id);
     if (!article) {
       return NextResponse.json(
         { success: false, error: '文章不存在' },
@@ -130,17 +131,23 @@ export async function POST(request: Request) {
       }),
     });
 
-    const publishData = await publishResponse.json();
+    let publishData: Record<string, any> = {};
+    try {
+      publishData = await publishResponse.json();
+    } catch (error) {
+      console.error('解析小红书发布响应失败:', error);
+    }
 
     // 调试日志：打印API返回的完整数据
     console.log('小红书API返回数据:', JSON.stringify(publishData, null, 2));
 
     if (publishData.success) {
       // 更新文章状态为已发布
-      updateArticle(articleId, { status: 'published' }, session.user.id);
+      updateArticle(numericArticleId, { status: 'published' }, session.user.id);
 
       // 根据API文档，publish_url 是发布页面URL，用于生成二维码
       const publishUrl = publishData.data?.publish_url;
+      const qrImageUrl = publishData.data?.xiaohongshu_qr_image_url;
 
       console.log('发布URL:', publishUrl);
 
@@ -151,6 +158,7 @@ export async function POST(request: Request) {
           noteId: publishData.data?.note_id,
           title: article.title,
           publishUrl: publishUrl,
+          qrImageUrl,
           coverImage: coverImage,
           imageCount: allImages.length,
           createdAt: publishData.data?.created_at,
@@ -161,7 +169,7 @@ export async function POST(request: Request) {
         success: false,
         error: publishData.error || '发布失败',
         code: publishData.code,
-      });
+      }, { status: publishResponse.status || 500 });
     }
   } catch (error) {
     console.error('小红书发布失败:', error);

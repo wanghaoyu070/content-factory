@@ -28,20 +28,14 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const [isDragging, setIsDragging] = useState(false);
   const previousOverflow = useRef<string>('');
   const previouslyFocusedElement = useRef<HTMLElement | null>(null);
-
-  const user = session?.user;
-  const isAdmin = user?.role === 'admin';
-
-  // 关闭抽屉时重置状态
-// 关闭时重置滑动状态，避免残留偏移
-// eslint-disable-next-line react-hooks/set-state-in-effect
-useEffect(() => {
-  if (!isOpen) {
+  const resetGestureState = useCallback(() => {
     setTouchStart(null);
     setTouchCurrent(null);
     setIsDragging(false);
-  }
-}, [isOpen]);
+  }, []);
+
+  const user = session?.user;
+  const isAdmin = user?.role === 'admin';
 
   // 禁止背景滚动
   useEffect(() => {
@@ -69,12 +63,13 @@ useEffect(() => {
     if (!isOpen) return undefined;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        resetGestureState();
         onClose();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, resetGestureState]);
 
   // 手势处理：开始触摸
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -98,13 +93,13 @@ useEffect(() => {
     const diff = touchStart - touchCurrent;
     // 向左滑动超过 80px 则关闭
     if (diff > 80) {
+      resetGestureState();
       onClose();
+      return;
     }
 
-    setTouchStart(null);
-    setTouchCurrent(null);
-    setIsDragging(false);
-  }, [touchStart, touchCurrent, onClose]);
+    resetGestureState();
+  }, [touchStart, touchCurrent, onClose, resetGestureState]);
 
   // 计算抽屉的位移
   const getDrawerTransform = () => {
@@ -120,8 +115,13 @@ useEffect(() => {
     return 'translateX(0)';
   };
 
-  const handleNavClick = () => {
+  const handleClose = useCallback(() => {
+    resetGestureState();
     onClose();
+  }, [onClose, resetGestureState]);
+
+  const handleNavClick = () => {
+    handleClose();
   };
 
   if (!isOpen && !isDragging) return null;
@@ -134,7 +134,7 @@ useEffect(() => {
           'absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
           isOpen ? 'opacity-100' : 'opacity-0'
         )}
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* 抽屉 */}
@@ -162,7 +162,7 @@ useEffect(() => {
             </span>
           </Link>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             ref={closeButtonRef}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#1a1a2e] transition-colors"
             aria-label="关闭菜单"
@@ -259,7 +259,10 @@ useEffect(() => {
         {user && (
           <div className="p-3 border-t border-[#2d2d44]">
             <button
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => {
+                signOut({ callbackUrl: '/' });
+                handleClose();
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition-colors"
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />

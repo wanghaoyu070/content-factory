@@ -14,8 +14,11 @@ interface RemoteWechatAccount {
 }
 
 interface RemoteWechatAccountsResponse {
-  code: number;
-  data?: RemoteWechatAccount[];
+  success: boolean;
+  data?: {
+    accounts: RemoteWechatAccount[];
+    total: number;
+  };
   error?: string;
   message?: string;
 }
@@ -28,11 +31,12 @@ interface GetAccountsRequest {
 // 发布文章请求
 interface PublishArticleRequest {
   action: 'publish';
-  articleId: number;
+  articleId: number | string;
   wechatAppid: string;
   contentFormat?: 'markdown' | 'html';
   articleType?: 'news' | 'newspic';
   author?: string;
+  summary?: string;
 }
 
 type RequestBody = GetAccountsRequest | PublishArticleRequest;
@@ -80,21 +84,32 @@ export async function POST(request: Request) {
         );
       }
 
-      if (data.code !== 0) {
+      // 根据实际API返回格式判断成功（API返回 { success: true, data: { accounts: [...] } }）
+      if (!data.success) {
         return NextResponse.json(
           { success: false, error: data.error || data.message || '获取公众号列表失败' },
           { status: 500 }
         );
       }
 
-      return NextResponse.json({ success: true, data: data.data || [] });
+      // 正确提取accounts数组
+      return NextResponse.json({ success: true, data: data.data?.accounts || [] });
     }
 
     // 发布文章
     if (body.action === 'publish') {
-      const { articleId, wechatAppid, contentFormat = 'html', articleType = 'news', author } = body;
+      const {
+        articleId,
+        wechatAppid,
+        contentFormat = 'html',
+        articleType = 'news',
+        author,
+        summary,
+      } = body;
 
-      if (!articleId || !wechatAppid) {
+      const numericArticleId = Number(articleId);
+
+      if (!numericArticleId || Number.isNaN(numericArticleId) || !wechatAppid) {
         return NextResponse.json(
           { success: false, error: '缺少必要参数: articleId, wechatAppid' },
           { status: 400 }
@@ -102,13 +117,30 @@ export async function POST(request: Request) {
       }
 
       // 获取文章内容
-      const article = getArticleById(articleId, session.user.id);
+      const article = getArticleById(numericArticleId, session.user.id);
       if (!article) {
         return NextResponse.json(
           { success: false, error: '文章不存在' },
           { status: 404 }
         );
       }
+
+      const stripHtml = (content: string) => content.replace(/<[^>]*>/g, '');
+      const fallbackSummary = stripHtml(article.content || '').slice(0, 120);
+      const finalSummary = summary?.trim()
+        ? summary.trim().slice(0, 120)
+        : fallbackSummary;
+
+      const payload = {
+        wechatAppid,
+        title: article.title,
+        content: article.content,
+        summary: finalSummary,
+        coverImage: article.cover_image || undefined,
+        author: author?.trim() || undefined,
+        contentFormat,
+        articleType,
+      };
 
       // 调用公众号发布API
       const publishResponse = await fetch(`${config.endpoint}/api/openapi/wechat-publish`, {
@@ -117,23 +149,19 @@ export async function POST(request: Request) {
           'X-API-Key': config.apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          wechatAppid,
-          title: article.title,
-          content: article.content,
-          summary: article.content?.slice(0, 120).replace(/<[^>]*>/g, '') || '',
-          coverImage: article.cover_image || undefined,
-          author: author || undefined,
-          contentFormat,
-          articleType,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const publishData = await publishResponse.json();
+      let publishData: Record<string, any> = {};
+      try {
+        publishData = await publishResponse.json();
+      } catch (error) {
+        console.error('解析公众号发布响应失败:', error);
+      }
 
       if (publishResponse.ok && publishData.success) {
         // 更新文章状态为已发布
-        updateArticle(articleId, { status: 'published' }, session.user.id);
+        updateArticle(numericArticleId, { status: 'published' }, session.user.id);
 
         return NextResponse.json({
           success: true,
@@ -148,9 +176,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: false,
-        error: publishData.error || '发布失败',
+        error: publishData.error || publishData.message || '发布失败',
         code: publishData.code,
-      });
+      }, { status: publishResponse.status || 500 });
     }
 
     return NextResponse.json(

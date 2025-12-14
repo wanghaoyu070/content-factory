@@ -102,6 +102,7 @@ export default function ArticlesPage() {
     showXhsModal,
     xhsPublishing,
     xhsResult,
+    xhsError,
     openXhsPublishModal,
     closeXhsPublishModal,
     publishingId,
@@ -555,6 +556,7 @@ export default function ArticlesPage() {
         onClose={closeXhsPublishModal}
         isPublishing={xhsPublishing}
         result={xhsResult}
+        error={xhsError}
       />
 
       {/* 确认对话框 */}

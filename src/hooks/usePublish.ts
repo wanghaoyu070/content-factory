@@ -19,12 +19,14 @@ export interface WechatPublishConfig {
     author: string;
     articleType: 'news' | 'newspic';
     contentFormat: 'html' | 'markdown';
+    summary: string;
 }
 
 export interface XhsPublishResult {
     publishUrl: string;
     title: string;
     imageCount: number;
+    qrImageUrl?: string;
 }
 
 const PUBLISH_CONFIG_STORAGE_KEY = 'wechat_publish_config';
@@ -34,6 +36,7 @@ const DEFAULT_CONFIG: WechatPublishConfig = {
     author: '',
     articleType: 'news',
     contentFormat: 'html',
+    summary: '',
 };
 
 // ===== Hook 实现 =====
@@ -51,6 +54,7 @@ export function usePublish() {
     const [selectedArticleForXhs, setSelectedArticleForXhs] = useState<string | null>(null);
     const [xhsPublishing, setXhsPublishing] = useState(false);
     const [xhsResult, setXhsResult] = useState<XhsPublishResult | null>(null);
+    const [xhsError, setXhsError] = useState<string | null>(null);
 
     // 通用发布状态
     const [publishingId, setPublishingId] = useState<string | null>(null);
@@ -72,7 +76,8 @@ export function usePublish() {
     const saveConfig = useCallback((config: Partial<WechatPublishConfig>) => {
         setWechatConfig((prev) => {
             const newConfig = { ...prev, ...config };
-            localStorage.setItem(PUBLISH_CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+            const { summary: _summary, ...persistable } = newConfig;
+            localStorage.setItem(PUBLISH_CONFIG_STORAGE_KEY, JSON.stringify(persistable));
             return newConfig;
         });
     }, []);
@@ -103,6 +108,7 @@ export function usePublish() {
 
     const openWechatPublishModal = useCallback((articleId: string) => {
         setSelectedArticleForWechat(articleId);
+        setWechatConfig((prev) => ({ ...prev, summary: '' }));
         setShowWechatModal(true);
         fetchWechatAccounts();
     }, [fetchWechatAccounts]);
@@ -165,6 +171,7 @@ export function usePublish() {
         setShowXhsModal(false);
         setSelectedArticleForXhs(null);
         setXhsResult(null);
+        setXhsError(null);
     }, []);
 
     const publishToXiaohongshu = useCallback(async (articleId: string): Promise<boolean> => {
@@ -185,28 +192,31 @@ export function usePublish() {
                     publishUrl: result.data.publishUrl,
                     title: result.data.title,
                     imageCount: result.data.imageCount,
+                    qrImageUrl: result.data.qrImageUrl,
                 });
+                setXhsError(null);
                 return true;
             } else {
                 toast.error('生成发布链接失败', { description: result.error });
-                closeXhsPublishModal();
+                setXhsError(result.error || '生成发布链接失败');
                 return false;
             }
         } catch (error) {
             console.error('发布到小红书失败:', error);
             toast.error('发布失败', { description: '网络异常' });
-            closeXhsPublishModal();
+            setXhsError('网络异常');
             return false;
         } finally {
             setXhsPublishing(false);
             setPublishingId(null);
         }
-    }, [closeXhsPublishModal]);
+    }, []);
 
     const openXhsPublishModal = useCallback((articleId: string) => {
         setSelectedArticleForXhs(articleId);
         setShowXhsModal(true);
         setXhsResult(null);
+        setXhsError(null);
         publishToXiaohongshu(articleId);
     }, [publishToXiaohongshu]);
 
@@ -228,6 +238,7 @@ export function usePublish() {
         selectedArticleForXhs,
         xhsPublishing,
         xhsResult,
+        xhsError,
         openXhsPublishModal,
         closeXhsPublishModal,
 

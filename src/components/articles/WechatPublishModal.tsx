@@ -19,6 +19,7 @@ interface PublishConfig {
     author: string;
     articleType: 'news' | 'newspic';
     contentFormat: 'html' | 'markdown';
+    summary: string;
 }
 
 interface WechatPublishModalProps {
@@ -143,6 +144,25 @@ export function WechatPublishModal({
             {/* 发布配置 */}
             <div className="space-y-4">
                 <h4 className="text-sm font-medium text-slate-300">发布配置</h4>
+
+                {/* 摘要 */}
+                <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">
+                        文章摘要（选填，最多120字）
+                    </label>
+                    <textarea
+                        value={config.summary}
+                        onChange={(e) =>
+                            onConfigChange({ ...config, summary: e.target.value.slice(0, 120) })
+                        }
+                        rows={3}
+                        placeholder="用于公众号摘要展示"
+                        className="w-full px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                    />
+                    <div className="text-right text-xs text-slate-500 mt-1">
+                        {config.summary.length}/120
+                    </div>
+                </div>
 
                 {/* 作者名称 */}
                 <div>

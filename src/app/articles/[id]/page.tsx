@@ -55,6 +55,7 @@ export default function ArticleEditPage() {
     showXhsModal,
     xhsPublishing,
     xhsResult,
+    xhsError,
     openXhsPublishModal,
     closeXhsPublishModal,
     publishingId,
@@ -572,6 +573,7 @@ export default function ArticleEditPage() {
         onClose={closeXhsPublishModal}
         isPublishing={xhsPublishing}
         result={xhsResult}
+        error={xhsError}
       />
     </div>
   );
