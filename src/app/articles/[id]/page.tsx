@@ -52,6 +52,7 @@ export default function ArticleEditPage() {
     openWechatPublishModal,
     closeWechatPublishModal,
     publishToWechat,
+    publishingToWechat,
     showXhsModal,
     xhsPublishing,
     xhsResult,
@@ -565,6 +566,7 @@ export default function ArticleEditPage() {
         loadingAccounts={loadingAccounts}
         config={wechatConfig}
         onConfigChange={setWechatConfig}
+        publishing={publishingToWechat}
       />
 
       {/* 小红书发布模态框 */}

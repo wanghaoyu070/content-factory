@@ -99,6 +99,7 @@ export default function ArticlesPage() {
     openWechatPublishModal,
     closeWechatPublishModal,
     publishToWechat,
+    publishingToWechat,
     showXhsModal,
     xhsPublishing,
     xhsResult,
@@ -458,71 +459,71 @@ export default function ArticlesPage() {
             </div>
             {/* 桌面端表格视图 */}
             <div className="hidden lg:block glass-card rounded-2xl overflow-visible animate-fade-in">
-            <table className="w-full">
-              <thead className="bg-white/5 border-b border-white/5">
-                <tr>
-                  <th className="w-12 px-4 py-3">
-                    <button onClick={toggleSelectAll} className="text-slate-500 hover:text-slate-300 transition-colors">
-                      {selectedIds.length === filteredArticles.length && filteredArticles.length > 0 ? (
-                        <CheckSquare className="w-5 h-5 text-indigo-400" />
-                      ) : (
-                        <Square className="w-5 h-5" />
-                      )}
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-3">
-                    <button
-                      onClick={() => toggleSort('title')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      标题
-                      {getSortIcon('title')}
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-3 w-28">
-                    <button
-                      onClick={() => toggleSort('status')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      状态
-                      {getSortIcon('status')}
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-3 w-32">
-                    <button
-                      onClick={() => toggleSort('createdAt')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      创建时间
-                      {getSortIcon('createdAt')}
-                    </button>
-                  </th>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-40">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredArticles.map((article, index) => (
-                  <ArticleRow
-                    key={article.id}
-                    article={article}
-                    isSelected={selectedIds.includes(article.id)}
-                    isDropdownOpen={openDropdownId === article.id}
-                    isPublishing={publishingId === article.id}
-                    onToggleSelect={toggleSelect}
-                    onOpenDropdown={setOpenDropdownId}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDelete}
-                    onCopy={handleCopy}
-                    onArchive={handleArchive}
-                    onExport={handleExport}
-                    onPreview={(article) => setPreviewArticle(article)}
-                    onPublishToWechat={openWechatPublishModal}
-                    onPublishToXiaohongshu={openXhsPublishModal}
-                    formatDate={formatDate}
-                  />
-                ))}
-              </tbody>
-            </table>
+              <table className="w-full">
+                <thead className="bg-white/5 border-b border-white/5">
+                  <tr>
+                    <th className="w-12 px-4 py-3">
+                      <button onClick={toggleSelectAll} className="text-slate-500 hover:text-slate-300 transition-colors">
+                        {selectedIds.length === filteredArticles.length && filteredArticles.length > 0 ? (
+                          <CheckSquare className="w-5 h-5 text-indigo-400" />
+                        ) : (
+                          <Square className="w-5 h-5" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="text-left px-4 py-3">
+                      <button
+                        onClick={() => toggleSort('title')}
+                        className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        标题
+                        {getSortIcon('title')}
+                      </button>
+                    </th>
+                    <th className="text-left px-4 py-3 w-28">
+                      <button
+                        onClick={() => toggleSort('status')}
+                        className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        状态
+                        {getSortIcon('status')}
+                      </button>
+                    </th>
+                    <th className="text-left px-4 py-3 w-32">
+                      <button
+                        onClick={() => toggleSort('createdAt')}
+                        className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        创建时间
+                        {getSortIcon('createdAt')}
+                      </button>
+                    </th>
+                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-40">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredArticles.map((article, index) => (
+                    <ArticleRow
+                      key={article.id}
+                      article={article}
+                      isSelected={selectedIds.includes(article.id)}
+                      isDropdownOpen={openDropdownId === article.id}
+                      isPublishing={publishingId === article.id}
+                      onToggleSelect={toggleSelect}
+                      onOpenDropdown={setOpenDropdownId}
+                      onStatusChange={handleStatusChange}
+                      onDelete={handleDelete}
+                      onCopy={handleCopy}
+                      onArchive={handleArchive}
+                      onExport={handleExport}
+                      onPreview={(article) => setPreviewArticle(article)}
+                      onPublishToWechat={openWechatPublishModal}
+                      onPublishToXiaohongshu={openXhsPublishModal}
+                      formatDate={formatDate}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}
@@ -548,6 +549,7 @@ export default function ArticlesPage() {
         loadingAccounts={loadingAccounts}
         config={wechatConfig}
         onConfigChange={setWechatConfig}
+        publishing={publishingToWechat}
       />
 
       {/* 小红书发布模态框 */}
