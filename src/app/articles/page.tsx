@@ -99,7 +99,6 @@ export default function ArticlesPage() {
     openWechatPublishModal,
     closeWechatPublishModal,
     publishToWechat,
-    publishingToWechat,
     showXhsModal,
     xhsPublishing,
     xhsResult,
@@ -549,7 +548,6 @@ export default function ArticlesPage() {
         loadingAccounts={loadingAccounts}
         config={wechatConfig}
         onConfigChange={setWechatConfig}
-        publishing={publishingToWechat}
       />
 
       {/* 小红书发布模态框 */}

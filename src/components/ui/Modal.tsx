@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export interface ModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose?: () => void;
     title?: string;
     subtitle?: string;
     children: ReactNode;
@@ -43,7 +43,7 @@ export function Modal({
     // ESC 键关闭
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
-            if (closeOnEscape && e.key === 'Escape') {
+            if (closeOnEscape && e.key === 'Escape' && onClose) {
                 onClose();
             }
         },
@@ -77,7 +77,7 @@ export function Modal({
             {/* 背景遮罩 */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-backdrop"
-                onClick={closeOnOverlayClick ? onClose : undefined}
+                onClick={closeOnOverlayClick && onClose ? onClose : undefined}
             />
 
             {/* 模态框内容 */}
@@ -103,7 +103,7 @@ export function Modal({
                                 <p className="text-sm text-slate-400 mt-1">{subtitle}</p>
                             )}
                         </div>
-                        {showCloseButton && (
+                        {showCloseButton && onClose && (
                             <button
                                 ref={closeButtonRef}
                                 onClick={onClose}
