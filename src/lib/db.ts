@@ -12,7 +12,41 @@ if (!fs.existsSync(dataDir)) {
 
 const db = new Database(dbPath);
 
+// 安全性：表名白名单，防止 SQL 注入
+const ALLOWED_TABLES = [
+  'users',
+  'invite_codes',
+  'search_records',
+  'source_articles',
+  'settings',
+  'article_summaries',
+  'topic_insights',
+  'articles',
+  'insight_favorites',
+] as const;
+
+type AllowedTable = typeof ALLOWED_TABLES[number];
+
+function isValidTableName(table: string): table is AllowedTable {
+  return ALLOWED_TABLES.includes(table as AllowedTable);
+}
+
+// 安全性：列名验证（只允许字母、数字、下划线）
+function isValidColumnName(column: string): boolean {
+  return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column);
+}
+
 function columnExists(table: string, column: string): boolean {
+  // 安全检查：验证表名和列名
+  if (!isValidTableName(table)) {
+    console.error(`无效的表名: ${table}`);
+    return false;
+  }
+  if (!isValidColumnName(column)) {
+    console.error(`无效的列名: ${column}`);
+    return false;
+  }
+
   try {
     const stmt = db.prepare(`PRAGMA table_info(${table})`);
     const columns = stmt.all() as { name: string }[];
@@ -52,6 +86,21 @@ function ensureColumn(
   definition: string,
   onAdd?: () => void
 ) {
+  // 安全检查：验证表名和列名
+  if (!isValidTableName(table)) {
+    console.error(`ensureColumn: 无效的表名: ${table}`);
+    return;
+  }
+  if (!isValidColumnName(column)) {
+    console.error(`ensureColumn: 无效的列名: ${column}`);
+    return;
+  }
+  // 安全检查：验证列定义（只允许安全的 SQL 类型定义）
+  if (!/^[A-Z]+(\s+DEFAULT\s+('?[\w\-]+'?|\d+|NULL))?$/i.test(definition)) {
+    console.error(`ensureColumn: 无效的列定义: ${definition}`);
+    return;
+  }
+
   if (!columnExists(table, column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     if (onAdd) onAdd();
@@ -845,6 +894,56 @@ export function archiveArticle(id: number, userId?: number): void {
   userId ? stmt.run(id, userId) : stmt.run(id);
 }
 
+// 批量删除文章
+export function batchDeleteArticles(ids: number[], userId: number): { success: number; failed: number } {
+  let success = 0;
+  let failed = 0;
+
+  const deleteStmt = db.prepare('DELETE FROM articles WHERE id = ? AND user_id = ?');
+  const checkStmt = db.prepare('SELECT id FROM articles WHERE id = ? AND user_id = ?');
+
+  const batchDelete = db.transaction((articleIds: number[]) => {
+    for (const id of articleIds) {
+      const exists = checkStmt.get(id, userId);
+      if (exists) {
+        deleteStmt.run(id, userId);
+        success++;
+      } else {
+        failed++;
+      }
+    }
+  });
+
+  batchDelete(ids);
+  return { success, failed };
+}
+
+// 批量归档文章
+export function batchArchiveArticles(ids: number[], userId: number): { success: number; failed: number } {
+  let success = 0;
+  let failed = 0;
+
+  const archiveStmt = db.prepare(
+    "UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+  );
+  const checkStmt = db.prepare('SELECT id FROM articles WHERE id = ? AND user_id = ?');
+
+  const batchArchive = db.transaction((articleIds: number[]) => {
+    for (const id of articleIds) {
+      const exists = checkStmt.get(id, userId);
+      if (exists) {
+        archiveStmt.run(id, userId);
+        success++;
+      } else {
+        failed++;
+      }
+    }
+  });
+
+  batchArchive(ids);
+  return { success, failed };
+}
+
 // 获取非归档文章
 export function getActiveArticles(userId?: number): ArticleRecord[] {
   const stmt = userId
@@ -1000,6 +1099,30 @@ export interface RecentActivity {
   title: string;
   time: string;
   id: number;
+}
+
+// 合并的仪表盘数据查询（减少数据库往返）
+export interface DashboardData {
+  stats: DashboardStats;
+  trend: DailyAnalysis[];
+  statusDistribution: StatusDistribution[];
+  topKeywords: KeywordRank[];
+  recentActivities: RecentActivity[];
+}
+
+export function getAllDashboardData(userId: number, days: number = 7, keywordLimit: number = 10, activityLimit: number = 10): DashboardData {
+  // 使用事务确保数据一致性
+  const getData = db.transaction(() => {
+    return {
+      stats: getDashboardStats(userId),
+      trend: getAnalysisTrend(days, userId),
+      statusDistribution: getArticleStatusDistribution(userId),
+      topKeywords: getTopKeywords(keywordLimit, userId),
+      recentActivities: getRecentActivities(activityLimit, userId),
+    };
+  });
+
+  return getData();
 }
 
 export function getRecentActivities(limit: number = 10, userId?: number): RecentActivity[] {

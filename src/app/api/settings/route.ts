@@ -2,6 +2,38 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getAllSettings, setSetting } from '@/lib/db';
 
+// 安全性：API 密钥脱敏函数
+function maskApiKey(key: string): string {
+  if (!key || key.length === 0) return '';
+  if (key.length <= 8) return '****';
+  return `${key.slice(0, 4)}****${key.slice(-4)}`;
+}
+
+// 安全性：对包含 apiKey 的对象进行脱敏
+function maskSensitiveData(data: Record<string, unknown>): Record<string, unknown> {
+  const masked: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'object' && value !== null) {
+      const obj = value as Record<string, string>;
+      const maskedObj: Record<string, string> = {};
+
+      for (const [subKey, subValue] of Object.entries(obj)) {
+        if (subKey.toLowerCase().includes('apikey') || subKey.toLowerCase().includes('api_key')) {
+          maskedObj[subKey] = maskApiKey(subValue);
+        } else {
+          maskedObj[subKey] = subValue;
+        }
+      }
+      masked[key] = maskedObj;
+    } else {
+      masked[key] = value;
+    }
+  }
+
+  return masked;
+}
+
 // 从环境变量获取默认配置
 function getEnvDefaults() {
   return {
@@ -70,7 +102,9 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ success: true, data: parsed });
+    // 安全性：对敏感数据进行脱敏后返回
+    const maskedData = maskSensitiveData(parsed);
+    return NextResponse.json({ success: true, data: maskedData });
   } catch (error) {
     console.error('获取设置失败:', error);
     return NextResponse.json(

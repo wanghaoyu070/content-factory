@@ -83,3 +83,32 @@ export async function generateImages(
 
   return results;
 }
+
+// 并行生成图片（提高效率，适用于支持并发的 API）
+export async function generateImagesParallel(
+  config: ImageGenConfig,
+  prompts: string[],
+  concurrency: number = 3 // 默认并发数为3
+): Promise<(GeneratedImage | null)[]> {
+  const results: (GeneratedImage | null)[] = new Array(prompts.length).fill(null);
+
+  // 分批并行处理
+  for (let i = 0; i < prompts.length; i += concurrency) {
+    const batch = prompts.slice(i, i + concurrency);
+    const batchPromises = batch.map((prompt, index) =>
+      generateImage(config, prompt)
+        .then(image => {
+          results[i + index] = image;
+          return image;
+        })
+        .catch(err => {
+          console.error(`生成第 ${i + index + 1} 张图片失败:`, err);
+          return null;
+        })
+    );
+
+    await Promise.all(batchPromises);
+  }
+
+  return results;
+}

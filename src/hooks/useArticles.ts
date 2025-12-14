@@ -257,63 +257,67 @@ export function useArticles(options: UseArticlesOptions = {}): UseArticlesReturn
 
     // ===== 批量操作 =====
     const batchDelete = useCallback(async (ids: string[]): Promise<{ success: number; failed: number }> => {
-        let success = 0;
-        let failed = 0;
+        try {
+            const response = await fetch('/api/articles/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete', ids }),
+            });
+            const result = await response.json();
 
-        for (const id of ids) {
-            try {
-                const response = await fetch(`/api/articles?id=${id}`, { method: 'DELETE' });
-                const result = await response.json();
-                if (result.success) {
-                    success++;
-                    setArticles((prev) => prev.filter((a) => a.id !== id));
-                } else {
-                    failed++;
-                }
-            } catch {
-                failed++;
+            if (result.success) {
+                const { success, failed } = result.data;
+                // 从本地状态中移除已删除的文章
+                setArticles((prev) => prev.filter((a) => !ids.includes(a.id)));
+                setSelectedIds([]);
+
+                if (success > 0) toast.success(`成功删除 ${success} 篇文章`);
+                if (failed > 0) toast.error(`${failed} 篇文章删除失败`);
+
+                return { success, failed };
+            } else {
+                toast.error('批量删除失败', { description: result.error });
+                return { success: 0, failed: ids.length };
             }
+        } catch (err) {
+            toast.error('批量删除失败', { description: '网络异常' });
+            console.error('批量删除失败:', err);
+            return { success: 0, failed: ids.length };
         }
-
-        setSelectedIds([]);
-
-        if (success > 0) toast.success(`成功删除 ${success} 篇文章`);
-        if (failed > 0) toast.error(`${failed} 篇文章删除失败`);
-
-        return { success, failed };
     }, []);
 
     const batchArchive = useCallback(async (ids: string[]): Promise<{ success: number; failed: number }> => {
-        let success = 0;
-        let failed = 0;
+        try {
+            const response = await fetch('/api/articles/batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'archive', ids }),
+            });
+            const result = await response.json();
 
-        for (const id of ids) {
-            try {
-                const response = await fetch('/api/articles', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'archive', id }),
-                });
-                const result = await response.json();
-                if (result.success) {
-                    success++;
-                    setArticles((prev) =>
-                        prev.map((a) => (a.id === id ? { ...a, status: 'archived' as ArticleStatus } : a))
-                    );
-                } else {
-                    failed++;
-                }
-            } catch {
-                failed++;
+            if (result.success) {
+                const { success, failed } = result.data;
+                // 更新本地状态中的文章状态
+                setArticles((prev) =>
+                    prev.map((a) =>
+                        ids.includes(a.id) ? { ...a, status: 'archived' as ArticleStatus } : a
+                    )
+                );
+                setSelectedIds([]);
+
+                if (success > 0) toast.success(`成功归档 ${success} 篇文章`);
+                if (failed > 0) toast.error(`${failed} 篇文章归档失败`);
+
+                return { success, failed };
+            } else {
+                toast.error('批量归档失败', { description: result.error });
+                return { success: 0, failed: ids.length };
             }
+        } catch (err) {
+            toast.error('批量归档失败', { description: '网络异常' });
+            console.error('批量归档失败:', err);
+            return { success: 0, failed: ids.length };
         }
-
-        setSelectedIds([]);
-
-        if (success > 0) toast.success(`成功归档 ${success} 篇文章`);
-        if (failed > 0) toast.error(`${failed} 篇文章归档失败`);
-
-        return { success, failed };
     }, []);
 
     const batchExport = useCallback(async (ids: string[], format: 'markdown' | 'html'): Promise<void> => {

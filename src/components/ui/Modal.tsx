@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, type ReactNode } from 'react';
+import { useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,9 @@ export function Modal({
     closeOnEscape = true,
     footer,
 }: ModalProps) {
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
+
     // ESC 键关闭
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
@@ -51,6 +54,15 @@ export function Modal({
         if (isOpen) {
             document.addEventListener('keydown', handleKeyDown);
             document.body.style.overflow = 'hidden';
+
+            // 焦点管理：打开时聚焦到关闭按钮或模态框
+            setTimeout(() => {
+                if (closeButtonRef.current) {
+                    closeButtonRef.current.focus();
+                } else if (modalRef.current) {
+                    modalRef.current.focus();
+                }
+            }, 0);
         }
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
@@ -70,6 +82,11 @@ export function Modal({
 
             {/* 模态框内容 */}
             <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={title ? 'modal-title' : undefined}
+                tabIndex={-1}
                 className={cn(
                     'relative w-full glass-card rounded-2xl overflow-hidden modal-content',
                     sizeStyles[size]
@@ -80,7 +97,7 @@ export function Modal({
                     <div className="flex items-start justify-between p-6 border-b border-white/5">
                         <div>
                             {title && (
-                                <h2 className="text-xl font-semibold text-slate-100">{title}</h2>
+                                <h2 id="modal-title" className="text-xl font-semibold text-slate-100">{title}</h2>
                             )}
                             {subtitle && (
                                 <p className="text-sm text-slate-400 mt-1">{subtitle}</p>
@@ -88,7 +105,9 @@ export function Modal({
                         </div>
                         {showCloseButton && (
                             <button
+                                ref={closeButtonRef}
                                 onClick={onClose}
+                                aria-label="关闭对话框"
                                 className="p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />

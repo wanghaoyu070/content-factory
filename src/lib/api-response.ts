@@ -78,6 +78,43 @@ export function serverErrorResponse(
     return errorResponse(message, 500, 'INTERNAL_ERROR');
 }
 
+// ===== 自定义错误类 =====
+
+export class ApiError extends Error {
+    constructor(
+        message: string,
+        public statusCode: number = 500,
+        public code: string = 'INTERNAL_ERROR'
+    ) {
+        super(message);
+        this.name = 'ApiError';
+    }
+}
+
+export class UnauthorizedError extends ApiError {
+    constructor(message = '请先登录') {
+        super(message, 401, 'UNAUTHORIZED');
+    }
+}
+
+export class ForbiddenError extends ApiError {
+    constructor(message = '无权限访问') {
+        super(message, 403, 'FORBIDDEN');
+    }
+}
+
+export class NotFoundError extends ApiError {
+    constructor(message = '资源不存在') {
+        super(message, 404, 'NOT_FOUND');
+    }
+}
+
+export class BadRequestError extends ApiError {
+    constructor(message = '请求参数错误') {
+        super(message, 400, 'BAD_REQUEST');
+    }
+}
+
 // ===== 错误处理包装器 =====
 
 type ApiHandler<T> = () => Promise<NextResponse<ApiResponse<T>>>;
@@ -93,6 +130,11 @@ export async function withErrorHandler<T>(
         return await handler();
     } catch (error) {
         console.error('API Error:', error);
+
+        // 处理自定义 ApiError
+        if (error instanceof ApiError) {
+            return errorResponse(error.message, error.statusCode, error.code) as NextResponse<ApiResponse<T>>;
+        }
 
         if (error instanceof Error) {
             // 处理已知的错误类型
@@ -114,6 +156,52 @@ export async function withErrorHandler<T>(
     }
 }
 
+// ===== 重试机制 =====
+
+interface RetryOptions {
+    maxRetries?: number;
+    delayMs?: number;
+    backoffMultiplier?: number;
+    shouldRetry?: (error: unknown) => boolean;
+}
+
+/**
+ * 带重试机制的异步函数执行器
+ * 支持指数退避
+ */
+export async function withRetry<T>(
+    fn: () => Promise<T>,
+    options: RetryOptions = {}
+): Promise<T> {
+    const {
+        maxRetries = 3,
+        delayMs = 1000,
+        backoffMultiplier = 2,
+        shouldRetry = () => true,
+    } = options;
+
+    let lastError: unknown;
+    let currentDelay = delayMs;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (error) {
+            lastError = error;
+
+            if (attempt === maxRetries || !shouldRetry(error)) {
+                throw error;
+            }
+
+            console.warn(`重试第 ${attempt + 1} 次，等待 ${currentDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, currentDelay));
+            currentDelay *= backoffMultiplier;
+        }
+    }
+
+    throw lastError;
+}
+
 // ===== 请求验证工具 =====
 
 /**
@@ -131,5 +219,64 @@ export function validateRequired<T extends Record<string, unknown>>(
     return {
         valid: missing.length === 0,
         missing: missing as string[],
+    };
+}
+
+// ===== 认证中间件 =====
+
+export interface AuthenticatedUser {
+    id: number;
+    email?: string | null;
+    name?: string | null;
+}
+
+export interface AuthenticatedRequest {
+    user: AuthenticatedUser;
+}
+
+type AuthenticatedHandler<T> = (
+    request: Request,
+    context: AuthenticatedRequest
+) => Promise<NextResponse<ApiResponse<T>>>;
+
+/**
+ * 认证中间件包装器
+ * 自动处理用户认证，未登录时返回 401
+ *
+ * @example
+ * export const GET = withAuth(async (request, { user }) => {
+ *   const data = getData(user.id);
+ *   return successResponse(data);
+ * });
+ */
+export function withAuth<T>(
+    handler: AuthenticatedHandler<T>,
+    authFn: () => Promise<{ user?: AuthenticatedUser } | null>
+): (request: Request) => Promise<NextResponse<ApiResponse<T>>> {
+    return async (request: Request) => {
+        try {
+            const session = await authFn();
+            if (!session?.user) {
+                return unauthorizedResponse() as NextResponse<ApiResponse<T>>;
+            }
+
+            return await handler(request, { user: session.user });
+        } catch (error) {
+            console.error('API Error:', error);
+
+            if (error instanceof ApiError) {
+                return errorResponse(error.message, error.statusCode, error.code) as NextResponse<ApiResponse<T>>;
+            }
+
+            if (error instanceof Error) {
+                return serverErrorResponse(
+                    process.env.NODE_ENV === 'development'
+                        ? error.message
+                        : '服务器内部错误'
+                ) as NextResponse<ApiResponse<T>>;
+            }
+
+            return serverErrorResponse() as NextResponse<ApiResponse<T>>;
+        }
     };
 }

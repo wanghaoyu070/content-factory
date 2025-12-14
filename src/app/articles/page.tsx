@@ -437,8 +437,26 @@ export default function ArticlesPage() {
             onPublishToXiaohongshu={openXhsPublishModal}
           />
         ) : (
-          /* 表格视图 */
-          <div className="glass-card rounded-2xl overflow-visible animate-fade-in">
+          /* 表格视图 - 移动端显示卡片，桌面端显示表格 */
+          <>
+            {/* 移动端卡片视图 */}
+            <div className="lg:hidden">
+              <ArticleCardGrid
+                articles={filteredArticles}
+                selectedIds={selectedIds}
+                publishingId={publishingId}
+                onToggleSelect={toggleSelect}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
+                onCopy={handleCopy}
+                onArchive={handleArchive}
+                onExport={handleExport}
+                onPublishToWechat={openWechatPublishModal}
+                onPublishToXiaohongshu={openXhsPublishModal}
+              />
+            </div>
+            {/* 桌面端表格视图 */}
+            <div className="hidden lg:block glass-card rounded-2xl overflow-visible animate-fade-in">
             <table className="w-full">
               <thead className="bg-white/5 border-b border-white/5">
                 <tr>
@@ -504,7 +522,8 @@ export default function ArticlesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 

@@ -169,7 +169,7 @@ export default function DashboardPage() {
         <QuickCreate className="mb-6" />
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
           <StatCard
             title="分析次数"
             value={stats.totalAnalysis}
@@ -201,7 +201,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 图表区域 */}
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
           {/* 近7天分析趋势 - 使用新组件 */}
           <TrendChart data={data?.trend || []} />
 
@@ -210,11 +210,11 @@ export default function DashboardPage() {
         </div>
 
         {/* 下方区域 */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* 热门关键词 - 使用新组件 */}
           <TopKeywordsChart
             data={data?.topKeywords || []}
-            className="col-span-2"
+            className="lg:col-span-2"
           />
 
           {/* 最近活动 */}
@@ -254,7 +254,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 快捷入口 */}
-        <div className="mt-6 grid grid-cols-3 gap-6">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Link
             href="/analysis"
             className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-6 border border-indigo-500/30 hover:border-indigo-500/50 transition-all group"

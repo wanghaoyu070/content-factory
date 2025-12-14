@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { Skeleton, InsightCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -142,7 +143,8 @@ const styleOptions: { value: WritingStyle; label: string; description: string }[
   { value: 'storytelling', label: '故事叙述', description: '有代入感、情感共鸣、引人入胜' },
 ];
 
-export default function CreatePage() {
+function CreatePageContent() {
+  const searchParams = useSearchParams();
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后使用内容创作功能');
   // 页面模式
   const [mode, setMode] = useState<PageMode>('select');
@@ -183,6 +185,9 @@ export default function CreatePage() {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
+  // URL 参数自动选中洞察的标记
+  const autoSelectedRef = useRef(false);
+
   // 初始加载数据
   useEffect(() => {
     if (!isAuthenticated) {
@@ -197,6 +202,29 @@ export default function CreatePage() {
     if (!isAuthenticated || searchFilter === 'all') return;
     fetchData();
   }, [searchFilter, isAuthenticated]);
+
+  // 处理 URL 参数自动选中洞察
+  useEffect(() => {
+    if (autoSelectedRef.current || loading || flatInsights.length === 0) return;
+
+    const insightId = searchParams.get('insightId');
+    const searchId = searchParams.get('searchId');
+
+    if (insightId) {
+      const insight = flatInsights.find(i => i.id === parseInt(insightId));
+      if (insight) {
+        autoSelectedRef.current = true;
+        setSelectedInsight(insight);
+        setExpandedId(insight.id);
+        // 如果有 searchId，设置筛选
+        if (searchId) {
+          setSearchFilter(parseInt(searchId));
+        }
+        // 清除 URL 参数
+        window.history.replaceState({}, '', '/create');
+      }
+    }
+  }, [searchParams, loading, flatInsights]);
 
   // 自动保存逻辑
   const autoSave = useCallback(async () => {
@@ -574,8 +602,8 @@ export default function CreatePage() {
         </div>
 
         {/* 编辑器和预览区域 */}
-        <div className="flex-1 p-6 overflow-hidden">
-          <div className="grid grid-cols-[1fr_1fr] gap-6 h-full">
+        <div className="flex-1 p-4 lg:p-6 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 h-full">
             {/* 左侧：编辑器 */}
             <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden flex flex-col">
               <ArticleEditor
@@ -642,9 +670,9 @@ export default function CreatePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* 左侧：选题列表 */}
-          <div className="col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6 order-2 lg:order-1">
             {/* 筛选器 */}
             <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
               <div className="flex items-center justify-between gap-4 mb-3">
@@ -843,7 +871,7 @@ export default function CreatePage() {
           </div>
 
           {/* 右侧：创作面板 */}
-          <div className="space-y-6">
+          <div className="space-y-4 lg:space-y-6 order-1 lg:order-2">
             {/* 创作设置 */}
             <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
               <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
@@ -1134,5 +1162,18 @@ export default function CreatePage() {
         </div>
       )}
     </div>
+  );
+}
+
+// 导出带 Suspense 包装的组件（解决 useSearchParams 预渲染问题）
+export default function CreatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0f0f23] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <CreatePageContent />
+    </Suspense>
   );
 }

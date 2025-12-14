@@ -189,3 +189,111 @@ header {
 .card-glow:hover::before {
   opacity: 1;
 }
+
+/* ===== 移动端安全区域支持 ===== */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* 底部导航栏样式 */
+@media (max-width: 1023px) {
+  .main-content {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ===== 设计规范系统 (Design System) ===== */
+:root {
+  /* 圆角规范 */
+  --radius-sm: 0.5rem;    /* 8px - 小元素、标签 */
+  --radius-md: 0.75rem;   /* 12px - 按钮、输入框 */
+  --radius-lg: 1rem;      /* 16px - 卡片、模态框 */
+  --radius-xl: 1.5rem;    /* 24px - 大卡片、页面容器 */
+
+  /* 间距规范 */
+  --spacing-xs: 0.5rem;   /* 8px */
+  --spacing-sm: 0.75rem;  /* 12px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+}
+
+/* 次要按钮 */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--foreground-muted);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--foreground);
+}
+
+/* 危险按钮 */
+.btn-danger {
+  background: rgba(255, 95, 87, 0.15);
+  border: 1px solid rgba(255, 95, 87, 0.3);
+  color: var(--danger);
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(255, 95, 87, 0.25);
+  border-color: rgba(255, 95, 87, 0.5);
+}
+
+/* 幽灵按钮 */
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--foreground-muted);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--foreground);
+}
+
+/* 统一输入框样式 */
+.input-base {
+  background: rgba(26, 26, 46, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+
+.input-base::placeholder {
+  color: var(--foreground-dim);
+}
+
+/* 统一卡片样式 */
+.card-base {
+  background: rgba(22, 22, 42, 0.8);
+  border: 1px solid rgba(45, 45, 68, 0.8);
+  border-radius: var(--radius-lg);
+}
+
+/* 统一标签样式 */
+.badge-base {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+}

@@ -1,12 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import {
-  getDashboardStats,
-  getAnalysisTrend,
-  getArticleStatusDistribution,
-  getTopKeywords,
-  getRecentActivities,
-} from '@/lib/db';
+import { getAllDashboardData } from '@/lib/db';
 
 // GET /api/dashboard - 获取仪表盘数据
 export async function GET() {
@@ -18,11 +12,8 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const stats = getDashboardStats(userId);
-    const trend = getAnalysisTrend(7, userId);
-    const statusDistribution = getArticleStatusDistribution(userId);
-    const topKeywords = getTopKeywords(10, userId);
-    const recentActivities = getRecentActivities(10, userId);
+    // 使用合并查询获取所有仪表盘数据
+    const { stats, trend, statusDistribution, topKeywords, recentActivities } = getAllDashboardData(userId);
 
     // 补全近7天的日期数据（没有数据的日期填0）
     const today = new Date();

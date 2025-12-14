@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getSetting, createArticle, getSearchById } from '@/lib/db';
 import { generateArticle, generateImagePrompts, ImageInsertPosition } from '@/lib/ai';
-import { generateImage, GeneratedImage } from '@/lib/image-gen';
+import { generateImagesParallel, GeneratedImage } from '@/lib/image-gen';
 import { getImageGenConfig, getAIConfig as getAIUserConfig } from '@/lib/config';
 
 interface GenerateRequest {
@@ -230,34 +230,21 @@ export async function POST(request: Request) {
                 progress: 65,
               });
 
-              // 步骤3.2: 调用图片生成 API
+              // 步骤3.2: 调用图片生成 API（并行生成提高效率）
               sendProgress({
                 step: 'generating_images',
-                message: '正在生成配图...',
+                message: `正在并行生成 ${imagePositions.length} 张配图...`,
                 progress: 70,
               });
 
-              const generatedImages: (GeneratedImage | null)[] = [];
+              // 提取所有 prompt 并行生成
+              const prompts = imagePositions.map(pos => pos.prompt);
+              const generatedImages = await generateImagesParallel(imageGenConfig, prompts, 3);
 
-              for (let i = 0; i < imagePositions.length; i++) {
-                const pos = imagePositions[i];
-
-                sendProgress({
-                  step: 'generating_images',
-                  message: `正在生成配图 (${i + 1}/${imagePositions.length})...`,
-                  progress: 70 + Math.floor((i / imagePositions.length) * 15),
-                });
-
-                try {
-                  const image = await generateImage(imageGenConfig, pos.prompt);
-                  generatedImages.push(image);
-
-                  if (image) {
-                    images.push(image);
-                  }
-                } catch (imgErr) {
-                  console.error(`生成第 ${i + 1} 张图片失败:`, imgErr);
-                  generatedImages.push(null);
+              // 收集成功生成的图片
+              for (const image of generatedImages) {
+                if (image) {
+                  images.push(image);
                 }
               }
 

@@ -693,7 +693,7 @@ function AnalysisPageContent() {
             <p className="text-sm text-slate-400 mb-4">
               不知道搜什么？试试这些热门话题
             </p>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
               {hotTopics.map((topic, index) => (
                 <button
                   key={topic.keyword}
@@ -754,7 +754,7 @@ function AnalysisPageContent() {
             )}
 
             {/* 统计概览 */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
               <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
                 <div className="text-sm text-slate-400 mb-1">文章总数</div>
                 <div className="text-2xl font-bold text-slate-100">{articles.length}</div>
@@ -777,7 +777,7 @@ function AnalysisPageContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* 点赞量TOP5 */}
               <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
                 <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
@@ -916,23 +916,13 @@ function AnalysisPageContent() {
                             </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleGenerateArticle(insight)}
-                          disabled={generatingId === insight.id}
-                          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                        <a
+                          href={`/create?insightId=${insight.id}&searchId=${searchId}`}
+                          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 flex-shrink-0"
                         >
-                          {generatingId === insight.id ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              生成中...
-                            </>
-                          ) : (
-                            <>
-                              <PenTool className="w-4 h-4" />
-                              一键创作
-                            </>
-                          )}
-                        </button>
+                          <PenTool className="w-4 h-4" />
+                          去创作
+                        </a>
                       </div>
                     </div>
                   ))}

@@ -6,11 +6,13 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
+import { usePublish } from '@/hooks/usePublish';
 import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List, Heading1, Heading2, Loader2, Maximize2, Minimize2, Quote, Code, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUploadModal } from '@/components/ui/ImageUploadModal';
 import { XhsTagsManager } from '@/components/editor/XhsTagsManager';
 import { XhsContentChecker } from '@/components/editor/XhsContentChecker';
+import { WechatPublishModal, XiaohongshuPublishModal } from '@/components/articles';
 
 type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
 
@@ -39,6 +41,24 @@ export default function ArticleEditPage() {
   const router = useRouter();
   const { ensureLogin, isAuthenticated, status: sessionStatus } = useLoginGuard('请登录后编辑文章');
   const isNew = params.id === 'new';
+
+  // 发布相关 hooks
+  const {
+    wechatAccounts,
+    loadingAccounts,
+    showWechatModal,
+    wechatConfig,
+    setWechatConfig,
+    openWechatPublishModal,
+    closeWechatPublishModal,
+    publishToWechat,
+    showXhsModal,
+    xhsPublishing,
+    xhsResult,
+    openXhsPublishModal,
+    closeXhsPublishModal,
+    publishingId,
+  } = usePublish();
 
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -498,13 +518,23 @@ export default function ArticleEditPage() {
                       通过审核
                     </button>
                   )}
-                  {status === 'approved' && (
+                  {(status === 'approved' || status === 'published' || status === 'failed') && (
                     <>
-                      <button className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm">
-                        📕 发布到小红书
+                      <button
+                        onClick={() => openXhsPublishModal(params.id as string)}
+                        disabled={publishingId === params.id}
+                        className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {publishingId === params.id ? <Loader2 className="w-4 h-4 animate-spin" /> : '📕'}
+                        发布到小红书
                       </button>
-                      <button className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm">
-                        📗 发布到公众号
+                      <button
+                        onClick={() => openWechatPublishModal(params.id as string)}
+                        disabled={publishingId === params.id}
+                        className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {publishingId === params.id ? <Loader2 className="w-4 h-4 animate-spin" /> : '📗'}
+                        发布到公众号
                       </button>
                     </>
                   )}
@@ -523,6 +553,25 @@ export default function ArticleEditPage() {
           setImages([...images, url]);
         }}
         existingImages={images}
+      />
+
+      {/* 微信发布模态框 */}
+      <WechatPublishModal
+        isOpen={showWechatModal}
+        onClose={closeWechatPublishModal}
+        onConfirm={publishToWechat}
+        accounts={wechatAccounts}
+        loadingAccounts={loadingAccounts}
+        config={wechatConfig}
+        onConfigChange={setWechatConfig}
+      />
+
+      {/* 小红书发布模态框 */}
+      <XiaohongshuPublishModal
+        isOpen={showXhsModal}
+        onClose={closeXhsPublishModal}
+        isPublishing={xhsPublishing}
+        result={xhsResult}
       />
     </div>
   );
