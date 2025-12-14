@@ -29,6 +29,7 @@ import {
   XiaohongshuPublishModal,
   BatchActionsBar,
 } from '@/components/articles';
+import { ArticlePreviewModal } from '@/components/articles/ArticlePreviewModal';
 import { type ArticleStatus, STATUS_CONFIG, formatDate, debounce } from '@/lib/utils';
 
 type ViewMode = 'table' | 'card';
@@ -61,8 +62,10 @@ export default function ArticlesPage() {
   });
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // 搜索输入（用于防抖）
   const [searchInput, setSearchInput] = useState('');
+
+  // 预览状态
+  const [previewArticle, setPreviewArticle] = useState<any>(null);
 
   // 使用自定义 Hooks
   const {
@@ -493,6 +496,7 @@ export default function ArticlesPage() {
                     onCopy={handleCopy}
                     onArchive={handleArchive}
                     onExport={handleExport}
+                    onPreview={(article) => setPreviewArticle(article)}
                     onPublishToWechat={openWechatPublishModal}
                     onPublishToXiaohongshu={openXhsPublishModal}
                     formatDate={formatDate}
@@ -545,6 +549,13 @@ export default function ArticlesPage() {
         loading={confirmLoading}
         confirmText="确认"
         cancelText="取消"
+      />
+
+      {/* 文章预览模态框 */}
+      <ArticlePreviewModal
+        article={previewArticle}
+        isOpen={!!previewArticle}
+        onClose={() => setPreviewArticle(null)}
       />
     </div>
   );

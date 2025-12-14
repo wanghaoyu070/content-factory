@@ -14,6 +14,7 @@ import {
     Loader2,
     CheckSquare,
     Square,
+    Eye,
 } from 'lucide-react';
 import { type ArticleStatus, STATUS_CONFIG } from '@/lib/utils';
 
@@ -41,6 +42,7 @@ interface ArticleRowProps {
     onCopy: (id: string) => void;
     onArchive: (id: string) => void;
     onExport: (id: string, format: 'markdown' | 'html') => void;
+    onPreview: (article: Article) => void;
     onPublishToWechat: (id: string) => void;
     onPublishToXiaohongshu: (id: string) => void;
     formatDate: (date: string) => string;
@@ -58,6 +60,7 @@ export function ArticleRow({
     onCopy,
     onArchive,
     onExport,
+    onPreview,
     onPublishToWechat,
     onPublishToXiaohongshu,
     formatDate,
@@ -134,6 +137,15 @@ export function ArticleRow({
                     >
                         <Edit className="w-4 h-4" />
                     </Link>
+
+                    {/* 预览按钮 */}
+                    <button
+                        onClick={() => onPreview(article)}
+                        className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        title="预览"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </button>
 
                     {/* 主操作按钮 - 根据状态显示 */}
                     {article.status === 'draft' && (

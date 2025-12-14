@@ -24,6 +24,8 @@ const ArticlePreview = dynamic(() => import('@/components/preview/ArticlePreview
 const ProgressTracker = dynamic(() => import('@/components/ui/ProgressTracker'), {
   ssr: false,
 });
+
+import { FloatingProgress } from '@/components/ui/FloatingProgress';
 import {
   Sparkles,
   Loader2,
@@ -157,6 +159,7 @@ export default function CreatePage() {
   const [customTitle, setCustomTitle] = useState('');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [generateProgress, setGenerateProgress] = useState<GenerateProgress | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // 收藏状态
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
@@ -945,14 +948,41 @@ export default function CreatePage() {
         </div>
       </div>
 
-      {/* 生成进度模态框 */}
-      {generating && generateProgress && (
+      {/* 生成进度模态框（全屏） */}
+      {generating && generateProgress && !isMinimized && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <ProgressTracker
             progress={generateProgress}
-            minimizable={false}
+            minimizable={true}
+            onMinimize={() => setIsMinimized(true)}
           />
         </div>
+      )}
+
+      {/* 浮动进度条（最小化时显示） */}
+      {generating && generateProgress && isMinimized && (
+        <FloatingProgress
+          progress={generateProgress}
+          articleId={articleId || undefined}
+          onExpand={() => setIsMinimized(false)}
+          onClose={() => {
+            setIsMinimized(false);
+            // 如果已完成，清理状态
+            if (generateProgress?.step === 'completed' || generateProgress?.step === 'error') {
+              setGenerating(false);
+              setGenerateProgress(null);
+            }
+          }}
+        />
+      )}
+
+      {/* 已完成的浮动提示（当不在创作页面时显示） */}
+      {!generating && generateProgress?.step === 'completed' && articleId && (
+        <FloatingProgress
+          progress={generateProgress}
+          articleId={articleId}
+          onClose={() => setGenerateProgress(null)}
+        />
       )}
     </div>
   );

@@ -14,7 +14,7 @@
 
 /* 主按钮悬停效果 */
 .btn-primary {
-  transition: 
+  transition:
     transform var(--transition-fast) var(--ease-spring),
     box-shadow var(--transition-normal) ease-out,
     background var(--transition-normal) ease-out;
@@ -32,7 +32,7 @@
 
 /* 次级按钮悬停效果 */
 .btn-secondary {
-  transition: 
+  transition:
     background var(--transition-fast) ease-out,
     border-color var(--transition-fast) ease-out,
     color var(--transition-fast) ease-out;
@@ -56,7 +56,7 @@
 
 /* 可点击卡片悬停效果 */
 .card-interactive {
-  transition: 
+  transition:
     transform var(--transition-normal) var(--ease-out-expo),
     box-shadow var(--transition-normal) ease-out,
     border-color var(--transition-fast) ease-out;
@@ -78,7 +78,7 @@
 
 /* 列表项悬停效果 */
 .list-item-hover {
-  transition: 
+  transition:
     background var(--transition-fast) ease-out,
     padding-left var(--transition-fast) var(--ease-spring);
 }
@@ -94,6 +94,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -105,21 +106,50 @@
 }
 
 /* 列表项依次进入 */
-.stagger-list > * {
+.stagger-list>* {
   opacity: 0;
   animation: fadeInUp var(--transition-normal) var(--ease-out-expo) forwards;
 }
 
-.stagger-list > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-list > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-list > *:nth-child(3) { animation-delay: 100ms; }
-.stagger-list > *:nth-child(4) { animation-delay: 150ms; }
-.stagger-list > *:nth-child(5) { animation-delay: 200ms; }
-.stagger-list > *:nth-child(6) { animation-delay: 250ms; }
-.stagger-list > *:nth-child(7) { animation-delay: 300ms; }
-.stagger-list > *:nth-child(8) { animation-delay: 350ms; }
-.stagger-list > *:nth-child(9) { animation-delay: 400ms; }
-.stagger-list > *:nth-child(10) { animation-delay: 450ms; }
+.stagger-list>*:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.stagger-list>*:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.stagger-list>*:nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.stagger-list>*:nth-child(4) {
+  animation-delay: 150ms;
+}
+
+.stagger-list>*:nth-child(5) {
+  animation-delay: 200ms;
+}
+
+.stagger-list>*:nth-child(6) {
+  animation-delay: 250ms;
+}
+
+.stagger-list>*:nth-child(7) {
+  animation-delay: 300ms;
+}
+
+.stagger-list>*:nth-child(8) {
+  animation-delay: 350ms;
+}
+
+.stagger-list>*:nth-child(9) {
+  animation-delay: 400ms;
+}
+
+.stagger-list>*:nth-child(10) {
+  animation-delay: 450ms;
+}
 
 /* ===== 模态框动画 ===== */
 
@@ -127,6 +157,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -137,6 +168,7 @@
     opacity: 0;
     transform: scale(0.95) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -154,9 +186,12 @@
 /* ===== 脉冲动画 ===== */
 
 @keyframes pulse-soft {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -172,18 +207,17 @@
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 .progress-bar-animated {
-  background: linear-gradient(
-    90deg,
-    rgba(99, 102, 241, 0.8) 0%,
-    rgba(147, 51, 234, 1) 50%,
-    rgba(99, 102, 241, 0.8) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(99, 102, 241, 0.8) 0%,
+      rgba(147, 51, 234, 1) 50%,
+      rgba(99, 102, 241, 0.8) 100%);
   background-size: 200% 100%;
   animation: progress-shimmer 2s linear infinite;
 }
@@ -195,9 +229,11 @@
     transform: scale(0);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -209,9 +245,26 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-  20%, 40%, 60%, 80% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
 }
 
 .animate-shake {
@@ -224,12 +277,15 @@
   0% {
     transform: scale(1);
   }
+
   25% {
     transform: scale(1.3);
   }
+
   50% {
     transform: scale(0.9);
   }
+
   100% {
     transform: scale(1);
   }
@@ -269,6 +325,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -285,18 +342,17 @@
   0% {
     background-position: -100% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 .skeleton-enhanced {
-  background: linear-gradient(
-    90deg,
-    rgba(30, 30, 56, 0.8) 0%,
-    rgba(45, 45, 68, 0.8) 50%,
-    rgba(30, 30, 56, 0.8) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(30, 30, 56, 0.8) 0%,
+      rgba(45, 45, 68, 0.8) 50%,
+      rgba(30, 30, 56, 0.8) 100%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
@@ -308,6 +364,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -321,9 +378,12 @@
 /* ===== 悬浮标签动画 ===== */
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-5px);
   }
@@ -339,23 +399,23 @@
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
 }
 
 .text-gradient-animated {
-  background: linear-gradient(
-    90deg,
-    #818cf8,
-    #a78bfa,
-    #f472b6,
-    #a78bfa,
-    #818cf8
-  );
+  background: linear-gradient(90deg,
+      #818cf8,
+      #a78bfa,
+      #f472b6,
+      #a78bfa,
+      #818cf8);
   background-size: 200% 200%;
   background-clip: text;
   -webkit-background-clip: text;
@@ -370,6 +430,7 @@
     opacity: 0;
     transform: translateY(4px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -378,4 +439,38 @@
 
 .tooltip-animated {
   animation: tooltip-in 0.15s var(--ease-out-expo);
+}
+
+/* ===== 滑入动画 ===== */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s var(--ease-out-expo);
+}
+
+/* ===== 简单淡入动画 ===== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
 }
