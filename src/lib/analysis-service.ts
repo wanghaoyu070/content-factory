@@ -73,6 +73,59 @@ function generateMockArticles(keyword: string, count = 8) {
     });
 }
 
+// 调用真实微信文章 API
+async function fetchRealArticles(keyword: string, config: { endpoint: string; apiKey: string }): Promise<{ success: boolean; articles: any[]; isMock: boolean }> {
+    try {
+        const response = await fetch(config.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                kw: keyword,
+                sort_type: 1,
+                mode: 1,
+                period: 7,
+                page: 1,
+                key: config.apiKey,
+            }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data && data.code === 0 && data.data && data.data.length > 0) {
+                const articles = data.data.map((article: any) => ({
+                    title: article.title,
+                    content: article.content || '',
+                    cover_image: article.avatar,
+                    read_count: article.read,
+                    readCount: article.read,
+                    like_count: article.praise,
+                    likeCount: article.praise,
+                    wow_count: article.looking,
+                    wowCount: article.looking,
+                    publish_time: article.publish_time_str,
+                    publishTime: article.publish_time_str,
+                    source_url: article.url,
+                    sourceUrl: article.url,
+                    wx_name: article.wx_name,
+                    wxName: article.wx_name,
+                    author: article.wx_name,
+                    wx_id: article.wx_id,
+                    is_original: article.is_original === 1 ? 1 : 0,
+                }));
+                return { success: true, articles, isMock: false };
+            }
+        }
+        return { success: false, articles: [], isMock: true };
+    } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('[Analysis] Real API call failed:', error);
+        }
+        return { success: false, articles: [], isMock: true };
+    }
+}
+
 // 后台分析任务
 export async function runAnalysisTask(
     searchId: number,
@@ -80,20 +133,36 @@ export async function runAnalysisTask(
     userId: number,
     searchType: 'keyword' | 'account' = 'keyword'
 ) {
-    console.log(`[Task ${searchId}] Starting analysis for: ${keyword}`);
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[Task ${searchId}] Starting analysis for: ${keyword}`);
+    }
 
     try {
-        // Step 1: 搜索文章
-        // 这里为了简化和稳健，直接复用 Mock 逻辑保底，如果想接真实普通 API，逻辑同 route.ts
-        // 鉴于这是一个后台稳健版本，我们先优先保证能跑通
+        // Step 1: 搜索文章 - 优先使用真实 API
         const config = getWechatArticleConfig(userId);
-        let articles = [];
+        let articles: any[] = [];
+        let isMockData = true;
 
-        // 如果有真实配置且不是 example.com，尝试真实调用 (这里简化处理，直接用 Mock 以保证 100% 成功率体验)
-        // 实际生产中这里应该把 API 调用逻辑封装进来
+        // 尝试调用真实 API
+        if (config && config.endpoint && config.apiKey && !config.endpoint.includes('example.com')) {
+            const result = await fetchRealArticles(keyword, config);
+            if (result.success) {
+                articles = result.articles;
+                isMockData = false;
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`[Task ${searchId}] Fetched ${articles.length} real articles`);
+                }
+            }
+        }
 
-        // 生成模拟文章
-        articles = generateMockArticles(keyword);
+        // 如果真实 API 失败或未配置，使用 Mock 数据作为降级方案
+        if (articles.length === 0) {
+            articles = generateMockArticles(keyword);
+            isMockData = true;
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`[Task ${searchId}] Using mock data (API not configured or failed)`);
+            }
+        }
 
         // Step 2: 保存文章
         saveArticles(searchId, articles);
@@ -158,15 +227,21 @@ export async function runAnalysisTask(
 
                         insights = JSON.parse(jsonStr);
                     } catch (parseError) {
-                        console.error(`[Task ${searchId}] JSON Parse failed. Content:`, content);
+                        if (process.env.NODE_ENV === 'development') {
+                            console.error(`[Task ${searchId}] JSON Parse failed`);
+                        }
                         throw parseError; // Re-throw to trigger fallback
                     }
                 } else {
-                    console.error(`[Task ${searchId}] AI API Error: ${response.status} ${response.statusText}`);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.error(`[Task ${searchId}] AI API Error: ${response.status}`);
+                    }
                     throw new Error(`AI API Error: ${response.statusText}`);
                 }
             } catch (e) {
-                console.error(`[Task ${searchId}] AI Analysis failed:`, e);
+                if (process.env.NODE_ENV === 'development') {
+                    console.error(`[Task ${searchId}] AI Analysis failed:`, e);
+                }
                 // AI 失败时的保底洞察
                 const relatedTitle = articles.length > 0 ? articles[0].title : keyword;
                 insights = [{
@@ -193,10 +268,14 @@ export async function runAnalysisTask(
 
         // Step 5: 任务完成
         updateSearchStatus(searchId, 'completed');
-        console.log(`[Task ${searchId}] Analysis completed successfully.`);
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`[Task ${searchId}] Analysis completed successfully.`);
+        }
 
     } catch (error) {
-        console.error(`[Task ${searchId}] Task failed:`, error);
+        if (process.env.NODE_ENV === 'development') {
+            console.error(`[Task ${searchId}] Task failed:`, error);
+        }
         updateSearchStatus(searchId, 'failed');
     }
 }

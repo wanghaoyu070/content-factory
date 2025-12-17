@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { createSearchRecord } from '@/lib/db';
 import { runAnalysisTask } from '@/lib/analysis-service';
+import { startAnalysisSchema, validateBody } from '@/lib/validations';
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,12 +11,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
         }
 
-        const body = await request.json();
-        const { keyword, searchType = 'keyword' } = body;
-
-        if (!keyword) {
-            return NextResponse.json({ success: false, error: '关键词不能为空' }, { status: 400 });
+        // 使用 Zod 验证请求体
+        const validation = await validateBody(request, startAnalysisSchema);
+        if (!validation.success) {
+            return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
         }
+
+        const { keyword, searchType } = validation.data;
 
         // 1. 创建搜索记录，标记为 processing
         const searchId = createSearchRecord(keyword, 0, session.user.id, {

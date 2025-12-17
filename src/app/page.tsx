@@ -42,6 +42,11 @@ interface DashboardData {
     totalArticles: number;
     publishedArticles: number;
     pendingArticles: number;
+    // 趋势百分比（本周 vs 上周）
+    analysisTrend: number;
+    articlesTrend: number;
+    publishedTrend: number;
+    pendingTrend: number;
   };
   trend: { date: string; count: number }[];
   statusDistribution: { status: string; count: number }[];
@@ -158,6 +163,10 @@ export default function DashboardPage() {
     totalArticles: 0,
     publishedArticles: 0,
     pendingArticles: 0,
+    analysisTrend: 0,
+    articlesTrend: 0,
+    publishedTrend: 0,
+    pendingTrend: 0,
   };
 
   return (
@@ -175,28 +184,28 @@ export default function DashboardPage() {
             value={stats.totalAnalysis}
             icon={<BarChart3 className="w-5 h-5" />}
             color="indigo"
-            trend={12}
+            trend={stats.analysisTrend}
           />
           <StatCard
             title="生成文章"
             value={stats.totalArticles}
             icon={<FileText className="w-5 h-5" />}
             color="purple"
-            trend={8}
+            trend={stats.articlesTrend}
           />
           <StatCard
             title="已发布"
             value={stats.publishedArticles}
             icon={<Send className="w-5 h-5" />}
             color="emerald"
-            trend={15}
+            trend={stats.publishedTrend}
           />
           <StatCard
             title="待处理"
             value={stats.pendingArticles}
             icon={<Clock className="w-5 h-5" />}
             color="amber"
-            trend={-5}
+            trend={stats.pendingTrend}
           />
         </div>
 

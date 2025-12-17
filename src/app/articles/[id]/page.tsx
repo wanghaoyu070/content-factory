@@ -7,14 +7,12 @@ import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
 import { usePublish } from '@/hooks/usePublish';
-import { ArrowLeft, Save, Send, Image as ImageIcon, Plus, X, Bold, Italic, List, Heading1, Heading2, Loader2, Maximize2, Minimize2, Quote, Code, Minus } from 'lucide-react';
+import { ArrowLeft, Save, Send, Image as ImageIcon, Bold, Italic, List, Heading1, Heading2, Loader2, Maximize2, Minimize2, Quote, Code, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUploadModal } from '@/components/ui/ImageUploadModal';
-import { XhsTagsManager } from '@/components/editor/XhsTagsManager';
-import { XhsContentChecker } from '@/components/editor/XhsContentChecker';
 import { WechatPublishModal, XiaohongshuPublishModal } from '@/components/articles';
-
-type ArticleStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'failed';
+import { ArticleSidebar } from '@/components/articles/ArticleSidebar';
+import type { Article, ArticleStatus } from '@/types';
 
 const statusConfig: Record<ArticleStatus, { label: string; color: string; bgColor: string }> = {
   draft: { label: '草稿', color: 'text-slate-600', bgColor: 'bg-slate-100' },
@@ -22,19 +20,8 @@ const statusConfig: Record<ArticleStatus, { label: string; color: string; bgColo
   approved: { label: '已审核', color: 'text-green-600', bgColor: 'bg-green-100' },
   published: { label: '已发布', color: 'text-blue-600', bgColor: 'bg-blue-100' },
   failed: { label: '发布失败', color: 'text-red-600', bgColor: 'bg-red-100' },
+  archived: { label: '已归档', color: 'text-slate-500', bgColor: 'bg-slate-100' },
 };
-
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  coverImage: string;
-  images: string[];
-  status: ArticleStatus;
-  source: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export default function ArticleEditPage() {
   const params = useParams();
@@ -73,6 +60,9 @@ export default function ArticleEditPage() {
 
   // 小红书相关状态
   const [xhsTags, setXhsTags] = useState<string[]>([]);
+
+  // 侧边栏 Tab 状态
+  const [sidebarTab, setSidebarTab] = useState<'settings' | 'preview'>('settings');
 
   // 全屏编辑模式
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -415,133 +405,27 @@ export default function ArticleEditPage() {
 
           {/* Sidebar - 全屏时隐藏 */}
           {!isFullscreen && (
-            <div className="space-y-4">
-              {/* Article Info */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                <h3 className="font-medium text-slate-800 mb-4">文章信息</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">状态</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs ${statusConfig[status].bgColor} ${statusConfig[status].color}`}>
-                      {statusConfig[status].label}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">来源</span>
-                    <span className="text-slate-700 text-right max-w-[150px] truncate" title={source}>
-                      {source || '手动创建'}
-                    </span>
-                  </div>
-                  {article && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">创建时间</span>
-                        <span className="text-slate-700">{new Date(article.createdAt).toLocaleDateString('zh-CN')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">更新时间</span>
-                        <span className="text-slate-700">{new Date(article.updatedAt).toLocaleDateString('zh-CN')}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Images */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                <h3 className="font-medium text-slate-800 mb-4">图片管理</h3>
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {images.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img src={img} alt="" className="w-full h-16 object-cover rounded-lg" />
-                      <button
-                        onClick={() => removeImage(index)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setShowImageModal(true)}
-                  className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  添加图片
-                </button>
-              </div>
-
-              {/* 小红书标签管理 */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                <h3 className="font-medium text-slate-800 mb-4 flex items-center gap-2">
-                  <span className="text-red-500">📕</span>
-                  小红书标签
-                </h3>
-                <XhsTagsManager
-                  tags={xhsTags}
-                  onChange={setXhsTags}
-                  className="[&_*]:!bg-transparent [&_input]:!bg-slate-50 [&>div:first-child]:!bg-slate-50 [&>div:first-child]:!border-slate-200 [&_span]:!text-slate-600 [&_p]:!text-slate-500 [&>div:last-child]:!bg-slate-50"
-                />
-              </div>
-
-              {/* 小红书字数检测 */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                <h3 className="font-medium text-slate-800 mb-4 flex items-center gap-2">
-                  <span className="text-red-500">📏</span>
-                  小红书字数检测
-                </h3>
-                <XhsContentChecker
-                  content={content}
-                  className="[&_div]:!bg-slate-50 [&_div]:!border-slate-200 [&_p]:!text-slate-500"
-                />
-              </div>
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                <h3 className="font-medium text-slate-800 mb-4">快捷操作</h3>
-                <div className="space-y-2">
-                  {status === 'draft' && (
-                    <button
-                      onClick={() => handleSave('pending_review')}
-                      disabled={saving}
-                      className="w-full py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
-                    >
-                      提交审核
-                    </button>
-                  )}
-                  {status === 'pending_review' && (
-                    <button
-                      onClick={() => handleSave('approved')}
-                      disabled={saving}
-                      className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
-                    >
-                      通过审核
-                    </button>
-                  )}
-                  {(status === 'approved' || status === 'published' || status === 'failed') && (
-                    <>
-                      <button
-                        onClick={() => openXhsPublishModal(params.id as string)}
-                        disabled={publishingId === params.id}
-                        className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {publishingId === params.id ? <Loader2 className="w-4 h-4 animate-spin" /> : '📕'}
-                        发布到小红书
-                      </button>
-                      <button
-                        onClick={() => openWechatPublishModal(params.id as string)}
-                        disabled={publishingId === params.id}
-                        className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {publishingId === params.id ? <Loader2 className="w-4 h-4 animate-spin" /> : '📗'}
-                        发布到公众号
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+            <ArticleSidebar
+              title={title}
+              sidebarTab={sidebarTab}
+              setSidebarTab={setSidebarTab}
+              content={content}
+              article={article}
+              source={source}
+              status={status}
+              statusConfig={statusConfig}
+              images={images}
+              onRemoveImage={removeImage}
+              onAddImageClick={() => setShowImageModal(true)}
+              xhsTags={xhsTags}
+              onTagsChange={setXhsTags}
+              handleSave={handleSave}
+              saving={saving}
+              openXhsPublishModal={openXhsPublishModal}
+              openWechatPublishModal={openWechatPublishModal}
+              publishingId={publishingId}
+              articleId={params.id as string}
+            />
           )}
         </div>
       </div>

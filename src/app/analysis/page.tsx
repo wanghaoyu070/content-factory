@@ -79,16 +79,10 @@ interface WordCloudItem {
 // idle -> processing (polling) -> done -> error
 type AnalysisStep = 'idle' | 'processing' | 'done' | 'error';
 
-const hotTopics = [
-  { keyword: 'AI人工智能', heat: 98 },
-  { keyword: '职场成长', heat: 92 },
-  { keyword: '副业赚钱', heat: 88 },
-  { keyword: '自媒体运营', heat: 85 },
-  { keyword: '健康养生', heat: 82 },
-  { keyword: '育儿教育', heat: 78 },
-  { keyword: '投资理财', heat: 75 },
-  { keyword: '情感心理', heat: 72 },
-];
+interface HotTopic {
+  keyword: string;
+  heat: number;
+}
 
 function AnalysisPageContent() {
   const router = useRouter();
@@ -109,18 +103,40 @@ function AnalysisPageContent() {
   const [generatingId, setGeneratingId] = useState<number | null>(null);
   const [searchId, setSearchId] = useState<number | null>(null);
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
+  const [hotTopics, setHotTopics] = useState<HotTopic[]>([]);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Init: Check login & Fetch recent searches
+  // 获取热门话题
+  const fetchHotTopics = async () => {
+    try {
+      const res = await fetch('/api/hot-topics');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setHotTopics(data.data);
+      }
+    } catch {
+      // 获取失败时使用默认值
+      setHotTopics([
+        { keyword: 'AI人工智能', heat: 98 },
+        { keyword: '职场成长', heat: 92 },
+        { keyword: '副业赚钱', heat: 88 },
+        { keyword: '自媒体运营', heat: 85 },
+      ]);
+    }
+  };
+
+  // 1. Init: Check login & Fetch recent searches and hot topics
   useEffect(() => {
     if (status === 'loading') return;
     if (!isAuthenticated) {
       setInitialLoading(false);
+      // 未登录也获取热门话题（会返回默认值）
+      fetchHotTopics();
       return;
     }
-    fetchRecentSearches().finally(() => setInitialLoading(false));
+    Promise.all([fetchRecentSearches(), fetchHotTopics()]).finally(() => setInitialLoading(false));
   }, [isAuthenticated, status]);
 
   // 2. Init: Check URL for 'id' to resume task, OR 'keyword' to auto-start

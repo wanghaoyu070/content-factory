@@ -46,12 +46,6 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
 
-    console.log('[Xiaohongshu API] Session check:', {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id
-    });
-
     if (!session?.user) {
       return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
     }
@@ -69,17 +63,7 @@ export async function POST(request: Request) {
     }
 
     // 获取配置
-    console.log('[Xiaohongshu API] Environment variables:', {
-      XIAOHONGSHU_PUBLISH_ENDPOINT: process.env.XIAOHONGSHU_PUBLISH_ENDPOINT ? 'SET' : 'NOT SET',
-      XIAOHONGSHU_PUBLISH_API_KEY: process.env.XIAOHONGSHU_PUBLISH_API_KEY ? 'SET' : 'NOT SET',
-    });
-
     const config = getXiaohongshuPublishConfig(session.user.id);
-    console.log('[Xiaohongshu API] Config result:', {
-      hasConfig: !!config,
-      hasEndpoint: !!config?.endpoint,
-      hasApiKey: !!config?.apiKey,
-    });
 
     if (!config || !config.endpoint || !config.apiKey) {
       return NextResponse.json(
@@ -152,12 +136,9 @@ export async function POST(request: Request) {
     let publishData: Record<string, any> = {};
     try {
       publishData = await publishResponse.json();
-    } catch (error) {
-      console.error('解析小红书发布响应失败:', error);
+    } catch {
+      // JSON 解析失败
     }
-
-    // 调试日志：打印API返回的完整数据
-    console.log('小红书API返回数据:', JSON.stringify(publishData, null, 2));
 
     if (publishData.success) {
       // 更新文章状态为已发布
@@ -166,8 +147,6 @@ export async function POST(request: Request) {
       // 根据API文档，publish_url 是发布页面URL，用于生成二维码
       const publishUrl = publishData.data?.publish_url;
       const qrImageUrl = publishData.data?.xiaohongshu_qr_image_url;
-
-      console.log('发布URL:', publishUrl);
 
       return NextResponse.json({
         success: true,
@@ -190,7 +169,9 @@ export async function POST(request: Request) {
       }, { status: publishResponse.status || 500 });
     }
   } catch (error) {
-    console.error('小红书发布失败:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('小红书发布失败:', error);
+    }
     return NextResponse.json(
       {
         success: false,

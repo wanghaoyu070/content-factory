@@ -1018,15 +1018,29 @@ export function getTopicInsightsBySearchIdOrdered(searchId: number): TopicInsigh
 
 // ============ 仪表盘统计函数 ============
 
-// 获取总体统计数据
+// 获取总体统计数据（包含趋势）
 export interface DashboardStats {
   totalAnalysis: number;
   totalArticles: number;
   publishedArticles: number;
   pendingArticles: number;
+  // 趋势百分比（本周 vs 上周）
+  analysisTrend: number;
+  articlesTrend: number;
+  publishedTrend: number;
+  pendingTrend: number;
+}
+
+// 计算趋势百分比的辅助函数
+function calculateTrend(current: number, previous: number): number {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+  return Math.round(((current - previous) / previous) * 100);
 }
 
 export function getDashboardStats(userId?: number): DashboardStats {
+  // 总数统计
   const analysisStmt = userId
     ? db.prepare('SELECT COUNT(*) as count FROM search_records WHERE user_id = ?')
     : db.prepare('SELECT COUNT(*) as count FROM search_records');
@@ -1042,19 +1056,51 @@ export function getDashboardStats(userId?: number): DashboardStats {
     )
     : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status IN ('draft', 'pending_review')");
 
+  // 本周数据（最近7天）
+  const thisWeekAnalysisStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM search_records WHERE user_id = ? AND created_at >= DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM search_records WHERE created_at >= DATE('now', '-7 days')");
+  const thisWeekArticlesStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM articles WHERE user_id = ? AND created_at >= DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE created_at >= DATE('now', '-7 days')");
+  const thisWeekPublishedStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published' AND user_id = ? AND updated_at >= DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published' AND updated_at >= DATE('now', '-7 days')");
+
+  // 上周数据（7-14天前）
+  const lastWeekAnalysisStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM search_records WHERE user_id = ? AND created_at >= DATE('now', '-14 days') AND created_at < DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM search_records WHERE created_at >= DATE('now', '-14 days') AND created_at < DATE('now', '-7 days')");
+  const lastWeekArticlesStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM articles WHERE user_id = ? AND created_at >= DATE('now', '-14 days') AND created_at < DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE created_at >= DATE('now', '-14 days') AND created_at < DATE('now', '-7 days')");
+  const lastWeekPublishedStmt = userId
+    ? db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published' AND user_id = ? AND updated_at >= DATE('now', '-14 days') AND updated_at < DATE('now', '-7 days')")
+    : db.prepare("SELECT COUNT(*) as count FROM articles WHERE status = 'published' AND updated_at >= DATE('now', '-14 days') AND updated_at < DATE('now', '-7 days')");
+
+  // 获取数据
+  const totalAnalysis = (userId ? (analysisStmt.get(userId) as { count: number }) : (analysisStmt.get() as { count: number })).count;
+  const totalArticles = (userId ? (articlesStmt.get(userId) as { count: number }) : (articlesStmt.get() as { count: number })).count;
+  const publishedArticles = (userId ? (publishedStmt.get(userId) as { count: number }) : (publishedStmt.get() as { count: number })).count;
+  const pendingArticles = (userId ? (pendingStmt.get(userId) as { count: number }) : (pendingStmt.get() as { count: number })).count;
+
+  const thisWeekAnalysis = (userId ? (thisWeekAnalysisStmt.get(userId) as { count: number }) : (thisWeekAnalysisStmt.get() as { count: number })).count;
+  const thisWeekArticles = (userId ? (thisWeekArticlesStmt.get(userId) as { count: number }) : (thisWeekArticlesStmt.get() as { count: number })).count;
+  const thisWeekPublished = (userId ? (thisWeekPublishedStmt.get(userId) as { count: number }) : (thisWeekPublishedStmt.get() as { count: number })).count;
+
+  const lastWeekAnalysis = (userId ? (lastWeekAnalysisStmt.get(userId) as { count: number }) : (lastWeekAnalysisStmt.get() as { count: number })).count;
+  const lastWeekArticles = (userId ? (lastWeekArticlesStmt.get(userId) as { count: number }) : (lastWeekArticlesStmt.get() as { count: number })).count;
+  const lastWeekPublished = (userId ? (lastWeekPublishedStmt.get(userId) as { count: number }) : (lastWeekPublishedStmt.get() as { count: number })).count;
+
   return {
-    totalAnalysis: (userId
-      ? (analysisStmt.get(userId) as { count: number })
-      : (analysisStmt.get() as { count: number })).count,
-    totalArticles: (userId
-      ? (articlesStmt.get(userId) as { count: number })
-      : (articlesStmt.get() as { count: number })).count,
-    publishedArticles: (userId
-      ? (publishedStmt.get(userId) as { count: number })
-      : (publishedStmt.get() as { count: number })).count,
-    pendingArticles: (userId
-      ? (pendingStmt.get(userId) as { count: number })
-      : (pendingStmt.get() as { count: number })).count,
+    totalAnalysis,
+    totalArticles,
+    publishedArticles,
+    pendingArticles,
+    analysisTrend: calculateTrend(thisWeekAnalysis, lastWeekAnalysis),
+    articlesTrend: calculateTrend(thisWeekArticles, lastWeekArticles),
+    publishedTrend: calculateTrend(thisWeekPublished, lastWeekPublished),
+    pendingTrend: 0, // 待处理数量的趋势意义不大，设为0
   };
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { batchDeleteArticles, batchArchiveArticles } from '@/lib/db';
+import { batchArticleSchema, validateBody } from '@/lib/validations';
 
 // POST /api/articles/batch - 批量操作文章
 export async function POST(request: NextRequest) {
@@ -10,27 +11,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { action, ids } = body;
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    // 使用 Zod 验证请求体
+    const validation = await validateBody(request, batchArticleSchema);
+    if (!validation.success) {
       return NextResponse.json(
-        { success: false, error: '请选择要操作的文章' },
+        { success: false, error: validation.error },
         { status: 400 }
       );
     }
 
-    // 转换 ID 为数字
-    const numericIds = ids.map((id: string | number) =>
-      typeof id === 'string' ? parseInt(id, 10) : id
-    ).filter((id: number) => !isNaN(id));
-
-    if (numericIds.length === 0) {
-      return NextResponse.json(
-        { success: false, error: '无效的文章 ID' },
-        { status: 400 }
-      );
-    }
+    const { action, ids: numericIds } = validation.data;
 
     let result: { success: number; failed: number };
 

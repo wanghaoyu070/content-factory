@@ -87,44 +87,65 @@ export const STATUS_CONFIG: Record<ArticleStatus, {
   color: string;
   bgColor: string;
   textColor: string;
+  badgeColor: 'default' | 'success' | 'warning' | 'danger' | 'info';
 }> = {
   draft: {
     label: '草稿',
     color: '#64748b',
     bgColor: 'bg-slate-500/10',
-    textColor: 'text-slate-400'
+    textColor: 'text-slate-400',
+    badgeColor: 'default'
   },
   pending_review: {
     label: '待审核',
     color: '#f59e0b',
     bgColor: 'bg-amber-500/10',
-    textColor: 'text-amber-400'
+    textColor: 'text-amber-400',
+    badgeColor: 'warning'
   },
   approved: {
     label: '已审核',
     color: '#10b981',
     bgColor: 'bg-emerald-500/10',
-    textColor: 'text-emerald-400'
+    textColor: 'text-emerald-400',
+    badgeColor: 'success'
   },
   published: {
     label: '已发布',
     color: '#6366f1',
     bgColor: 'bg-indigo-500/10',
-    textColor: 'text-indigo-400'
+    textColor: 'text-indigo-400',
+    badgeColor: 'success'
   },
   failed: {
     label: '发布失败',
     color: '#ef4444',
     bgColor: 'bg-red-500/10',
-    textColor: 'text-red-400'
+    textColor: 'text-red-400',
+    badgeColor: 'danger'
   },
   archived: {
     label: '已归档',
     color: '#8b5cf6',
     bgColor: 'bg-purple-500/10',
-    textColor: 'text-purple-400'
+    textColor: 'text-purple-400',
+    badgeColor: 'info'
   },
 };
+
+/**
+ * 获取状态标签文本
+ */
+export function getStatusLabel(status: ArticleStatus): string {
+  return STATUS_CONFIG[status]?.label || status;
+}
+
+/**
+ * 获取状态对应的徽章颜色
+ */
+export function getStatusColor(status: ArticleStatus): 'default' | 'success' | 'warning' | 'danger' | 'info' {
+  return STATUS_CONFIG[status]?.badgeColor || 'default';
+}
 
 // ===== 数字格式化 =====
 
