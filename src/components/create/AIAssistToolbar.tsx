@@ -111,7 +111,7 @@ export default function AIAssistToolbar({
 
     return (
         <div
-            className="fixed z-50 bg-[#16162a] border border-[#2d2d44] rounded-xl shadow-2xl overflow-hidden"
+            className="fixed z-50 bg-white border border-[rgba(0,0,0,0.06)] rounded-xl shadow-2xl overflow-hidden"
             style={{
                 left: Math.min(position.x, window.innerWidth - 320),
                 top: position.y + 10,
@@ -120,14 +120,14 @@ export default function AIAssistToolbar({
             }}
         >
             {/* 工具栏头部 */}
-            <div className="px-3 py-2 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-b border-[#2d2d44] flex items-center justify-between">
+            <div className="px-3 py-2 bg-gradient-to-r from-[rgba(0,0,0,0.02)] to-[rgba(0,0,0,0.04)] border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm font-medium text-slate-200">AI 助手</span>
+                    <span className="text-sm font-medium text-[#1A1A1A]">AI 助手</span>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="p-1 text-[#999] hover:text-[#333] transition-colors"
                 >
                     <X className="w-4 h-4" />
                 </button>
@@ -149,8 +149,8 @@ export default function AIAssistToolbar({
                                     className={cn(
                                         'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all',
                                         isActive
-                                            ? 'bg-indigo-500/20 text-indigo-400'
-                                            : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-slate-200',
+                                            ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+                                            : 'text-[#666] hover:bg-[#F7F6F0] hover:text-[#1A1A1A]',
                                         loading && !isActive && 'opacity-50 cursor-not-allowed'
                                     )}
                                 >
@@ -169,29 +169,29 @@ export default function AIAssistToolbar({
 
             {/* 加载状态 */}
             {loading && !result && (
-                <div className="px-4 py-3 border-t border-[#2d2d44] flex items-center gap-2 text-sm text-slate-400">
-                    <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                <div className="px-4 py-3 border-t border-[rgba(0,0,0,0.06)] flex items-center gap-2 text-sm text-[#666]">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#333]" />
                     AI 正在处理...
                 </div>
             )}
 
             {/* 结果预览 */}
             {result && (
-                <div className="border-t border-[#2d2d44]">
+                <div className="border-t border-[rgba(0,0,0,0.06)]">
                     <div className="p-3 max-h-48 overflow-y-auto">
-                        <div className="text-xs text-slate-500 mb-1">AI 结果预览</div>
-                        <div className="text-sm text-slate-200 whitespace-pre-wrap">{result}</div>
+                        <div className="text-xs text-[#999] mb-1">AI 结果预览</div>
+                        <div className="text-sm text-[#1A1A1A] whitespace-pre-wrap">{result}</div>
                     </div>
-                    <div className="p-2 border-t border-[#2d2d44] flex items-center justify-end gap-2">
+                    <div className="p-2 border-t border-[rgba(0,0,0,0.06)] flex items-center justify-end gap-2">
                         <button
                             onClick={handleCancel}
-                            className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                            className="px-3 py-1.5 text-sm text-[#666] hover:text-[#1A1A1A] transition-colors"
                         >
                             取消
                         </button>
                         <button
                             onClick={handleApply}
-                            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-indigo-600 text-[#1A1A1A] text-sm rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-1.5"
                         >
                             <Check className="w-3.5 h-3.5" />
                             应用
@@ -202,9 +202,9 @@ export default function AIAssistToolbar({
 
             {/* 选中文本预览 */}
             {!result && !loading && (
-                <div className="px-3 py-2 border-t border-[#2d2d44] bg-[#1a1a2e]">
-                    <div className="text-xs text-slate-500 mb-1">选中的文本</div>
-                    <div className="text-xs text-slate-400 line-clamp-2">{selectedText}</div>
+                <div className="px-3 py-2 border-t border-[rgba(0,0,0,0.06)] bg-[#F7F6F0]">
+                    <div className="text-xs text-[#999] mb-1">选中的文本</div>
+                    <div className="text-xs text-[#666] line-clamp-2">{selectedText}</div>
                 </div>
             )}
         </div>

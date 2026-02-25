@@ -131,7 +131,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       {/* 遮罩层 */}
       <div
         className={cn(
-          'absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
+          'absolute inset-0 bg-black/30 backdrop-blur-sm transition-opacity duration-300',
           isOpen ? 'opacity-100' : 'opacity-0'
         )}
         onClick={handleClose}
@@ -141,7 +141,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
       <div
         ref={drawerRef}
         className={cn(
-          'absolute left-0 top-0 h-full w-[280px] bg-[#0f0f23] border-r border-[#2d2d44] flex flex-col',
+          'absolute left-0 top-0 h-full w-[280px] bg-white border-r border-[rgba(0,0,0,0.06)] flex flex-col',
           !isDragging && 'transition-transform duration-300 ease-out'
         )}
         style={{ transform: getDrawerTransform() }}
@@ -154,26 +154,26 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         tabIndex={-1}
       >
         {/* 头部：Logo + 关闭按钮 */}
-        <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
+        <div className="p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3" onClick={handleNavClick}>
             <Logo className="w-9 h-9 flex-shrink-0" />
-            <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-[#1A1A1A]">
               内容工厂
             </span>
           </Link>
           <button
             onClick={handleClose}
             ref={closeButtonRef}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#1a1a2e] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[rgba(0,0,0,0.03)] transition-colors"
             aria-label="关闭菜单"
           >
-            <X className="w-5 h-5 text-slate-400" />
+            <X className="w-5 h-5 text-[#666]" />
           </button>
         </div>
 
         {/* 用户信息 */}
         {user && (
-          <div className="p-4 border-b border-[#2d2d44]">
+          <div className="p-4 border-b border-[rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               {user.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -183,22 +183,22 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
+                <div className="w-12 h-12 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#666] font-semibold text-lg">
                   {user.name?.[0] || user.githubLogin?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white truncate">
+                <p className="text-sm font-semibold text-[#1A1A1A] truncate">
                   {user.name || user.githubLogin || '未命名用户'}
                 </p>
-                <p className="text-xs text-slate-500 truncate">
+                <p className="text-xs text-[#999] truncate">
                   @{user.githubLogin || 'GitHub 用户'}
                 </p>
                 <span className={cn(
                   'inline-block mt-1 px-2 py-0.5 text-xs rounded-full',
                   isAdmin
-                    ? 'bg-indigo-500/20 text-indigo-300'
-                    : 'bg-slate-500/20 text-slate-400'
+                    ? 'bg-[rgba(0,0,0,0.04)] text-[#333]'
+                    : 'bg-[#F5F5F5] text-[#666]'
                 )}>
                   {isAdmin ? '管理员' : '普通用户'}
                 </span>
@@ -223,8 +223,8 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
                       isActive
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20'
-                        : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-white active:bg-[#24243a]'
+                        ? 'bg-[rgba(0,0,0,0.04)] text-[#1A1A1A] font-semibold'
+                        : 'text-[#666] hover:bg-[rgba(0,0,0,0.02)] hover:text-[#1A1A1A] active:bg-[rgba(0,0,0,0.04)]'
                     )}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
@@ -236,15 +236,15 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
             {/* 管理后台 - 仅管理员可见 */}
             {isAdmin && (
-              <li className="pt-2 mt-2 border-t border-[#2d2d44]">
+              <li className="pt-2 mt-2 border-t border-[rgba(0,0,0,0.06)]">
                 <Link
                   href="/admin"
                   onClick={handleNavClick}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
                     pathname === '/admin'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20'
-                      : 'text-indigo-300 hover:bg-[#1a1a2e] hover:text-indigo-200 active:bg-[#24243a]'
+                      ? 'bg-[rgba(0,0,0,0.04)] text-[#1A1A1A] font-semibold'
+                      : 'text-[#666] hover:bg-[rgba(0,0,0,0.02)] hover:text-[#1A1A1A] active:bg-[rgba(0,0,0,0.04)]'
                   )}
                 >
                   <Shield className="w-5 h-5 flex-shrink-0" />
@@ -257,13 +257,13 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
         {/* 底部：退出登录 */}
         {user && (
-          <div className="p-3 border-t border-[#2d2d44]">
+          <div className="p-3 border-t border-[rgba(0,0,0,0.06)]">
             <button
               onClick={() => {
                 signOut({ callbackUrl: '/' });
                 handleClose();
               }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
               <span className="font-medium">退出登录</span>

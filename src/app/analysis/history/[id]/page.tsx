@@ -229,15 +229,15 @@ export default function AnalysisHistoryDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
-        <div className="bg-[#16162a] border-b border-[#2d2d44]">
+      <div className="min-h-screen bg-[#FDFCF6]">
+        <div className="bg-white border-b border-[rgba(0,0,0,0.06)]">
           <div className="px-6 py-4">
-            <h1 className="text-xl font-semibold text-slate-100">搜索详情</h1>
+            <h1 className="text-xl font-semibold text-[#1A1A1A]">搜索详情</h1>
           </div>
         </div>
-        <div className="p-6 text-center text-slate-500">
+        <div className="p-6 text-center text-[#999]">
           <div className="inline-flex items-center gap-2">
-            <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-[rgba(0,0,0,0.15)] border-t-transparent rounded-full animate-spin"></div>
             加载中...
           </div>
         </div>
@@ -247,21 +247,21 @@ export default function AnalysisHistoryDetailPage() {
 
   if (error || !search) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
-        <div className="bg-[#16162a] border-b border-[#2d2d44]">
+      <div className="min-h-screen bg-[#FDFCF6]">
+        <div className="bg-white border-b border-[rgba(0,0,0,0.06)]">
           <div className="px-6 py-4">
-            <h1 className="text-xl font-semibold text-slate-100">搜索详情</h1>
+            <h1 className="text-xl font-semibold text-[#1A1A1A]">搜索详情</h1>
           </div>
         </div>
         <div className="p-6">
           <Link
             href="/analysis/history"
-            className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-400 mb-6 transition-colors"
+            className="inline-flex items-center gap-2 text-[#666] hover:text-[#333] mb-6 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             返回历史列表
           </Link>
-          <div className="bg-[#16162a] rounded-2xl p-12 border border-red-500/30 text-center text-red-400">
+          <div className="bg-white rounded-2xl p-12 border border-red-500/30 text-center text-red-400">
             {error || '记录不存在'}
           </div>
         </div>
@@ -270,13 +270,13 @@ export default function AnalysisHistoryDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       {/* Header */}
-      <div className="bg-[#16162a] border-b border-[#2d2d44]">
+      <div className="bg-white border-b border-[rgba(0,0,0,0.06)]">
         <div className="px-6 py-4">
-          <h1 className="text-xl font-semibold text-slate-100">
+          <h1 className="text-xl font-semibold text-[#1A1A1A]">
             {search.keyword}
-            <span className="ml-3 text-sm font-normal text-slate-500">
+            <span className="ml-3 text-sm font-normal text-[#999]">
               {search.article_count}篇 · {formatDate(search.created_at)}
             </span>
           </h1>
@@ -286,7 +286,7 @@ export default function AnalysisHistoryDetailPage() {
       <div className="p-6">
         <Link
           href="/analysis/history"
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-indigo-400 mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-[#666] hover:text-[#333] mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           返回历史列表
@@ -294,47 +294,47 @@ export default function AnalysisHistoryDetailPage() {
 
         {/* Stats Overview */}
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
+          <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">{search.article_count}</p>
-                <p className="text-sm text-slate-500">文章总数</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{search.article_count}</p>
+                <p className="text-sm text-[#999]">文章总数</p>
               </div>
             </div>
           </div>
-          <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
+          <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
                 <Eye className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">{formatCount(stats.avgRead)}</p>
-                <p className="text-sm text-slate-500">平均阅读</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{formatCount(stats.avgRead)}</p>
+                <p className="text-sm text-[#999]">平均阅读</p>
               </div>
             </div>
           </div>
-          <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
+          <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                 <ThumbsUp className="w-5 h-5 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">{stats.avgInteraction.toFixed(1)}%</p>
-                <p className="text-sm text-slate-500">平均互动率</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{stats.avgInteraction.toFixed(1)}%</p>
+                <p className="text-sm text-[#999]">平均互动率</p>
               </div>
             </div>
           </div>
-          <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44]">
+          <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.06)]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                 <Lightbulb className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-slate-100">{insights.length}</p>
-                <p className="text-sm text-slate-500">洞察数量</p>
+                <p className="text-2xl font-bold text-[#1A1A1A]">{insights.length}</p>
+                <p className="text-sm text-[#999]">洞察数量</p>
               </div>
             </div>
           </div>
@@ -342,22 +342,22 @@ export default function AnalysisHistoryDetailPage() {
 
         {/* Insights Section */}
         {insights.length > 0 && (
-          <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6">
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
               选题洞察
-              <span className="text-sm font-normal text-slate-500">({insights.length} 条)</span>
+              <span className="text-sm font-normal text-[#999]">({insights.length} 条)</span>
             </h3>
             <div className="space-y-4">
               {insights.map((insight) => (
                 <div
                   key={insight.id}
-                  className="p-4 bg-[#1a1a2e] rounded-xl border border-[#2d2d44] hover:border-indigo-500/30 transition-colors"
+                  className="p-4 bg-[#F7F6F0] rounded-xl border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h4 className="font-medium text-slate-200 mb-2">{insight.title}</h4>
-                      <p className="text-sm text-slate-400 mb-3">{insight.description}</p>
+                      <h4 className="font-medium text-[#1A1A1A] mb-2">{insight.title}</h4>
+                      <p className="text-sm text-[#666] mb-3">{insight.description}</p>
                       {insight.suggestedTopics && insight.suggestedTopics.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {insight.suggestedTopics.slice(0, 3).map((topic, i) => (
@@ -374,7 +374,7 @@ export default function AnalysisHistoryDetailPage() {
                     <button
                       onClick={() => handleGenerateArticle(insight)}
                       disabled={generatingId === insight.id}
-                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                      className="px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
                     >
                       {generatingId === insight.id ? (
                         <>
@@ -399,8 +399,8 @@ export default function AnalysisHistoryDetailPage() {
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div className="space-y-6">
             {/* Top Liked */}
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-              <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+              <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-pink-400" />
                 点赞量 TOP5
               </h3>
@@ -411,17 +411,17 @@ export default function AnalysisHistoryDetailPage() {
                     href={article.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-3 rounded-xl bg-[#1a1a2e] hover:bg-[#1e1e38] transition-colors group"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors group"
                   >
                     <span className="w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 text-sm font-medium flex items-center justify-center flex-shrink-0">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 line-clamp-2 group-hover:text-indigo-400 transition-colors">
+                      <p className="text-sm text-[#333] line-clamp-2 group-hover:text-[#333] transition-colors">
                         {article.title}
                         <ExternalLink className="w-3 h-3 inline ml-1 opacity-0 group-hover:opacity-100" />
                       </p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-[#999]">
                         <span className="flex items-center gap-1">
                           <ThumbsUp className="w-3 h-3" />
                           {formatCount(article.likeCount)}
@@ -438,8 +438,8 @@ export default function AnalysisHistoryDetailPage() {
             </div>
 
             {/* Top Interaction */}
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-              <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+              <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-emerald-400" />
                 互动率 TOP5
               </h3>
@@ -450,17 +450,17 @@ export default function AnalysisHistoryDetailPage() {
                     href={article.sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-3 rounded-xl bg-[#1a1a2e] hover:bg-[#1e1e38] transition-colors group"
+                    className="flex items-start gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors group"
                   >
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-sm font-medium flex items-center justify-center flex-shrink-0">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 line-clamp-2 group-hover:text-indigo-400 transition-colors">
+                      <p className="text-sm text-[#333] line-clamp-2 group-hover:text-[#333] transition-colors">
                         {article.title}
                         <ExternalLink className="w-3 h-3 inline ml-1 opacity-0 group-hover:opacity-100" />
                       </p>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-[#999]">
                         <span className="flex items-center gap-1 text-emerald-400">
                           <TrendingUp className="w-3 h-3" />
                           {getInteractionRate(article)}%
@@ -478,8 +478,8 @@ export default function AnalysisHistoryDetailPage() {
           </div>
 
           {/* Word Cloud */}
-          <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] h-fit">
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] h-fit">
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
               <Hash className="w-5 h-5 text-amber-400" />
               高频词云
             </h3>
@@ -487,7 +487,7 @@ export default function AnalysisHistoryDetailPage() {
               {wordCloud.map((word) => (
                 <span
                   key={word.text}
-                  className="px-3 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 transition-transform hover:scale-110 cursor-default"
+                  className="px-3 py-1.5 rounded-full bg-[rgba(0,0,0,0.06)] text-[#444] transition-transform hover:scale-110 cursor-default"
                   style={{
                     fontSize: `${Math.max(12, word.weight / 7)}px`,
                     opacity: 0.5 + word.weight / 200,
@@ -501,40 +501,40 @@ export default function AnalysisHistoryDetailPage() {
         </div>
 
         {/* All Articles */}
-        <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#2d2d44]">
-            <h3 className="text-lg font-semibold text-slate-200">全部文章 ({articles.length}篇)</h3>
+        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+            <h3 className="text-lg font-semibold text-[#1A1A1A]">全部文章 ({articles.length}篇)</h3>
           </div>
           <table className="w-full">
-            <thead className="bg-[#1a1a2e] border-b border-[#2d2d44]">
+            <thead className="bg-[#F7F6F0] border-b border-[rgba(0,0,0,0.06)]">
               <tr>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400">标题</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400 w-32">公众号</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400 w-24">阅读</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400 w-24">点赞</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-400 w-24">互动率</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-[#666]">标题</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-[#666] w-32">公众号</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-[#666] w-24">阅读</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-[#666] w-24">点赞</th>
+                <th className="text-left px-6 py-3 text-sm font-medium text-[#666] w-24">互动率</th>
               </tr>
             </thead>
             <tbody>
               {articles.map((article) => (
                 <tr
                   key={article.id}
-                  className="border-b border-[#2d2d44] hover:bg-[#1a1a2e] transition-colors"
+                  className="border-b border-[rgba(0,0,0,0.06)] hover:bg-[#F7F6F0] transition-colors"
                 >
                   <td className="px-6 py-4">
                     <a
                       href={article.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-slate-300 hover:text-indigo-400 line-clamp-1 transition-colors"
+                      className="text-sm text-[#333] hover:text-[#333] line-clamp-1 transition-colors"
                     >
                       {article.title}
                     </a>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{article.wxName}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{formatCount(article.readCount)}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{formatCount(article.likeCount)}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{getInteractionRate(article)}%</td>
+                  <td className="px-6 py-4 text-sm text-[#999]">{article.wxName}</td>
+                  <td className="px-6 py-4 text-sm text-[#999]">{formatCount(article.readCount)}</td>
+                  <td className="px-6 py-4 text-sm text-[#999]">{formatCount(article.likeCount)}</td>
+                  <td className="px-6 py-4 text-sm text-[#999]">{getInteractionRate(article)}%</td>
                 </tr>
               ))}
             </tbody>

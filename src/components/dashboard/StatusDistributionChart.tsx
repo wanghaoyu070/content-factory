@@ -66,11 +66,11 @@ export function StatusDistributionChart({ data, className }: StatusDistributionC
     if (data.length === 0 || total === 0) {
         return (
             <div className={cn('glass-card rounded-2xl p-6', className)}>
-                <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-purple-400" />
                     文章状态分布
                 </h3>
-                <div className="h-64 flex items-center justify-center text-slate-500">
+                <div className="h-64 flex items-center justify-center text-[#999]">
                     暂无文章数据
                 </div>
             </div>
@@ -79,7 +79,7 @@ export function StatusDistributionChart({ data, className }: StatusDistributionC
 
     return (
         <div className={cn('glass-card rounded-2xl p-6', className)}>
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-purple-400" />
                 文章状态分布
             </h3>
@@ -169,13 +169,13 @@ export function StatusDistributionChart({ data, className }: StatusDistributionC
                                     <div className="flex items-center justify-between">
                                         <span className={cn(
                                             'text-sm truncate transition-colors',
-                                            isActive ? 'text-slate-100' : 'text-slate-400'
+                                            isActive ? 'text-[#1A1A1A]' : 'text-[#666]'
                                         )}>
                                             {item.name}
                                         </span>
                                         <span className={cn(
                                             'text-sm font-medium transition-colors',
-                                            isActive ? 'text-slate-100' : 'text-slate-300'
+                                            isActive ? 'text-[#1A1A1A]' : 'text-[#333]'
                                         )}>
                                             {item.count}
                                         </span>

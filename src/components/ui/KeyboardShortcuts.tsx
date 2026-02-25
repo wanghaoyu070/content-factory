@@ -161,16 +161,16 @@ export function KeyboardShortcuts() {
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setShowHelp(false)}
             />
-            <div className="relative w-full max-w-lg bg-[#16162a] rounded-2xl border border-[#2d2d44] shadow-2xl overflow-hidden animate-slide-up">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-2xl overflow-hidden animate-slide-up">
                 {/* 头部 */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d2d44]">
-                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Keyboard className="w-5 h-5 text-indigo-400" />
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+                    <h2 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
+                        <Keyboard className="w-5 h-5 text-[#333]" />
                         键盘快捷键
                     </h2>
                     <button
                         onClick={() => setShowHelp(false)}
-                        className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-[#2d2d44] rounded-lg transition-colors"
+                        className="p-1.5 text-[#999] hover:text-[#333] hover:bg-[#2d2d44] rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -180,7 +180,7 @@ export function KeyboardShortcuts() {
                 <div className="p-6 space-y-6">
                     {/* 导航 */}
                     <div>
-                        <h3 className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                        <h3 className="text-sm font-medium text-[#666] mb-3 flex items-center gap-2">
                             <Command className="w-4 h-4" />
                             导航快捷键
                         </h3>
@@ -188,10 +188,10 @@ export function KeyboardShortcuts() {
                             {navigationShortcuts.map((shortcut) => (
                                 <div
                                     key={shortcut.label}
-                                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#1a1a2e]"
+                                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F6F0]"
                                 >
-                                    <span className="text-sm text-slate-300">{shortcut.description}</span>
-                                    <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-slate-400 font-mono">
+                                    <span className="text-sm text-[#333]">{shortcut.description}</span>
+                                    <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-[#666] font-mono">
                                         {shortcut.label}
                                     </kbd>
                                 </div>
@@ -201,24 +201,24 @@ export function KeyboardShortcuts() {
 
                     {/* 操作 */}
                     <div>
-                        <h3 className="text-sm font-medium text-slate-400 mb-3">
+                        <h3 className="text-sm font-medium text-[#666] mb-3">
                             其他快捷键
                         </h3>
                         <div className="space-y-2">
                             {actionShortcuts.map((shortcut) => (
                                 <div
                                     key={shortcut.label}
-                                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#1a1a2e]"
+                                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F6F0]"
                                 >
-                                    <span className="text-sm text-slate-300">{shortcut.description}</span>
-                                    <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-slate-400 font-mono">
+                                    <span className="text-sm text-[#333]">{shortcut.description}</span>
+                                    <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-[#666] font-mono">
                                         {shortcut.label}
                                     </kbd>
                                 </div>
                             ))}
-                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#1a1a2e]">
-                                <span className="text-sm text-slate-300">关闭弹窗</span>
-                                <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-slate-400 font-mono">
+                            <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-[#F7F6F0]">
+                                <span className="text-sm text-[#333]">关闭弹窗</span>
+                                <kbd className="px-2 py-1 bg-[#2d2d44] rounded text-xs text-[#666] font-mono">
                                     ESC
                                 </kbd>
                             </div>
@@ -227,9 +227,9 @@ export function KeyboardShortcuts() {
                 </div>
 
                 {/* 底部 */}
-                <div className="px-6 py-4 border-t border-[#2d2d44] bg-[#1a1a2e]/50">
-                    <p className="text-xs text-slate-500 text-center">
-                        按 <kbd className="px-1.5 py-0.5 bg-[#2d2d44] rounded text-slate-400">?</kbd> 随时查看快捷键
+                <div className="px-6 py-4 border-t border-[rgba(0,0,0,0.06)] bg-[#F7F6F0]/50">
+                    <p className="text-xs text-[#999] text-center">
+                        按 <kbd className="px-1.5 py-0.5 bg-[#2d2d44] rounded text-[#666]">?</kbd> 随时查看快捷键
                     </p>
                 </div>
             </div>

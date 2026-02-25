@@ -84,7 +84,7 @@ export function ArticleCard({
                 }`}
         >
             {/* 封面图 */}
-            <div className="relative aspect-video bg-[#1a1a2e]">
+            <div className="relative aspect-video bg-[#F7F6F0]">
                 {article.coverImage ? (
                     <img
                         src={article.coverImage}
@@ -92,7 +92,7 @@ export function ArticleCard({
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-500">
+                    <div className="w-full h-full flex items-center justify-center text-[#999]">
                         <ImageIcon className="w-12 h-12" />
                     </div>
                 )}
@@ -100,10 +100,10 @@ export function ArticleCard({
                 {/* 选择按钮 */}
                 <button
                     onClick={() => onToggleSelect(article.id)}
-                    className="absolute top-3 left-3 p-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-3 left-3 p-1.5 rounded-lg bg-black/40 backdrop-blur-sm text-[#1A1A1A] opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                     {isSelected ? (
-                        <CheckSquare className="w-5 h-5 text-indigo-400" />
+                        <CheckSquare className="w-5 h-5 text-[#333]" />
                     ) : (
                         <Square className="w-5 h-5" />
                     )}
@@ -120,7 +120,7 @@ export function ArticleCard({
 
                 {/* 图片数量 */}
                 {article.images.length > 0 && (
-                    <div className="absolute bottom-3 right-3 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white text-xs flex items-center gap-1">
+                    <div className="absolute bottom-3 right-3 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-[#1A1A1A] text-xs flex items-center gap-1">
                         <ImageIcon className="w-3 h-3" />
                         {article.images.length}
                     </div>
@@ -131,17 +131,17 @@ export function ArticleCard({
             <div className="p-4">
                 {/* 标题 */}
                 <Link href={`/articles/${article.id}`}>
-                    <h3 className="font-medium text-slate-100 line-clamp-2 hover:text-indigo-400 transition-colors mb-2">
+                    <h3 className="font-medium text-[#1A1A1A] line-clamp-2 hover:text-[#333] transition-colors mb-2">
                         {article.title}
                     </h3>
                 </Link>
 
                 {/* 摘要 */}
-                <p className="text-sm text-slate-400 line-clamp-2 mb-3">{summary}</p>
+                <p className="text-sm text-[#666] line-clamp-2 mb-3">{summary}</p>
 
                 {/* 底部信息 */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 text-xs text-[#999]">
                         <Calendar className="w-3 h-3" />
                         {formatRelativeTime(article.createdAt)}
                     </div>
@@ -150,7 +150,7 @@ export function ArticleCard({
                     <div className="flex items-center gap-1">
                         <Link
                             href={`/articles/${article.id}`}
-                            className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                            className="p-1.5 text-[#999] hover:text-[#333] hover:bg-[rgba(0,0,0,0.04)] rounded-lg transition-colors"
                         >
                             <Edit className="w-4 h-4" />
                         </Link>
@@ -160,7 +160,7 @@ export function ArticleCard({
                             <button
                                 onClick={() => setShowDropdown(!showDropdown)}
                                 disabled={isPublishing}
-                                className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
+                                className="p-1.5 text-[#999] hover:text-[#333] hover:bg-white/5 rounded-lg transition-colors"
                             >
                                 {isPublishing ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -170,7 +170,7 @@ export function ArticleCard({
                             </button>
 
                             {showDropdown && (
-                                <div className="absolute right-0 top-full mt-1 w-40 bg-[#1a1a2e] rounded-xl shadow-xl border border-[#2d2d44] py-1 z-50">
+                                <div className="absolute right-0 top-full mt-1 w-40 bg-[#F7F6F0] rounded-xl shadow-xl border border-[rgba(0,0,0,0.06)] py-1 z-50">
                                     {/* 发布选项 */}
                                     {['approved', 'published', 'failed'].includes(article.status) && (
                                         <>
@@ -179,7 +179,7 @@ export function ArticleCard({
                                                     setShowDropdown(false);
                                                     onPublishToXiaohongshu(article.id);
                                                 }}
-                                                className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                                className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                             >
                                                 <Send className="w-4 h-4 text-red-400" />
                                                 发布到小红书
@@ -189,7 +189,7 @@ export function ArticleCard({
                                                     setShowDropdown(false);
                                                     onPublishToWechat(article.id);
                                                 }}
-                                                className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                                className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                             >
                                                 <Send className="w-4 h-4 text-green-400" />
                                                 发布到公众号
@@ -203,7 +203,7 @@ export function ArticleCard({
                                             setShowDropdown(false);
                                             onCopy(article.id);
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                     >
                                         <Copy className="w-4 h-4 text-blue-400" />
                                         复制
@@ -214,7 +214,7 @@ export function ArticleCard({
                                             setShowDropdown(false);
                                             onExport(article.id, 'markdown');
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                     >
                                         <FileText className="w-4 h-4 text-purple-400" />
                                         导出 MD
@@ -225,7 +225,7 @@ export function ArticleCard({
                                             setShowDropdown(false);
                                             onExport(article.id, 'html');
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                     >
                                         <Download className="w-4 h-4 text-cyan-400" />
                                         导出 HTML
@@ -238,7 +238,7 @@ export function ArticleCard({
                                             setShowDropdown(false);
                                             onArchive(article.id);
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-white/5 flex items-center gap-2"
                                     >
                                         <Archive className="w-4 h-4 text-amber-400" />
                                         归档

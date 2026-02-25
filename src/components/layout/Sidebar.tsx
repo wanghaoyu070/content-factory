@@ -56,15 +56,15 @@ export default function Sidebar() {
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col h-screen fixed left-0 top-0 glass-sidebar text-white transition-all duration-300 z-40',
+        'hidden lg:flex flex-col h-screen fixed left-0 top-0 glass-sidebar transition-all duration-300 z-40',
         collapsed ? 'w-16' : 'w-60'
       )}
     >
-      <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
+      <div className="p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Logo className="w-9 h-9 flex-shrink-0" />
           {!collapsed && (
-            <span className="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-[#1A1A1A]">
               内容工厂
             </span>
           )}
@@ -87,15 +87,15 @@ export default function Sidebar() {
                       'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
                       collapsed && 'justify-center',
                       isActive
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20'
-                        : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-white'
+                        ? 'bg-[rgba(0,0,0,0.04)] text-[#1A1A1A] font-medium'
+                        : 'text-[#666] hover:bg-[rgba(0,0,0,0.02)] hover:text-[#1A1A1A]'
                     )}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {!collapsed && <span>{item.label}</span>}
                   </Link>
                   {collapsed && (
-                    <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1 rounded-lg bg-[#1a1a2e] border border-[#2d2d44] text-xs text-slate-200 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap shadow-xl">
+                    <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1 rounded-lg bg-white border border-[rgba(0,0,0,0.06)] text-xs text-[#1A1A1A] opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap shadow-lg">
                       {item.label}
                     </span>
                   )}
@@ -109,13 +109,13 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={toggleCollapse}
-        className="absolute -right-3 top-20 w-7 h-7 bg-[#16162a] border border-[#2d2d44] rounded-full flex items-center justify-center hover:bg-[#1a1a2e] transition-colors"
+        className="absolute -right-3 top-20 w-7 h-7 bg-white border border-[rgba(0,0,0,0.1)] rounded-full flex items-center justify-center hover:bg-[#F7F6F0] transition-colors text-[#666] shadow-sm"
         aria-label={collapsed ? '展开侧边栏' : '折叠侧边栏'}
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
 
-      <div className="p-4 border-t border-[#2d2d44]">
+      <div className="p-4 border-t border-[rgba(0,0,0,0.06)]">
         <SidebarFooter collapsed={collapsed} />
       </div>
     </aside>

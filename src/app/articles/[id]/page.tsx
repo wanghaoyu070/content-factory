@@ -20,7 +20,7 @@ const statusConfig: Record<ArticleStatus, { label: string; color: string; bgColo
   approved: { label: '已审核', color: 'text-green-600', bgColor: 'bg-green-100' },
   published: { label: '已发布', color: 'text-blue-600', bgColor: 'bg-blue-100' },
   failed: { label: '发布失败', color: 'text-red-600', bgColor: 'bg-red-100' },
-  archived: { label: '已归档', color: 'text-slate-500', bgColor: 'bg-slate-100' },
+  archived: { label: '已归档', color: 'text-[#999]', bgColor: 'bg-slate-100' },
 };
 
 export default function ArticleEditPage() {
@@ -245,15 +245,15 @@ export default function ArticleEditPage() {
       <div className="min-h-screen bg-slate-50">
         <Header title="新建文章" />
         <div className="p-6">
-          <Link href="/articles" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6">
+          <Link href="/articles" className="inline-flex items-center gap-2 text-[#999] hover:text-slate-700 mb-6">
             <ArrowLeft className="w-4 h-4" />
             返回列表
           </Link>
           <div className="bg-white rounded-xl p-12 shadow-sm border border-slate-200 text-center">
-            <p className="text-slate-500 mb-4">推荐使用「选题分析」页面的「一键创作」功能生成文章</p>
+            <p className="text-[#999] mb-4">推荐使用「选题分析」页面的「一键创作」功能生成文章</p>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[#1A1A1A] rounded-lg hover:bg-blue-700 transition-colors"
             >
               前往选题分析
             </Link>
@@ -281,7 +281,7 @@ export default function ArticleEditPage() {
               <button
                 onClick={() => handleSave('pending_review')}
                 disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-[#1A1A1A] rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
                 提交审核
@@ -294,7 +294,7 @@ export default function ArticleEditPage() {
       <div className="p-6">
         <Link
           href="/articles"
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6"
+          className="inline-flex items-center gap-2 text-[#999] hover:text-slate-700 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           返回列表
@@ -331,36 +331,36 @@ export default function ArticleEditPage() {
               {/* Toolbar */}
               <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-1">
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="标题 1">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="标题 1">
                     <Heading1 className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="标题 2">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="标题 2">
                     <Heading2 className="w-4 h-4" />
                   </button>
                   <div className="w-px h-5 bg-slate-300 mx-1" />
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="粗体">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="粗体">
                     <Bold className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="斜体">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="斜体">
                     <Italic className="w-4 h-4" />
                   </button>
                   <div className="w-px h-5 bg-slate-300 mx-1" />
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="列表">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="列表">
                     <List className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="引用">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="引用">
                     <Quote className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="代码">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="代码">
                     <Code className="w-4 h-4" />
                   </button>
-                  <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="分割线">
+                  <button className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="分割线">
                     <Minus className="w-4 h-4" />
                   </button>
                   <div className="w-px h-5 bg-slate-300 mx-1" />
                   <button
                     onClick={() => setShowImageModal(true)}
-                    className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                    className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
                     title="插入图片"
                   >
                     <ImageIcon className="w-4 h-4" />
@@ -368,7 +368,7 @@ export default function ArticleEditPage() {
                 </div>
                 <button
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                  className="p-2 text-[#999] hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
                   title={isFullscreen ? '退出全屏' : '全屏编辑'}
                 >
                   {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -384,7 +384,7 @@ export default function ArticleEditPage() {
               />
 
               {/* Footer */}
-              <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-500 flex items-center justify-between">
+              <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 text-sm text-[#999] flex items-center justify-between">
                 <span>字数统计: {getWordCount()}</span>
                 <div className="flex items-center gap-3">
                   {hasUnsavedChanges && (
@@ -394,7 +394,7 @@ export default function ArticleEditPage() {
                     </span>
                   )}
                   {lastSavedAt && !hasUnsavedChanges && (
-                    <span className="text-slate-400">
+                    <span className="text-[#666]">
                       上次保存: {lastSavedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}

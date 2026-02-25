@@ -14,12 +14,12 @@ import { toast } from 'sonner';
 // 动态导入TipTap相关组件，避免SSR问题
 const ArticleEditor = dynamic(() => import('@/components/create/ArticleEditor'), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-slate-400">加载编辑器...</div>
+  loading: () => <div className="flex items-center justify-center h-full text-[#666]">加载编辑器...</div>
 });
 
 const ArticlePreview = dynamic(() => import('@/components/preview/ArticlePreview'), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-slate-400">加载预览...</div>
+  loading: () => <div className="flex items-center justify-center h-full text-[#666]">加载预览...</div>
 });
 
 const ProgressTracker = dynamic(() => import('@/components/ui/ProgressTracker'), {
@@ -101,17 +101,17 @@ interface GenerateProgress {
 
 function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void | Promise<void> }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a2e] border border-[#2d2d44] min-w-[120px] justify-center">
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] min-w-[120px] justify-center">
       {status === 'idle' && (
         <>
           <div className="w-2 h-2 rounded-full bg-slate-500" />
-          <span className="text-xs text-slate-400">已保存</span>
+          <span className="text-xs text-[#666]">已保存</span>
         </>
       )}
       {status === 'saving' && (
         <>
-          <Loader2 className="w-3 h-3 animate-spin text-indigo-400" />
-          <span className="text-xs text-indigo-400">保存中...</span>
+          <Loader2 className="w-3 h-3 animate-spin text-[#333]" />
+          <span className="text-xs text-[#333]">保存中...</span>
         </>
       )}
       {status === 'saved' && (
@@ -507,7 +507,7 @@ function CreatePageContent() {
 
   if (status !== 'loading' && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="内容创作" />
         <div className="p-6">
           <LoginPrompt description="登录后即可生成文章、管理草稿" />
@@ -518,11 +518,11 @@ function CreatePageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="内容创作" />
         <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#16162a] rounded-2xl border border-[#2d2d44]">
-            <div className="p-6 flex flex-col gap-4 border-b border-[#2d2d44]">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-[rgba(0,0,0,0.06)]">
+            <div className="p-6 flex flex-col gap-4 border-b border-[rgba(0,0,0,0.06)]">
               <Skeleton className="h-10 w-full" />
               <div className="flex gap-4">
                 <Skeleton className="h-10 w-28" />
@@ -535,7 +535,7 @@ function CreatePageContent() {
               ))}
             </div>
           </div>
-          <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-6 space-y-4">
             <Skeleton className="h-6 w-32" />
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="space-y-3">
@@ -553,7 +553,7 @@ function CreatePageContent() {
   // 编辑模式
   if (mode === 'edit') {
     return (
-      <div className="min-h-screen bg-[#0f0f23] flex flex-col">
+      <div className="min-h-screen bg-[#FDFCF6] flex flex-col">
         <Header
           title="内容创作"
           action={
@@ -564,14 +564,14 @@ function CreatePageContent() {
               </div>
               {/* 移动端显示简化的状态点 */}
               <div className="sm:hidden">
-                {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+                {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-[#333]" />}
                 {saveStatus === 'saved' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
                 {saveStatus === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
               </div>
               {/* 保存按钮 - 移动端只显示图标 */}
               <button
                 onClick={autoSave}
-                className="p-2 sm:px-4 sm:py-2 border border-[#2d2d44] text-slate-300 rounded-lg hover:bg-[#1a1a2e] transition-colors flex items-center gap-2 active:scale-95"
+                className="p-2 sm:px-4 sm:py-2 border border-[rgba(0,0,0,0.06)] text-[#333] rounded-lg hover:bg-[#F7F6F0] transition-colors flex items-center gap-2 active:scale-95"
                 title="保存草稿"
               >
                 <Save className="w-4 h-4" />
@@ -580,7 +580,7 @@ function CreatePageContent() {
               {/* 提交按钮 - 移动端只显示图标 */}
               <button
                 onClick={handleSubmitReview}
-                className="p-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 active:scale-95"
+                className="p-2 sm:px-4 sm:py-2 bg-indigo-600 text-[#1A1A1A] rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 active:scale-95"
                 title="提交审核"
               >
                 <Send className="w-4 h-4" />
@@ -591,26 +591,26 @@ function CreatePageContent() {
         />
 
         {/* 当前选题信息栏 - 移动端优化 */}
-        <div className="px-4 sm:px-6 py-3 bg-[#16162a] border-b border-[#2d2d44]">
+        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[rgba(0,0,0,0.06)]">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <button
                 onClick={() => setMode('select')}
-                className="p-1 text-slate-400 hover:text-slate-200 transition-colors flex-shrink-0"
+                className="p-1 text-[#666] hover:text-[#1A1A1A] transition-colors flex-shrink-0"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <span className="hidden sm:inline text-slate-500 flex-shrink-0">当前选题:</span>
+              <span className="hidden sm:inline text-[#999] flex-shrink-0">当前选题:</span>
               <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full flex-shrink-0">
                 {currentInsight?.keyword}
               </span>
-              <span className="text-slate-200 font-medium truncate text-sm sm:text-base">
+              <span className="text-[#1A1A1A] font-medium truncate text-sm sm:text-base">
                 {currentInsight?.title}
               </span>
             </div>
             <button
               onClick={handleRegenerate}
-              className="p-2 sm:px-3 sm:py-1.5 text-sm text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg flex items-center gap-1 flex-shrink-0 active:scale-95"
+              className="p-2 sm:px-3 sm:py-1.5 text-sm text-[#666] hover:text-[#333] hover:bg-[rgba(0,0,0,0.04)] rounded-lg flex items-center gap-1 flex-shrink-0 active:scale-95"
               title="重新生成"
             >
               <RefreshCw className="w-4 h-4" />
@@ -623,7 +623,7 @@ function CreatePageContent() {
         <div className="flex-1 p-4 lg:p-6 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 h-full">
             {/* 左侧：编辑器 */}
-            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden flex flex-col">
               <ArticleEditor
                 title={articleTitle}
                 content={articleContent}
@@ -648,20 +648,20 @@ function CreatePageContent() {
 
   // 选题模式
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       <Header title="内容创作" />
 
       <div className="p-4 sm:p-6">
         {/* 自由创作入口 */}
-        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-indigo-500/30 mb-4 sm:mb-6">
+        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[rgba(0,0,0,0.08)] mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-[#333] to-[#555] flex items-center justify-center flex-shrink-0">
+                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-[#1A1A1A]" />
               </div>
               <div>
-                <h3 className="font-semibold text-white text-sm sm:text-base mb-0.5 sm:mb-1">自由创作模式</h3>
-                <p className="text-xs sm:text-sm text-slate-400">已有想法？跳过选题，直接开始 AI 创作</p>
+                <h3 className="font-semibold text-[#1A1A1A] text-sm sm:text-base mb-0.5 sm:mb-1">自由创作模式</h3>
+                <p className="text-xs sm:text-sm text-[#666]">已有想法？跳过选题，直接开始 AI 创作</p>
               </div>
             </div>
             <button
@@ -680,7 +680,7 @@ function CreatePageContent() {
                 });
                 setShowFreeCreateModal(true);
               }}
-              className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-95 text-sm sm:text-base"
+              className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium flex items-center justify-center gap-2 shadow-lg shadow-black/8 active:scale-95 text-sm sm:text-base"
             >
               <Zap className="w-4 h-4" />
               开始创作
@@ -692,15 +692,15 @@ function CreatePageContent() {
           {/* 左侧：选题列表 */}
           <div className="lg:col-span-2 space-y-3 sm:space-y-4 lg:space-y-6 order-2 lg:order-1">
             {/* 筛选器 */}
-            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#2d2d44]">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[rgba(0,0,0,0.06)]">
               <div className="flex items-center justify-between gap-4 mb-3">
                 {/* 视图模式切换 */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setViewMode('all')}
                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === 'all'
-                      ? 'bg-indigo-500/20 text-indigo-400'
-                      : 'text-slate-400 hover:bg-[#1a1a2e]'
+                      ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+                      : 'text-[#666] hover:bg-[#F7F6F0]'
                       }`}
                   >
                     全部洞察 ({flatInsights.length})
@@ -709,7 +709,7 @@ function CreatePageContent() {
                     onClick={() => setViewMode('favorites')}
                     className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === 'favorites'
                       ? 'bg-amber-500/20 text-amber-400'
-                      : 'text-slate-400 hover:bg-[#1a1a2e]'
+                      : 'text-[#666] hover:bg-[#F7F6F0]'
                       }`}
                   >
                     ⭐ 我的收藏 ({favoriteIds.length})
@@ -720,7 +720,7 @@ function CreatePageContent() {
               {/* 关键词筛选 */}
               {viewMode === 'all' && (
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-[#666]">
                     <Search className="w-4 h-4" />
                     <span className="text-sm">筛选关键词:</span>
                   </div>
@@ -728,8 +728,8 @@ function CreatePageContent() {
                     <button
                       onClick={() => setSearchFilter('all')}
                       className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${searchFilter === 'all'
-                        ? 'bg-indigo-500/20 text-indigo-400'
-                        : 'text-slate-400 hover:bg-[#1a1a2e]'
+                        ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+                        : 'text-[#666] hover:bg-[#F7F6F0]'
                         }`}
                     >
                       全部
@@ -739,8 +739,8 @@ function CreatePageContent() {
                         key={search.searchId}
                         onClick={() => setSearchFilter(search.searchId)}
                         className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${searchFilter === search.searchId
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : 'text-slate-400 hover:bg-[#1a1a2e]'
+                          ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+                          : 'text-[#666] hover:bg-[#F7F6F0]'
                           }`}
                       >
                         {search.keyword} ({search.insightCount})
@@ -752,19 +752,19 @@ function CreatePageContent() {
             </div>
 
             {/* 选题洞察列表 */}
-            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl border border-[#2d2d44]">
-              <div className="p-3 sm:p-4 border-b border-[#2d2d44] flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-slate-200 flex items-center gap-2">
+            <div className="bg-white rounded-xl sm:rounded-2xl border border-[rgba(0,0,0,0.06)]">
+              <div className="p-3 sm:p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-400" />
                   <span className="hidden sm:inline">选题洞察库</span>
                   <span className="sm:hidden">洞察库</span>
-                  <span className="text-xs sm:text-sm font-normal text-slate-500">
+                  <span className="text-xs sm:text-sm font-normal text-[#999]">
                     ({filteredInsights.length})
                   </span>
                 </h3>
                 <button
                   onClick={fetchData}
-                  className="text-sm text-slate-400 hover:text-indigo-400 flex items-center gap-1"
+                  className="text-sm text-[#666] hover:text-[#333] flex items-center gap-1"
                 >
                   <RefreshCw className="w-4 h-4" />
                   刷新
@@ -779,7 +779,7 @@ function CreatePageContent() {
                   action={{ label: '前往选题分析', href: '/analysis' }}
                 />
               ) : (
-                <div className="divide-y divide-[#2d2d44] max-h-[50vh] sm:max-h-[600px] overflow-y-auto">
+                <div className="divide-y divide-[rgba(0,0,0,0.06)] max-h-[50vh] sm:max-h-[600px] overflow-y-auto">
                   {filteredInsights.map((insight) => {
                     const isExpanded = expandedId === insight.id;
                     const isSelected = selectedInsight?.id === insight.id;
@@ -787,7 +787,7 @@ function CreatePageContent() {
                     return (
                       <div
                         key={insight.id}
-                        className={`p-3 sm:p-4 transition-colors cursor-pointer active:bg-[#1a1a2e] ${isSelected ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'hover:bg-[#1a1a2e]'
+                        className={`p-3 sm:p-4 transition-colors cursor-pointer active:bg-[#F7F6F0] ${isSelected ? 'bg-[rgba(0,0,0,0.04)] border-l-2 border-[rgba(0,0,0,0.15)]' : 'hover:bg-[#F7F6F0]'
                           }`}
                         onClick={() => setSelectedInsight(insight)}
                       >
@@ -797,31 +797,31 @@ function CreatePageContent() {
                               <span className="px-1.5 sm:px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
                                 {insight.keyword}
                               </span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-[#999]">
                                 {formatDate(insight.createdAt)}
                               </span>
                             </div>
-                            <h4 className="font-medium text-slate-200 flex items-center gap-2 text-sm sm:text-base">
+                            <h4 className="font-medium text-[#1A1A1A] flex items-center gap-2 text-sm sm:text-base">
                               {isSelected && (
                                 <span className="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0" />
                               )}
                               <span className="line-clamp-2">{insight.title}</span>
                             </h4>
-                            <p className="text-xs sm:text-sm text-slate-400 mt-1 line-clamp-2">
+                            <p className="text-xs sm:text-sm text-[#666] mt-1 line-clamp-2">
                               {insight.description}
                             </p>
 
                             {isExpanded && (
-                              <div className="mt-3 pt-3 border-t border-[#2d2d44] space-y-3">
+                              <div className="mt-3 pt-3 border-t border-[rgba(0,0,0,0.06)] space-y-3">
                                 {insight.evidence && (
                                   <div>
-                                    <span className="text-xs font-medium text-slate-500">数据支撑</span>
-                                    <p className="text-sm text-slate-400 mt-1">{insight.evidence}</p>
+                                    <span className="text-xs font-medium text-[#999]">数据支撑</span>
+                                    <p className="text-sm text-[#666] mt-1">{insight.evidence}</p>
                                   </div>
                                 )}
                                 {insight.suggestedTopics.length > 0 && (
                                   <div>
-                                    <span className="text-xs font-medium text-slate-500">推荐选题方向</span>
+                                    <span className="text-xs font-medium text-[#999]">推荐选题方向</span>
                                     <div className="flex flex-wrap gap-2 mt-1">
                                       {insight.suggestedTopics.map((topic: string, i: number) => (
                                         <span
@@ -836,10 +836,10 @@ function CreatePageContent() {
                                 )}
                                 {insight.relatedArticles.length > 0 && (
                                   <div>
-                                    <span className="text-xs font-medium text-slate-500">相关文章</span>
+                                    <span className="text-xs font-medium text-[#999]">相关文章</span>
                                     <ul className="mt-1 space-y-1">
                                       {insight.relatedArticles.slice(0, 3).map((article: string, i: number) => (
-                                        <li key={i} className="text-xs text-slate-500 truncate">
+                                        <li key={i} className="text-xs text-[#999] truncate">
                                           • {article}
                                         </li>
                                       ))}
@@ -871,7 +871,7 @@ function CreatePageContent() {
                                 e.stopPropagation();
                                 setExpandedId(isExpanded ? null : insight.id);
                               }}
-                              className="p-2.5 sm:p-2 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors active:scale-95"
+                              className="p-2.5 sm:p-2 text-[#999] hover:text-[#333] hover:bg-white/5 rounded-lg transition-colors active:scale-95"
                               aria-label={isExpanded ? '收起详情' : '展开详情'}
                             >
                               {isExpanded ? (
@@ -893,30 +893,30 @@ function CreatePageContent() {
           {/* 右侧：创作面板 */}
           <div className="space-y-3 sm:space-y-4 lg:space-y-6 order-1 lg:order-2">
             {/* 创作设置 */}
-            <div className="bg-[#16162a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2d2d44]">
-              <h3 className="text-base sm:text-lg font-semibold text-slate-200 mb-3 sm:mb-4 flex items-center gap-2">
-                <PenTool className="w-5 h-5 text-indigo-400" />
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[rgba(0,0,0,0.06)]">
+              <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A] mb-3 sm:mb-4 flex items-center gap-2">
+                <PenTool className="w-5 h-5 text-[#333]" />
                 创作设置
               </h3>
 
               {selectedInsight ? (
                 <div className="space-y-4">
                   {/* 选中的洞察 */}
-                  <div className="p-3 bg-[#1a1a2e] rounded-xl border border-indigo-500/30">
-                    <div className="text-xs text-indigo-400 mb-1">已选择洞察</div>
-                    <div className="text-sm text-slate-200 font-medium">
+                  <div className="p-3 bg-[#F7F6F0] rounded-xl border border-[rgba(0,0,0,0.08)]">
+                    <div className="text-xs text-[#333] mb-1">已选择洞察</div>
+                    <div className="text-sm text-[#1A1A1A] font-medium">
                       {selectedInsight.title}
                     </div>
                   </div>
 
                   {/* 自定义标题 */}
                   <div>
-                    <label className="flex items-center gap-2 text-sm text-slate-400 mb-2">
+                    <label className="flex items-center gap-2 text-sm text-[#666] mb-2">
                       <input
                         type="checkbox"
                         checked={useCustomTitle}
                         onChange={(e) => setUseCustomTitle(e.target.checked)}
-                        className="rounded border-slate-600 bg-[#1a1a2e] text-indigo-500 focus:ring-indigo-500"
+                        className="rounded border-slate-600 bg-[#F7F6F0] text-indigo-500 focus:ring-[rgba(0,0,0,0.1)]"
                       />
                       自定义文章标题
                     </label>
@@ -926,21 +926,21 @@ function CreatePageContent() {
                         value={customTitle}
                         onChange={(e) => setCustomTitle(e.target.value)}
                         placeholder="输入自定义标题..."
-                        className="w-full px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        className="w-full px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm"
                       />
                     )}
                   </div>
 
                   {/* 写作风格 */}
                   <div>
-                    <label className="text-sm text-slate-400 mb-2 block">写作风格</label>
+                    <label className="text-sm text-[#666] mb-2 block">写作风格</label>
                     <div className="space-y-2">
                       {styleOptions.map((option) => (
                         <label
                           key={option.value}
                           className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors ${style === option.value
-                            ? 'bg-indigo-500/20 border border-indigo-500/30'
-                            : 'bg-[#1a1a2e] border border-transparent hover:border-[#2d2d44]'
+                            ? 'bg-[rgba(0,0,0,0.06)] border border-[rgba(0,0,0,0.08)]'
+                            : 'bg-[#F7F6F0] border border-transparent hover:border-[rgba(0,0,0,0.06)]'
                             }`}
                         >
                           <input
@@ -949,11 +949,11 @@ function CreatePageContent() {
                             value={option.value}
                             checked={style === option.value}
                             onChange={(e) => setStyle(e.target.value as WritingStyle)}
-                            className="mt-1 border-slate-600 bg-[#1a1a2e] text-indigo-500 focus:ring-indigo-500"
+                            className="mt-1 border-slate-600 bg-[#F7F6F0] text-indigo-500 focus:ring-[rgba(0,0,0,0.1)]"
                           />
                           <div>
-                            <div className="text-sm font-medium text-slate-200">{option.label}</div>
-                            <div className="text-xs text-slate-500">{option.description}</div>
+                            <div className="text-sm font-medium text-[#1A1A1A]">{option.label}</div>
+                            <div className="text-xs text-[#999]">{option.description}</div>
                           </div>
                         </label>
                       ))}
@@ -961,16 +961,16 @@ function CreatePageContent() {
                   </div>
 
                   {/* 功能说明 */}
-                  <div className="p-3 bg-[#1a1a2e] rounded-xl space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="p-3 bg-[#F7F6F0] rounded-xl space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-[#666]">
                       <ImageIcon className="w-4 h-4 text-emerald-400" />
                       AI 自动生成配图并插入文章
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="flex items-center gap-2 text-xs text-[#666]">
                       <FileText className="w-4 h-4 text-amber-400" />
                       生成 1500-2500 字高质量文章
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <div className="flex items-center gap-2 text-xs text-[#666]">
                       <Zap className="w-4 h-4 text-purple-400" />
                       AI 智能优化标题和结构
                     </div>
@@ -980,7 +980,7 @@ function CreatePageContent() {
                   <button
                     onClick={handleGenerate}
                     disabled={generating}
-                    className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                    className="w-full py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-black/8"
                   >
                     {generating ? (
                       <>
@@ -998,8 +998,8 @@ function CreatePageContent() {
               ) : (
                 <div className="text-center py-8">
                   <Sparkles className="w-12 h-12 mx-auto mb-4 text-slate-600" />
-                  <p className="text-slate-400">请从左侧选择一个选题洞察</p>
-                  <p className="text-sm text-slate-500 mt-2">
+                  <p className="text-[#666]">请从左侧选择一个选题洞察</p>
+                  <p className="text-sm text-[#999] mt-2">
                     点击洞察卡片即可选中
                   </p>
                 </div>
@@ -1007,27 +1007,27 @@ function CreatePageContent() {
             </div>
 
             {/* 快速入口 - 移动端隐藏 */}
-            <div className="hidden sm:block bg-[#16162a] rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[#2d2d44]">
-              <h3 className="text-sm font-medium text-slate-400 mb-3">快速入口</h3>
+            <div className="hidden sm:block bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[rgba(0,0,0,0.06)]">
+              <h3 className="text-sm font-medium text-[#666] mb-3">快速入口</h3>
               <div className="space-y-2">
                 <a
                   href="/"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[#1a1a2e] hover:bg-[#1e1e38] transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors"
                 >
-                  <Search className="w-5 h-5 text-indigo-400" />
+                  <Search className="w-5 h-5 text-[#333]" />
                   <div>
-                    <div className="text-sm text-slate-200">选题分析</div>
-                    <div className="text-xs text-slate-500">搜索关键词，发现新选题</div>
+                    <div className="text-sm text-[#1A1A1A]">选题分析</div>
+                    <div className="text-xs text-[#999]">搜索关键词，发现新选题</div>
                   </div>
                 </a>
                 <a
                   href="/articles"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[#1a1a2e] hover:bg-[#1e1e38] transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors"
                 >
                   <FileText className="w-5 h-5 text-emerald-400" />
                   <div>
-                    <div className="text-sm text-slate-200">发布管理</div>
-                    <div className="text-xs text-slate-500">管理已生成的文章</div>
+                    <div className="text-sm text-[#1A1A1A]">发布管理</div>
+                    <div className="text-xs text-[#999]">管理已生成的文章</div>
                   </div>
                 </a>
               </div>
@@ -1080,15 +1080,15 @@ function CreatePageContent() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowFreeCreateModal(false)}
           />
-          <div className="relative w-full max-w-lg bg-[#16162a] rounded-2xl border border-[#2d2d44] shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-2xl overflow-hidden">
             {/* 头部 */}
             <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-            <div className="p-6 border-b border-[#2d2d44]">
-              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <div className="p-6 border-b border-[rgba(0,0,0,0.06)]">
+              <h2 className="text-xl font-semibold text-[#1A1A1A] flex items-center gap-2">
                 <PenTool className="w-5 h-5 text-purple-400" />
                 自由创作
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-[#666] mt-1">
                 输入你想写的主题，AI 将为你生成完整文章
               </p>
             </div>
@@ -1096,7 +1096,7 @@ function CreatePageContent() {
             {/* 内容 */}
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[#333] mb-2">
                   创作主题 <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -1104,13 +1104,13 @@ function CreatePageContent() {
                   value={freeCreateTopic}
                   onChange={(e) => setFreeCreateTopic(e.target.value)}
                   placeholder="例如：2024年AI行业发展趋势分析"
-                  className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)]/50"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[#333] mb-2">
                   写作风格
                 </label>
                 <div className="flex gap-2">
@@ -1119,8 +1119,8 @@ function CreatePageContent() {
                       key={opt.value}
                       onClick={() => setStyle(opt.value)}
                       className={`flex-1 px-3 py-2 rounded-xl text-sm transition-colors ${style === opt.value
-                          ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                          : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
+                          ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.15)]/50'
+                          : 'bg-[#F7F6F0] text-[#666] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)]'
                         }`}
                     >
                       {opt.label}
@@ -1129,9 +1129,9 @@ function CreatePageContent() {
                 </div>
               </div>
 
-              <div className="bg-[#1a1a2e] rounded-xl p-4">
-                <p className="text-xs text-slate-500 mb-2">💡 创作提示</p>
-                <ul className="text-xs text-slate-400 space-y-1">
+              <div className="bg-[#F7F6F0] rounded-xl p-4">
+                <p className="text-xs text-[#999] mb-2">💡 创作提示</p>
+                <ul className="text-xs text-[#666] space-y-1">
                   <li>• 主题越具体，生成效果越好</li>
                   <li>• 可以包含关键词、行业、角度等</li>
                   <li>• AI 会自动组织结构和内容</li>
@@ -1140,13 +1140,13 @@ function CreatePageContent() {
             </div>
 
             {/* 底部操作 */}
-            <div className="px-6 py-4 border-t border-[#2d2d44] flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-[rgba(0,0,0,0.06)] flex justify-end gap-3">
               <button
                 onClick={() => {
                   setShowFreeCreateModal(false);
                   setFreeCreateTopic('');
                 }}
-                className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors"
+                className="px-4 py-2 text-[#666] hover:text-[#1A1A1A] transition-colors"
               >
                 取消
               </button>
@@ -1172,7 +1172,7 @@ function CreatePageContent() {
                   handleGenerate();
                 }}
                 disabled={!freeCreateTopic.trim() || generating}
-                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 开始创作
@@ -1189,8 +1189,8 @@ function CreatePageContent() {
 export default function CreatePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0f0f23] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-[#FDFCF6] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-[rgba(0,0,0,0.15)] border-t-transparent rounded-full" />
       </div>
     }>
       <CreatePageContent />

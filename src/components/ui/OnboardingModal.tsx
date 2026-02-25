@@ -129,28 +129,28 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
     const renderWelcome = () => (
         <div className="text-center">
             <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-white" />
+                <Sparkles className="w-10 h-10 text-[#1A1A1A]" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-3">
+            <h2 className="text-2xl font-bold text-[#1A1A1A] mb-3">
                 欢迎来到内容工厂！
             </h2>
-            <p className="text-slate-400 mb-6">
+            <p className="text-[#666] mb-6">
                 Hi {session?.user?.name || '创作者'}，让我们花 1 分钟完成基础设置，<br />
                 即可体验 AI 一键创作的魔力 ✨
             </p>
 
             <div className="flex items-center justify-center gap-3 mb-8">
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-[#666]">
                     <div className="w-2 h-2 rounded-full bg-indigo-500" />
                     配置 API
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-600" />
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-[#666]">
                     <div className="w-2 h-2 rounded-full bg-slate-600" />
                     体验功能
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-600" />
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-[#666]">
                     <div className="w-2 h-2 rounded-full bg-slate-600" />
                     开始创作
                 </div>
@@ -158,7 +158,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
             <button
                 onClick={() => setStep('api-config')}
-                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium shadow-lg shadow-indigo-500/20 flex items-center gap-2 mx-auto"
+                className="px-8 py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium shadow-lg shadow-black/8 flex items-center gap-2 mx-auto"
             >
                 开始设置
                 <ArrowRight className="w-5 h-5" />
@@ -174,22 +174,22 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     <Settings className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                    <h3 className="text-lg font-semibold text-slate-100">配置 AI 接口</h3>
-                    <p className="text-sm text-slate-400">用于生成文章内容（核心功能）</p>
+                    <h3 className="text-lg font-semibold text-[#1A1A1A]">配置 AI 接口</h3>
+                    <p className="text-sm text-[#666]">用于生成文章内容（核心功能）</p>
                 </div>
             </div>
 
             {/* 快捷选择 */}
             <div className="mb-4">
-                <label className="text-sm text-slate-400 mb-2 block">快捷选择服务商</label>
+                <label className="text-sm text-[#666] mb-2 block">快捷选择服务商</label>
                 <div className="flex gap-2">
                     {apiProviders.map((provider) => (
                         <button
                             key={provider.name}
                             onClick={() => setApiConfig({ ...apiConfig, baseUrl: provider.url, model: provider.models[0] })}
                             className={`px-3 py-2 rounded-lg text-sm transition-colors ${apiConfig.baseUrl === provider.url
-                                    ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50'
-                                    : 'bg-[#1a1a2e] text-slate-400 border border-[#2d2d44] hover:border-indigo-500/30'
+                                    ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.15)]/50'
+                                    : 'bg-[#F7F6F0] text-[#666] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)]'
                                 }`}
                         >
                             {provider.name}
@@ -200,31 +200,31 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
             {/* API URL */}
             <div className="mb-4">
-                <label className="text-sm text-slate-400 mb-2 block">API Base URL</label>
+                <label className="text-sm text-[#666] mb-2 block">API Base URL</label>
                 <input
                     type="text"
                     value={apiConfig.baseUrl}
                     onChange={(e) => setApiConfig({ ...apiConfig, baseUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-4 py-2.5 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)]/50"
                     placeholder="https://api.openai.com/v1"
                 />
             </div>
 
             {/* API Key */}
             <div className="mb-4">
-                <label className="text-sm text-slate-400 mb-2 block">API Key <span className="text-red-400">*</span></label>
+                <label className="text-sm text-[#666] mb-2 block">API Key <span className="text-red-400">*</span></label>
                 <div className="relative">
                     <input
                         type={showApiKey ? 'text' : 'password'}
                         value={apiConfig.apiKey}
                         onChange={(e) => setApiConfig({ ...apiConfig, apiKey: e.target.value })}
-                        className="w-full px-4 py-2.5 pr-10 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        className="w-full px-4 py-2.5 pr-10 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)]/50"
                         placeholder="sk-..."
                     />
                     <button
                         type="button"
                         onClick={() => setShowApiKey(!showApiKey)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                     >
                         {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -233,11 +233,11 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
             {/* Model */}
             <div className="mb-6">
-                <label className="text-sm text-slate-400 mb-2 block">模型</label>
+                <label className="text-sm text-[#666] mb-2 block">模型</label>
                 <select
                     value={apiConfig.model}
                     onChange={(e) => setApiConfig({ ...apiConfig, model: e.target.value })}
-                    className="w-full px-4 py-2.5 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    className="w-full px-4 py-2.5 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)]/50"
                 >
                     {apiProviders
                         .find((p) => p.url === apiConfig.baseUrl)
@@ -252,7 +252,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <div className="flex items-center justify-between">
                 <button
                     onClick={skipConfig}
-                    className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                    className="text-sm text-[#999] hover:text-[#333] transition-colors"
                 >
                     跳过，稍后配置
                 </button>
@@ -264,7 +264,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                         }
                     }}
                     disabled={loading || !apiConfig.apiKey}
-                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                     {loading ? (
                         <>
@@ -286,24 +286,24 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
     const renderExperience = () => (
         <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-white" />
+                <CheckCircle className="w-8 h-8 text-[#1A1A1A]" />
             </div>
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">
+            <h3 className="text-xl font-semibold text-[#1A1A1A] mb-2">
                 🎉 API 配置成功！
             </h3>
-            <p className="text-slate-400 mb-6">
+            <p className="text-[#666] mb-6">
                 现在让我们用一个热门话题来体验产品的核心功能
             </p>
 
-            <div className="bg-[#1a1a2e] rounded-xl p-6 mb-6 text-left">
+            <div className="bg-[#F7F6F0] rounded-xl p-6 mb-6 text-left">
                 <div className="flex items-center gap-2 mb-3">
                     <Zap className="w-5 h-5 text-amber-400" />
-                    <span className="font-medium text-slate-200">一键创作演示</span>
+                    <span className="font-medium text-[#1A1A1A]">一键创作演示</span>
                 </div>
-                <p className="text-sm text-slate-400 mb-4">
+                <p className="text-sm text-[#666] mb-4">
                     点击下方按钮，系统将自动：
                 </p>
-                <ul className="space-y-2 text-sm text-slate-300">
+                <ul className="space-y-2 text-sm text-[#333]">
                     <li className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                         搜索「AI人工智能」相关热门文章
@@ -324,14 +324,14 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
                     onClick={() => {
                         completeOnboarding();
                     }}
-                    className="px-4 py-2.5 text-slate-400 hover:text-slate-200 transition-colors"
+                    className="px-4 py-2.5 text-[#666] hover:text-[#1A1A1A] transition-colors"
                 >
                     跳过，自己探索
                 </button>
                 <button
                     onClick={startExperience}
                     disabled={loading}
-                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+                    className="px-6 py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium shadow-lg shadow-black/8 flex items-center gap-2"
                 >
                     {loading ? (
                         <>
@@ -353,32 +353,32 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
     const renderComplete = () => (
         <div className="text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-white" />
+                <Sparkles className="w-8 h-8 text-[#1A1A1A]" />
             </div>
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">
+            <h3 className="text-xl font-semibold text-[#1A1A1A] mb-2">
                 准备好开始了！
             </h3>
-            <p className="text-slate-400 mb-6">
+            <p className="text-[#666] mb-6">
                 你可以随时在设置中配置 API，享受完整功能
             </p>
 
-            <div className="bg-[#1a1a2e] rounded-xl p-4 mb-6 text-left">
+            <div className="bg-[#F7F6F0] rounded-xl p-4 mb-6 text-left">
                 <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400">📊 仪表盘</span>
-                        <span className="text-slate-500">查看数据概览</span>
+                        <span className="text-[#666]">📊 仪表盘</span>
+                        <span className="text-[#999]">查看数据概览</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400">🔍 选题分析</span>
-                        <span className="text-slate-500">发现热门选题</span>
+                        <span className="text-[#666]">🔍 选题分析</span>
+                        <span className="text-[#999]">发现热门选题</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400">✍️ 内容创作</span>
-                        <span className="text-slate-500">AI 生成文章</span>
+                        <span className="text-[#666]">✍️ 内容创作</span>
+                        <span className="text-[#999]">AI 生成文章</span>
                     </div>
                     <div className="flex items-center justify-between">
-                        <span className="text-slate-400">⚙️ 设置</span>
-                        <span className="text-slate-500">配置 API</span>
+                        <span className="text-[#666]">⚙️ 设置</span>
+                        <span className="text-[#999]">配置 API</span>
                     </div>
                 </div>
             </div>
@@ -386,7 +386,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
             <button
                 onClick={completeOnboarding}
                 disabled={loading}
-                className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all font-medium shadow-lg shadow-indigo-500/20 flex items-center gap-2 mx-auto"
+                className="px-8 py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium shadow-lg shadow-black/8 flex items-center gap-2 mx-auto"
             >
                 {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -402,7 +402,7 @@ export default function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
     return (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] w-full max-w-md p-8 shadow-2xl">
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] w-full max-w-md p-8 shadow-2xl">
                 {/* 进度指示 */}
                 <div className="flex items-center justify-center gap-2 mb-8">
                     {['welcome', 'api-config', 'experience', 'complete'].map((s, i) => (

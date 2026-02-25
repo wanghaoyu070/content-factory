@@ -13,7 +13,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       <Header title="管理后台" />
       <div className="p-6">
         <AdminInviteManager />

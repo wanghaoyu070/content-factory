@@ -40,8 +40,8 @@ function ToolbarButton({ onClick, isActive, disabled, children, title }: Toolbar
       title={title}
       className={`p-2 rounded-lg transition-colors ${
         isActive
-          ? 'bg-indigo-500/20 text-indigo-400'
-          : 'text-slate-400 hover:bg-[#1a1a2e] hover:text-slate-200'
+          ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+          : 'text-[#666] hover:bg-[#F7F6F0] hover:text-[#1A1A1A]'
       } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       {children}
@@ -75,7 +75,7 @@ export default function EditorToolbar({ editor, onInsertImage }: EditorToolbarPr
   };
 
   return (
-    <div className="flex items-center gap-1 p-3 border-b border-[#2d2d44] bg-[#1a1a2e] flex-wrap">
+    <div className="flex items-center gap-1 p-3 border-b border-[rgba(0,0,0,0.06)] bg-[#F7F6F0] flex-wrap">
       {/* 标题组 */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}

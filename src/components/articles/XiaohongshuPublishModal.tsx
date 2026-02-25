@@ -47,18 +47,18 @@ export function XiaohongshuPublishModal({
             {isPublishing ? (
                 <div className="py-12 flex flex-col items-center">
                     <Loader2 className="w-12 h-12 animate-spin text-red-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-200 mb-2">
+                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">
                         正在生成发布链接...
                     </h3>
-                    <p className="text-sm text-slate-400">请稍候，正在准备发布内容</p>
+                    <p className="text-sm text-[#666]">请稍候，正在准备发布内容</p>
                 </div>
             ) : result ? (
                 /* 二维码显示 */
                 <>
-                    <h3 className="text-lg font-semibold text-slate-200 mb-2 text-center flex items-center justify-center gap-2">
+                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2 text-center flex items-center justify-center gap-2">
                         📕 扫码发布到小红书
                     </h3>
-                    <p className="text-sm text-slate-400 text-center mb-6">
+                    <p className="text-sm text-[#666] text-center mb-6">
                         请使用小红书APP扫描二维码完成发布
                     </p>
 
@@ -73,9 +73,9 @@ export function XiaohongshuPublishModal({
                                     includeMargin={false}
                                 />
                             ) : (
-                                <div className="w-48 h-48 flex flex-col items-center justify-center text-slate-500 text-sm">
+                                <div className="w-48 h-48 flex flex-col items-center justify-center text-[#999] text-sm">
                                     <svg
-                                        className="w-12 h-12 mb-2 text-slate-400"
+                                        className="w-12 h-12 mb-2 text-[#666]"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -95,22 +95,22 @@ export function XiaohongshuPublishModal({
                     </div>
 
                     {/* 文章信息 */}
-                    <div className="bg-[#1a1a2e] rounded-xl p-4 mb-4 border border-[#2d2d44]">
+                    <div className="bg-[#F7F6F0] rounded-xl p-4 mb-4 border border-[rgba(0,0,0,0.06)]">
                         <div className="flex items-center justify-between text-sm mb-2">
-                            <span className="text-slate-400">文章标题</span>
-                            <span className="text-slate-200 truncate max-w-[200px]">
+                            <span className="text-[#666]">文章标题</span>
+                            <span className="text-[#1A1A1A] truncate max-w-[200px]">
                                 {result.title}
                             </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-400">图片数量</span>
-                            <span className="text-slate-200">{result.imageCount} 张</span>
+                            <span className="text-[#666]">图片数量</span>
+                            <span className="text-[#1A1A1A]">{result.imageCount} 张</span>
                         </div>
                     </div>
 
                     {/* 发布链接 */}
                     <div className="mb-6">
-                        <p className="text-xs text-slate-500 mb-2">
+                        <p className="text-xs text-[#999] mb-2">
                             或复制链接在浏览器中打开：
                         </p>
                         <div className="flex gap-2">
@@ -118,12 +118,12 @@ export function XiaohongshuPublishModal({
                                 type="text"
                                 value={result.publishUrl || '未返回链接'}
                                 readOnly
-                                className="flex-1 px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 text-xs"
+                                className="flex-1 px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-[#666] text-xs"
                             />
                             <button
                                 onClick={handleCopyLink}
                                 disabled={!result.publishUrl}
-                                className="px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-400 hover:text-slate-200 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-[#666] hover:text-[#1A1A1A] text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 复制
                             </button>
@@ -133,7 +133,7 @@ export function XiaohongshuPublishModal({
                     {/* 关闭按钮 */}
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 text-sm text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:from-red-400 hover:to-pink-400 transition-all btn-primary"
+                        className="w-full py-2.5 text-sm text-[#1A1A1A] bg-gradient-to-r from-red-500 to-pink-500 rounded-xl hover:from-red-400 hover:to-pink-400 transition-all btn-primary"
                     >
                         完成
                     </button>
@@ -141,11 +141,11 @@ export function XiaohongshuPublishModal({
             ) : error ? (
                 <div className="py-10 text-center">
                     <div className="text-4xl mb-3">😥</div>
-                    <h3 className="text-lg font-semibold text-slate-200 mb-2">生成失败</h3>
-                    <p className="text-sm text-slate-400 mb-6">{error}</p>
+                    <h3 className="text-lg font-semibold text-[#1A1A1A] mb-2">生成失败</h3>
+                    <p className="text-sm text-[#666] mb-6">{error}</p>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm text-white bg-red-500/80 hover:bg-red-500 rounded-lg"
+                        className="px-4 py-2 text-sm text-[#1A1A1A] bg-red-500/80 hover:bg-red-500 rounded-lg"
                     >
                         关闭
                     </button>

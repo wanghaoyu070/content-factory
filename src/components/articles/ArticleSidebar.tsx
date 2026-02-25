@@ -22,7 +22,7 @@ export function ArticleSidebar({ sidebarTab, setSidebarTab, title, ...settingsPa
             onClick={() => setSidebarTab('settings')}
             className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'settings'
               ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600 -mb-px'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              : 'text-[#999] hover:text-slate-700 hover:bg-slate-50'
               }`}
           >
             <Settings className="w-4 h-4" />
@@ -32,7 +32,7 @@ export function ArticleSidebar({ sidebarTab, setSidebarTab, title, ...settingsPa
             onClick={() => setSidebarTab('preview')}
             className={`flex-1 px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${sidebarTab === 'preview'
               ? 'text-green-600 bg-green-50 border-b-2 border-green-600 -mb-px'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              : 'text-[#999] hover:text-slate-700 hover:bg-slate-50'
               }`}
           >
             <Eye className="w-4 h-4" />

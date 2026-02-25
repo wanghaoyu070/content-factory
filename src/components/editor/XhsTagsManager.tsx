@@ -69,7 +69,7 @@ export function XhsTagsManager({
             <div
                 className={cn(
                     'p-3 rounded-xl border transition-colors min-h-[80px]',
-                    isFocused ? 'border-indigo-500 bg-[#1a1a2e]' : 'border-[#2d2d44] bg-[#16162a]'
+                    isFocused ? 'border-[rgba(0,0,0,0.15)] bg-[#F7F6F0]' : 'border-[rgba(0,0,0,0.06)] bg-white'
                 )}
                 onClick={() => inputRef.current?.focus()}
             >
@@ -103,7 +103,7 @@ export function XhsTagsManager({
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             placeholder={tags.length === 0 ? '输入话题标签，按回车添加' : '继续添加...'}
-                            className="flex-1 min-w-[120px] bg-transparent text-slate-200 placeholder-slate-500 text-sm outline-none"
+                            className="flex-1 min-w-[120px] bg-transparent text-[#1A1A1A] placeholder-[#999] text-sm outline-none"
                         />
                     )}
                 </div>
@@ -123,7 +123,7 @@ export function XhsTagsManager({
                             标签数量合适
                         </span>
                     ) : (
-                        <span className="text-slate-500">
+                        <span className="text-[#999]">
                             已添加 {tags.length} / {maxTags} 个标签
                         </span>
                     )}
@@ -136,7 +136,7 @@ export function XhsTagsManager({
             {/* 推荐标签 */}
             {allSuggestions.length > 0 && (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 text-xs text-[#999]">
                         <Sparkles className="w-3 h-3" />
                         推荐话题
                     </div>
@@ -150,7 +150,7 @@ export function XhsTagsManager({
                                     'px-2 py-1 text-xs rounded-full transition-all',
                                     tags.length >= maxTags
                                         ? 'bg-slate-700/30 text-slate-600 cursor-not-allowed'
-                                        : 'bg-[#1a1a2e] text-slate-400 hover:bg-red-500/10 hover:text-red-400 border border-[#2d2d44] hover:border-red-500/30'
+                                        : 'bg-[#F7F6F0] text-[#666] hover:bg-red-500/10 hover:text-red-400 border border-[rgba(0,0,0,0.06)] hover:border-red-500/30'
                                 )}
                             >
                                 <span className="text-red-400/50">#</span>
@@ -162,9 +162,9 @@ export function XhsTagsManager({
             )}
 
             {/* 提示说明 */}
-            <div className="text-xs text-slate-600 bg-[#1a1a2e] rounded-lg p-3">
+            <div className="text-xs text-slate-600 bg-[#F7F6F0] rounded-lg p-3">
                 <p className="mb-1">💡 <strong>话题标签技巧：</strong></p>
-                <ul className="space-y-0.5 text-slate-500">
+                <ul className="space-y-0.5 text-[#999]">
                     <li>• 使用热门话题可获得更多曝光</li>
                     <li>• 建议 3-5 个标签，避免过多</li>
                     <li>• 选择与内容相关的话题</li>

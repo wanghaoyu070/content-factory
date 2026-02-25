@@ -64,12 +64,12 @@ export default function BatchActionsBar({
 
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-fade-in-up">
-            <div className="bg-[#16162a] border border-[#2d2d44] rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-4">
+            <div className="bg-white border border-[rgba(0,0,0,0.06)] rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-4">
                 {/* 选择信息 */}
-                <div className="flex items-center gap-3 border-r border-[#2d2d44] pr-4">
+                <div className="flex items-center gap-3 border-r border-[rgba(0,0,0,0.06)] pr-4">
                     <button
                         onClick={isAllSelected ? onClearSelection : onSelectAll}
-                        className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+                        className="p-1.5 rounded-lg bg-[rgba(0,0,0,0.06)] text-[#333] hover:bg-indigo-500/30 transition-colors"
                     >
                         {isAllSelected ? (
                             <CheckSquare className="w-4 h-4" />
@@ -77,12 +77,12 @@ export default function BatchActionsBar({
                             <Square className="w-4 h-4" />
                         )}
                     </button>
-                    <span className="text-sm text-slate-300">
-                        已选择 <span className="font-medium text-indigo-400">{selectedIds.length}</span> 项
+                    <span className="text-sm text-[#333]">
+                        已选择 <span className="font-medium text-[#333]">{selectedIds.length}</span> 项
                     </span>
                     <button
                         onClick={onClearSelection}
-                        className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                        className="p-1 text-[#999] hover:text-[#333] transition-colors"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -97,7 +97,7 @@ export default function BatchActionsBar({
                             disabled={loading !== null}
                             className={cn(
                                 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all',
-                                'text-slate-300 hover:bg-[#1a1a2e] hover:text-emerald-400',
+                                'text-[#333] hover:bg-[#F7F6F0] hover:text-emerald-400',
                                 loading === 'export' && 'opacity-50 cursor-not-allowed'
                             )}
                         >
@@ -117,7 +117,7 @@ export default function BatchActionsBar({
                             disabled={loading !== null}
                             className={cn(
                                 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all',
-                                'text-slate-300 hover:bg-[#1a1a2e] hover:text-amber-400',
+                                'text-[#333] hover:bg-[#F7F6F0] hover:text-amber-400',
                                 loading === 'archive' && 'opacity-50 cursor-not-allowed'
                             )}
                         >
@@ -137,7 +137,7 @@ export default function BatchActionsBar({
                             disabled={loading !== null}
                             className={cn(
                                 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all',
-                                'bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30',
+                                'bg-[rgba(0,0,0,0.06)] text-[#333] hover:bg-indigo-500/30',
                                 loading === 'publish' && 'opacity-50 cursor-not-allowed'
                             )}
                         >
@@ -156,7 +156,7 @@ export default function BatchActionsBar({
                         disabled={loading !== null}
                         className={cn(
                             'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-all',
-                            'text-slate-300 hover:bg-red-500/20 hover:text-red-400',
+                            'text-[#333] hover:bg-red-500/20 hover:text-red-400',
                             loading === 'delete' && 'opacity-50 cursor-not-allowed'
                         )}
                     >
@@ -173,32 +173,32 @@ export default function BatchActionsBar({
             {/* 删除确认弹窗 */}
             {showConfirm === 'delete' && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-[#16162a] border border-[#2d2d44] rounded-2xl p-6 max-w-sm w-full mx-4 modal-content">
+                    <div className="bg-white border border-[rgba(0,0,0,0.06)] rounded-2xl p-6 max-w-sm w-full mx-4 modal-content">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                                 <AlertTriangle className="w-5 h-5 text-red-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-slate-200">确认删除</h3>
-                                <p className="text-sm text-slate-400">
+                                <h3 className="text-lg font-semibold text-[#1A1A1A]">确认删除</h3>
+                                <p className="text-sm text-[#666]">
                                     确定要删除选中的 {selectedIds.length} 篇文章吗？
                                 </p>
                             </div>
                         </div>
-                        <p className="text-sm text-slate-500 mb-6">
+                        <p className="text-sm text-[#999] mb-6">
                             此操作不可撤销，文章将被永久删除。
                         </p>
                         <div className="flex items-center justify-end gap-3">
                             <button
                                 onClick={() => setShowConfirm(null)}
-                                className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                                className="px-4 py-2 text-sm text-[#666] hover:text-[#1A1A1A] transition-colors"
                             >
                                 取消
                             </button>
                             <button
                                 onClick={() => handleAction('delete', onDelete)}
                                 disabled={loading === 'delete'}
-                                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors flex items-center gap-2"
+                                className="px-4 py-2 text-sm bg-red-600 text-[#1A1A1A] rounded-lg hover:bg-red-500 transition-colors flex items-center gap-2"
                             >
                                 {loading === 'delete' && <Loader2 className="w-4 h-4 animate-spin" />}
                                 确认删除
@@ -232,8 +232,8 @@ export function BatchSelectCheckbox({
             className={cn(
                 'p-1 rounded transition-colors',
                 checked
-                    ? 'text-indigo-400'
-                    : 'text-slate-500 hover:text-slate-300',
+                    ? 'text-[#333]'
+                    : 'text-[#999] hover:text-[#333]',
                 className
             )}
         >

@@ -21,7 +21,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-sidebar border-t border-[#2d2d44]"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[rgba(0,0,0,0.06)]"
       style={{
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
@@ -40,13 +40,13 @@ export default function BottomNav() {
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 py-2 transition-colors',
                   isActive
-                    ? 'text-indigo-400'
-                    : 'text-slate-500 active:text-slate-300'
+                    ? 'text-[#1A1A1A]'
+                    : 'text-[#999] active:text-[#666]'
                 )}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className={cn('w-5 h-5', isActive && 'drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]')} />
+                <Icon className={cn('w-5 h-5')} />
                 <span className={cn('text-xs', isActive ? 'font-medium' : 'font-normal')}>
                   {item.shortLabel || item.label}
                 </span>

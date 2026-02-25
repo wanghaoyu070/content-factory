@@ -124,7 +124,7 @@ export default function Header({ title, action }: HeaderProps) {
 
   return (
     <>
-      <header className="h-16 sticky top-0 z-30 flex items-center justify-between px-4 lg:px-6 backdrop-blur-xl bg-[#0f0f23]/80 border-b border-[#2d2d44]">
+      <header className="h-16 sticky top-0 z-30 flex items-center justify-between px-4 lg:px-6 backdrop-blur-xl bg-[#FDFCF6]/85 border-b border-[rgba(0,0,0,0.06)]">
         {/* 左侧：返回按钮/汉堡菜单 + 标题 */}
         <div className="flex items-center gap-3">
           {/* 移动端：二级页面显示返回按钮，否则显示汉堡菜单 */}
@@ -132,23 +132,23 @@ export default function Header({ title, action }: HeaderProps) {
             {isSecondaryPage ? (
               <button
                 onClick={handleBack}
-                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#1a1a2e] active:bg-[#24243a] transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[rgba(0,0,0,0.03)] active:bg-[rgba(0,0,0,0.06)] transition-colors"
                 aria-label="返回"
               >
-                <ArrowLeft className="w-5 h-5 text-slate-300" />
+                <ArrowLeft className="w-5 h-5 text-[#666]" />
               </button>
             ) : (
               <button
                 onClick={openDrawer}
-                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#1a1a2e] active:bg-[#24243a] transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[rgba(0,0,0,0.03)] active:bg-[rgba(0,0,0,0.06)] transition-colors"
                 aria-label="打开菜单"
               >
-                <Menu className="w-5 h-5 text-slate-300" />
+                <Menu className="w-5 h-5 text-[#666]" />
               </button>
             )}
           </div>
 
-          <h1 className="text-lg lg:text-xl font-semibold text-slate-100">{title}</h1>
+          <h1 className="text-lg lg:text-xl font-semibold text-[#1A1A1A]">{title}</h1>
         </div>
 
         {/* 右侧：操作按钮 + 用户菜单 */}
@@ -157,10 +157,10 @@ export default function Header({ title, action }: HeaderProps) {
           {isSecondaryPage && (
             <button
               onClick={openDrawer}
-              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[#1a1a2e] active:bg-[#24243a] transition-colors"
+              className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[rgba(0,0,0,0.03)] active:bg-[rgba(0,0,0,0.06)] transition-colors"
               aria-label="打开菜单"
             >
-              <Menu className="w-5 h-5 text-slate-300" />
+              <Menu className="w-5 h-5 text-[#666]" />
             </button>
           )}
           {action}

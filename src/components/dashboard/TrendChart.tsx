@@ -38,10 +38,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     });
 
     return (
-        <div className="bg-[#1a1a2e]/95 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-xl">
-            <p className="text-slate-400 text-xs mb-1">{formattedDate}</p>
-            <p className="text-slate-100 font-semibold text-lg">
-                {payload[0].value} <span className="text-sm text-slate-400 font-normal">次分析</span>
+        <div className="bg-[#F7F6F0]/95 backdrop-blur-xl border border-white/10 rounded-xl px-4 py-3 shadow-xl">
+            <p className="text-[#666] text-xs mb-1">{formattedDate}</p>
+            <p className="text-[#1A1A1A] font-semibold text-lg">
+                {payload[0].value} <span className="text-sm text-[#666] font-normal">次分析</span>
             </p>
         </div>
     );
@@ -111,11 +111,11 @@ export function TrendChart({ data, className }: TrendChartProps) {
     if (data.length === 0) {
         return (
             <div className={cn('glass-card rounded-2xl p-6', className)}>
-                <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#333]" />
                     近7天分析趋势
                 </h3>
-                <div className="h-64 flex items-center justify-center text-slate-500">
+                <div className="h-64 flex items-center justify-center text-[#999]">
                     暂无趋势数据
                 </div>
             </div>
@@ -126,14 +126,14 @@ export function TrendChart({ data, className }: TrendChartProps) {
         <div className={cn('glass-card rounded-2xl p-6', className)}>
             {/* 头部 */}
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-[#333]" />
                     近7天分析趋势
                 </h3>
                 <div className="flex items-center gap-4">
                     <div className="text-right">
-                        <p className="text-2xl font-bold text-slate-100">{stats.total}</p>
-                        <p className="text-xs text-slate-500">总计分析</p>
+                        <p className="text-2xl font-bold text-[#1A1A1A]">{stats.total}</p>
+                        <p className="text-xs text-[#999]">总计分析</p>
                     </div>
                 </div>
             </div>
@@ -142,18 +142,18 @@ export function TrendChart({ data, className }: TrendChartProps) {
             <div className="flex items-center gap-6 mb-4 pb-4 border-b border-white/5">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-sm text-slate-400">日均</span>
-                    <span className="text-sm font-semibold text-slate-200">{stats.average}</span>
+                    <span className="text-sm text-[#666]">日均</span>
+                    <span className="text-sm font-semibold text-[#1A1A1A]">{stats.average}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                    <span className="text-sm text-slate-400">最高</span>
-                    <span className="text-sm font-semibold text-slate-200">{stats.max}</span>
+                    <span className="text-sm text-[#666]">最高</span>
+                    <span className="text-sm font-semibold text-[#1A1A1A]">{stats.max}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-slate-500" />
-                    <span className="text-sm text-slate-400">最低</span>
-                    <span className="text-sm font-semibold text-slate-200">{stats.min}</span>
+                    <span className="text-sm text-[#666]">最低</span>
+                    <span className="text-sm font-semibold text-[#1A1A1A]">{stats.min}</span>
                 </div>
             </div>
 

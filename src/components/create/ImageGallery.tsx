@@ -14,14 +14,14 @@ export default function ImageGallery({ images, usedCount, onInsertImage }: Image
   }
 
   return (
-    <div className="p-4 border-t border-[#2d2d44] bg-[#1a1a2e]">
+    <div className="p-4 border-t border-[rgba(0,0,0,0.06)] bg-[#F7F6F0]">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-sm text-slate-400">
+        <div className="flex items-center gap-2 text-sm text-[#666]">
           <ImageIcon className="w-4 h-4 text-emerald-400" />
           <span>可用配图</span>
-          <span className="text-slate-500">({images.length}张)</span>
+          <span className="text-[#999]">({images.length}张)</span>
         </div>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-[#999]">
           已使用: {usedCount}/{images.length}
         </span>
       </div>
@@ -31,7 +31,7 @@ export default function ImageGallery({ images, usedCount, onInsertImage }: Image
           <button
             key={index}
             onClick={() => onInsertImage(imageUrl)}
-            className="relative group flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-colors"
+            className="relative group flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-[rgba(0,0,0,0.15)] transition-colors"
             title="点击插入到文章"
           >
             <img
@@ -40,13 +40,13 @@ export default function ImageGallery({ images, usedCount, onInsertImage }: Image
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-              <Plus className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Plus className="w-6 h-6 text-[#1A1A1A] opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </button>
         ))}
       </div>
 
-      <p className="text-xs text-slate-500 mt-2">
+      <p className="text-xs text-[#999] mt-2">
         点击图片可插入到文章光标位置
       </p>
     </div>

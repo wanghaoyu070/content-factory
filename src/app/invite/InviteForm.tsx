@@ -43,12 +43,12 @@ export default function InviteForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm text-slate-400 mb-2">邀请码</label>
+        <label className="block text-sm text-[#666] mb-2">邀请码</label>
         <input
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)]"
           placeholder="请输入管理员提供的邀请码"
           maxLength={16}
         />
@@ -56,7 +56,7 @@ export default function InviteForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:from-indigo-500 hover:to-purple-500 transition-colors disabled:opacity-60"
+        className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#333] to-[#555] text-white font-semibold hover:from-[#444] hover:to-[#666] transition-colors disabled:opacity-60"
       >
         {loading ? '验证中...' : '提交邀请码'}
       </button>

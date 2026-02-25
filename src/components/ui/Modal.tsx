@@ -76,7 +76,7 @@ export function Modal({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* 背景遮罩 */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-backdrop"
+                className="absolute inset-0 bg-black/30 backdrop-blur-sm modal-backdrop"
                 onClick={closeOnOverlayClick && onClose ? onClose : undefined}
             />
 
@@ -94,13 +94,13 @@ export function Modal({
             >
                 {/* 头部 */}
                 {(title || showCloseButton) && (
-                    <div className="flex items-start justify-between p-6 border-b border-white/5">
+                    <div className="flex items-start justify-between p-6 border-b border-[rgba(0,0,0,0.06)]">
                         <div>
                             {title && (
-                                <h2 id="modal-title" className="text-xl font-semibold text-slate-100">{title}</h2>
+                                <h2 id="modal-title" className="text-xl font-semibold text-[#1A1A1A]">{title}</h2>
                             )}
                             {subtitle && (
-                                <p className="text-sm text-slate-400 mt-1">{subtitle}</p>
+                                <p className="text-sm text-[#666] mt-1">{subtitle}</p>
                             )}
                         </div>
                         {showCloseButton && onClose && (
@@ -108,7 +108,7 @@ export function Modal({
                                 ref={closeButtonRef}
                                 onClick={onClose}
                                 aria-label="关闭对话框"
-                                className="p-2 text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors"
+                                className="p-2 text-[#999] hover:text-[#1A1A1A] hover:bg-[rgba(0,0,0,0.03)] rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -121,7 +121,7 @@ export function Modal({
 
                 {/* 底部 */}
                 {footer && (
-                    <div className="p-6 border-t border-white/5 flex items-center justify-end gap-3">
+                    <div className="p-6 border-t border-[rgba(0,0,0,0.06)] flex items-center justify-end gap-3">
                         {footer}
                     </div>
                 )}
@@ -155,7 +155,7 @@ export function ConfirmModal({
     loading = false,
 }: ConfirmModalProps) {
     const variantStyles = {
-        danger: 'bg-danger text-white hover:bg-danger/80',
+        danger: 'bg-danger text-[#1A1A1A] hover:bg-danger/80',
         warning: 'bg-warning text-black hover:bg-warning/80',
         info: 'bg-primary text-white hover:bg-primary-hover',
     };
@@ -171,7 +171,7 @@ export function ConfirmModal({
                     <button
                         onClick={onClose}
                         disabled={loading}
-                        className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                        className="px-4 py-2 text-sm text-[#666] hover:text-[#1A1A1A] transition-colors"
                     >
                         {cancelText}
                     </button>
@@ -192,7 +192,7 @@ export function ConfirmModal({
                 </>
             }
         >
-            <p className="text-slate-300">{message}</p>
+            <p className="text-[#666]">{message}</p>
         </Modal>
     );
 }

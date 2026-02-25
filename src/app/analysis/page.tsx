@@ -327,12 +327,12 @@ function AnalysisPageContent() {
 
   // Simplified UI render
   if (initialLoading) {
-    return <div className="min-h-screen bg-[#0f0f23] flex items-center justify-center text-slate-500">加载中...</div>;
+    return <div className="min-h-screen bg-[#FDFCF6] flex items-center justify-center text-[#999]">加载中...</div>;
   }
 
   if (status !== 'loading' && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="选题分析" />
         <div className="p-6"><LoginPrompt description="登录后即可使用选题分析" /></div>
       </div>
@@ -340,19 +340,19 @@ function AnalysisPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       <Header title="选题分析" />
 
       <div className="p-6 max-w-7xl mx-auto">
         {/* Search Box Area */}
-        <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6 shadow-xl relative z-10">
+        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6 shadow-xl relative z-10">
           {/* Mode Tabs */}
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={() => setSearchMode('keyword')}
               className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${searchMode === 'keyword'
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.08)]'
+                : 'text-[#666] hover:text-[#1A1A1A]'
                 }`}
             >
               关键词分析
@@ -360,8 +360,8 @@ function AnalysisPageContent() {
             <button
               onClick={() => setSearchMode('account')}
               className={`text-sm font-medium px-4 py-2 rounded-lg transition-all ${searchMode === 'account'
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.08)]'
+                : 'text-[#666] hover:text-[#1A1A1A]'
                 }`}
             >
               公众号分析
@@ -370,21 +370,21 @@ function AnalysisPageContent() {
 
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#999]" />
               <input
                 type="text"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isSearching && handleSearch()}
                 placeholder={searchMode === 'keyword' ? "输入关键词 (如：职场成长)..." : "输入公众号名称..."}
-                className="w-full pl-12 pr-4 py-3 bg-[#0f0f23] border border-[#2d2d44] rounded-xl text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-[#FDFCF6] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] focus:border-transparent outline-none transition-all"
                 disabled={isSearching}
               />
             </div>
             <button
               onClick={() => handleSearch()}
               disabled={isSearching || !keyword.trim()}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-[#1A1A1A] rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               {isSearching ? '分析中...' : '开始分析'}
@@ -393,14 +393,14 @@ function AnalysisPageContent() {
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && !isSearching && !hasResults && (
-            <div className="mt-6 pt-4 border-t border-[#2d2d44]">
-              <div className="text-xs text-slate-500 mb-2 flex items-center gap-1"><Clock className="w-3 h-3" /> 最近搜索</div>
+            <div className="mt-6 pt-4 border-t border-[rgba(0,0,0,0.06)]">
+              <div className="text-xs text-[#999] mb-2 flex items-center gap-1"><Clock className="w-3 h-3" /> 最近搜索</div>
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map(rec => (
                   <button
                     key={rec.id}
                     onClick={() => { setKeyword(rec.keyword); handleSearch(rec.keyword); }}
-                    className="text-xs px-3 py-1.5 bg-[#0f0f23] border border-[#2d2d44] rounded-lg text-slate-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all"
+                    className="text-xs px-3 py-1.5 bg-[#FDFCF6] border border-[rgba(0,0,0,0.06)] rounded-lg text-[#666] hover:text-[#333] hover:border-[rgba(0,0,0,0.12)] transition-all"
                   >
                     {rec.keyword}
                   </button>
@@ -412,10 +412,10 @@ function AnalysisPageContent() {
 
         {/* Status: Processing */}
         {isSearching && (
-          <div className="bg-[#16162a]/50 border border-indigo-500/30 rounded-2xl p-8 text-center animate-pulse mb-8">
-            <Loader2 className="w-10 h-10 text-indigo-400 mx-auto mb-4 animate-spin" />
-            <h3 className="text-xl font-semibold text-slate-100 mb-2">正在深入分析全网数据...</h3>
-            <p className="text-slate-400">这可能需要 5-10 秒，您可以去喝杯水，结果会自动显示。</p>
+          <div className="bg-white/50 border border-[rgba(0,0,0,0.08)] rounded-2xl p-8 text-center animate-pulse mb-8">
+            <Loader2 className="w-10 h-10 text-[#333] mx-auto mb-4 animate-spin" />
+            <h3 className="text-xl font-semibold text-[#1A1A1A] mb-2">正在深入分析全网数据...</h3>
+            <p className="text-[#666]">这可能需要 5-10 秒，您可以去喝杯水，结果会自动显示。</p>
 
             {articles.length > 0 && (
               <div className="mt-4 inline-block px-4 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-sm border border-emerald-500/20">
@@ -439,15 +439,15 @@ function AnalysisPageContent() {
 
             {/* 0. 数据统计概览卡片 */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 rounded-2xl p-5 border border-indigo-500/20">
+              <div className="bg-gradient-to-br from-indigo-500/20 to-indigo-600/10 rounded-2xl p-5 border border-[rgba(0,0,0,0.15)]/20">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-indigo-400" />
+                  <div className="w-10 h-10 rounded-xl bg-[rgba(0,0,0,0.06)] flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#333]" />
                   </div>
-                  <span className="text-sm text-slate-400">分析文章</span>
+                  <span className="text-sm text-[#666]">分析文章</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-100">{articles.length}</div>
-                <div className="text-xs text-slate-500 mt-1">篇热门内容</div>
+                <div className="text-3xl font-bold text-[#1A1A1A]">{articles.length}</div>
+                <div className="text-xs text-[#999] mt-1">篇热门内容</div>
               </div>
 
               <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-2xl p-5 border border-emerald-500/20">
@@ -455,12 +455,12 @@ function AnalysisPageContent() {
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
                     <TrendingUp className="w-5 h-5 text-emerald-400" />
                   </div>
-                  <span className="text-sm text-slate-400">总阅读量</span>
+                  <span className="text-sm text-[#666]">总阅读量</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-100">
+                <div className="text-3xl font-bold text-[#1A1A1A]">
                   {articles.reduce((sum, a) => sum + (a.readCount || a.reads || 0), 0).toLocaleString()}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">累计阅读</div>
+                <div className="text-xs text-[#999] mt-1">累计阅读</div>
               </div>
 
               <div className="bg-gradient-to-br from-rose-500/20 to-rose-600/10 rounded-2xl p-5 border border-rose-500/20">
@@ -468,12 +468,12 @@ function AnalysisPageContent() {
                   <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center">
                     <ThumbsUp className="w-5 h-5 text-rose-400" />
                   </div>
-                  <span className="text-sm text-slate-400">互动数据</span>
+                  <span className="text-sm text-[#666]">互动数据</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-100">
+                <div className="text-3xl font-bold text-[#1A1A1A]">
                   {articles.reduce((sum, a) => sum + (a.likeCount || a.likes || 0), 0).toLocaleString()}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">累计点赞</div>
+                <div className="text-xs text-[#999] mt-1">累计点赞</div>
               </div>
 
               <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-2xl p-5 border border-amber-500/20">
@@ -481,37 +481,37 @@ function AnalysisPageContent() {
                   <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-amber-400" />
                   </div>
-                  <span className="text-sm text-slate-400">AI 洞察</span>
+                  <span className="text-sm text-[#666]">AI 洞察</span>
                 </div>
-                <div className="text-3xl font-bold text-slate-100">{insights.length}</div>
-                <div className="text-xs text-slate-500 mt-1">写作建议</div>
+                <div className="text-3xl font-bold text-[#1A1A1A]">{insights.length}</div>
+                <div className="text-xs text-[#999] mt-1">写作建议</div>
               </div>
             </div>
 
             {/* 1. 核心洞察卡片 (Insights) */}
             <div>
-              <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-400" />
                 AI 深度洞察
-                <span className="text-sm font-normal text-slate-500 ml-2">基于 {articles.length} 篇热门文章智能分析</span>
+                <span className="text-sm font-normal text-[#999] ml-2">基于 {articles.length} 篇热门文章智能分析</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {insights.map((insight, idx) => (
-                  <div key={idx} className="bg-[#16162a] border border-[#2d2d44] hover:border-indigo-500/50 transition-all rounded-2xl p-6 group flex flex-col h-full">
+                  <div key={idx} className="bg-white border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] transition-all rounded-2xl p-6 group flex flex-col h-full">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-[rgba(0,0,0,0.04)] text-[#333] flex items-center justify-center font-bold text-sm">
                         {idx + 1}
                       </div>
-                      <span className="text-xs px-2 py-1 rounded bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/20">
+                      <span className="text-xs px-2 py-1 rounded bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-[#444] border border-[rgba(0,0,0,0.15)]/20">
                         AI 洞察
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-100 mb-3 group-hover:text-indigo-400 transition-colors line-clamp-2">
+                    <h3 className="text-lg font-bold text-[#1A1A1A] mb-3 group-hover:text-[#333] transition-colors line-clamp-2">
                       {insight.title}
                     </h3>
 
-                    <p className="text-sm text-slate-400 mb-4 flex-1 line-clamp-3">
+                    <p className="text-sm text-[#666] mb-4 flex-1 line-clamp-3">
                       {insight.description}
                     </p>
 
@@ -528,10 +528,10 @@ function AnalysisPageContent() {
                     {/* 推荐选题标签 */}
                     {insight.suggestedTopics && insight.suggestedTopics.length > 0 && (
                       <div className="mb-4">
-                        <div className="text-xs text-slate-500 mb-2">推荐选题</div>
+                        <div className="text-xs text-[#999] mb-2">推荐选题</div>
                         <div className="flex flex-wrap gap-1.5">
                           {insight.suggestedTopics.slice(0, 3).map((topic, i) => (
-                            <span key={i} className="text-xs px-2 py-1 rounded-md bg-[#0f0f23] text-slate-400 border border-[#2d2d44]">
+                            <span key={i} className="text-xs px-2 py-1 rounded-md bg-[#FDFCF6] text-[#666] border border-[rgba(0,0,0,0.06)]">
                               {topic}
                             </span>
                           ))}
@@ -539,11 +539,11 @@ function AnalysisPageContent() {
                       </div>
                     )}
 
-                    <div className="border-t border-[#2d2d44] pt-4 mt-auto">
+                    <div className="border-t border-[rgba(0,0,0,0.06)] pt-4 mt-auto">
                       <button
                         onClick={() => handleGenerateArticle(insight)}
                         disabled={generatingId === insight.id}
-                        className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-indigo-500/20"
+                        className="w-full py-2.5 bg-gradient-to-r from-[#333] to-[#555] hover:from-[#444] hover:to-[#666] text-[#1A1A1A] rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-black/8"
                       >
                         {generatingId === insight.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                         {generatingId === insight.id ? '生成中...' : '使用此洞察写文章'}
@@ -555,36 +555,36 @@ function AnalysisPageContent() {
             </div>
 
             {/* 2. 热门文章列表 (Articles) - 增强版 */}
-            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6">
-              <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-6">
+              <h2 className="text-xl font-bold text-[#1A1A1A] mb-6 flex items-center gap-2">
                 <Flame className="w-5 h-5 text-orange-400" />
                 热门文章参考
-                <span className="text-sm font-normal text-slate-500 ml-2">点击可查看详情</span>
+                <span className="text-sm font-normal text-[#999] ml-2">点击可查看详情</span>
               </h2>
               <div className="space-y-4">
                 {articles.slice(0, 8).map((article, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-4 p-4 rounded-xl bg-[#0f0f23]/50 hover:bg-[#0f0f23] transition-all border border-transparent hover:border-[#2d2d44] cursor-pointer group"
+                    className="flex items-start gap-4 p-4 rounded-xl bg-[#FDFCF6]/50 hover:bg-[#FDFCF6] transition-all border border-transparent hover:border-[rgba(0,0,0,0.06)] cursor-pointer group"
                   >
                     {/* 排名标识 */}
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${idx < 3
                         ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20 text-amber-400 border border-amber-500/30'
-                        : 'bg-[#1a1a2e] text-slate-500 border border-[#2d2d44]'
+                        : 'bg-[#F7F6F0] text-[#999] border border-[rgba(0,0,0,0.06)]'
                       }`}>
                       {idx + 1}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       {/* 标题 */}
-                      <h4 className="text-base font-medium text-slate-200 mb-2 group-hover:text-indigo-400 transition-colors line-clamp-2">
+                      <h4 className="text-base font-medium text-[#1A1A1A] mb-2 group-hover:text-[#333] transition-colors line-clamp-2">
                         {article.title}
                       </h4>
 
                       {/* 数据指标 */}
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-[#999]">
                         {/* 作者 */}
-                        <span className="flex items-center gap-1 text-slate-400">
+                        <span className="flex items-center gap-1 text-[#666]">
                           <User className="w-3 h-3" />
                           {article.author || (article as any).wxName || (article as any).wx_name || '匿名作者'}
                         </span>
@@ -624,28 +624,28 @@ function AnalysisPageContent() {
                     </div>
 
                     {/* 箭头 */}
-                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-[#333] transition-colors flex-shrink-0" />
                   </div>
                 ))}
               </div>
             </div>
 
             {/* 3. 热门话题推荐 */}
-            <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6">
-              <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-6">
+              <h2 className="text-xl font-bold text-[#1A1A1A] mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-400" />
                 相关热门话题
-                <span className="text-sm font-normal text-slate-500 ml-2">发现更多写作机会</span>
+                <span className="text-sm font-normal text-[#999] ml-2">发现更多写作机会</span>
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {hotTopics.slice(0, 8).map((topic, idx) => (
                   <button
                     key={idx}
                     onClick={() => { setKeyword(topic.keyword); }}
-                    className="p-4 rounded-xl bg-[#0f0f23]/50 hover:bg-[#0f0f23] border border-[#2d2d44] hover:border-indigo-500/30 transition-all text-left group"
+                    className="p-4 rounded-xl bg-[#FDFCF6]/50 hover:bg-[#FDFCF6] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all text-left group"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-300 group-hover:text-indigo-400 transition-colors">{topic.keyword}</span>
+                      <span className="text-sm font-medium text-[#333] group-hover:text-[#333] transition-colors">{topic.keyword}</span>
                       <Flame className={`w-4 h-4 ${topic.heat >= 90 ? 'text-red-400' : topic.heat >= 80 ? 'text-orange-400' : 'text-amber-400'}`} />
                     </div>
                     <div className="flex items-center gap-2">
@@ -655,7 +655,7 @@ function AnalysisPageContent() {
                           style={{ width: `${topic.heat}%` }}
                         />
                       </div>
-                      <span className="text-xs text-slate-500">{topic.heat}°</span>
+                      <span className="text-xs text-[#999]">{topic.heat}°</span>
                     </div>
                   </button>
                 ))}
@@ -667,11 +667,11 @@ function AnalysisPageContent() {
         {/* Empty State */}
         {!isSearching && !hasResults && step !== 'error' && (
           <div className="mt-12 text-center">
-            <div className="inline-flex w-16 h-16 rounded-full bg-[#16162a] items-center justify-center mb-4 border border-[#2d2d44]">
+            <div className="inline-flex w-16 h-16 rounded-full bg-white items-center justify-center mb-4 border border-[rgba(0,0,0,0.06)]">
               <Sparkles className="w-8 h-8 text-slate-600" />
             </div>
-            <h3 className="text-lg font-medium text-slate-300 mb-2">准备好探索了吗？</h3>
-            <p className="text-slate-500 max-w-md mx-auto">
+            <h3 className="text-lg font-medium text-[#333] mb-2">准备好探索了吗？</h3>
+            <p className="text-[#999] max-w-md mx-auto">
               输入关键词，AI 将为您分析全网热门趋势，并生成专业的写作角度。
             </p>
           </div>
@@ -683,7 +683,7 @@ function AnalysisPageContent() {
 
 export default function AnalysisPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0f0f23] p-6 text-slate-500">界面加载中...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[#FDFCF6] p-6 text-[#999]">界面加载中...</div>}>
       <AnalysisPageContent />
     </Suspense>
   );

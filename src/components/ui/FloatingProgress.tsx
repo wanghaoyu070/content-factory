@@ -75,13 +75,13 @@ export function FloatingProgress({
         <div
             className={cn(
                 'fixed bottom-6 right-6 z-50',
-                'bg-[#16162a]/95 backdrop-blur-xl',
+                'bg-white/95 backdrop-blur-xl',
                 'border rounded-2xl shadow-2xl',
                 'transition-all duration-300 ease-out',
                 'animate-slide-up',
                 isCompleted && 'border-emerald-500/30',
                 isError && 'border-red-500/30',
-                isProcessing && 'border-indigo-500/30'
+                isProcessing && 'border-[rgba(0,0,0,0.08)]'
             )}
             style={{ minWidth: '320px' }}
         >
@@ -93,25 +93,25 @@ export function FloatingProgress({
                     ) : isError ? (
                         <AlertCircle className="w-5 h-5 text-red-400" />
                     ) : (
-                        <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+                        <Loader2 className="w-5 h-5 text-[#333] animate-spin" />
                     )}
                     <span className={cn(
                         'font-medium text-sm',
                         isCompleted && 'text-emerald-400',
                         isError && 'text-red-400',
-                        isProcessing && 'text-slate-200'
+                        isProcessing && 'text-[#1A1A1A]'
                     )}>
                         {isCompleted ? '✨ 创作完成' : isError ? '创作失败' : 'AI 创作中'}
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
                     {isProcessing && (
-                        <span className="text-xs text-slate-500">{formatTime(elapsedTime)}</span>
+                        <span className="text-xs text-[#999]">{formatTime(elapsedTime)}</span>
                     )}
                     {onExpand && isProcessing && (
                         <button
                             onClick={onExpand}
-                            className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                            className="p-1 text-[#999] hover:text-[#333] transition-colors"
                             title="展开详情"
                         >
                             <Maximize2 className="w-4 h-4" />
@@ -119,7 +119,7 @@ export function FloatingProgress({
                     )}
                     <button
                         onClick={handleClose}
-                        className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+                        className="p-1 text-[#999] hover:text-[#333] transition-colors"
                         title="关闭"
                     >
                         <X className="w-4 h-4" />
@@ -135,21 +135,21 @@ export function FloatingProgress({
                         <div className="mb-2">
                             <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                                    className="h-full rounded-full bg-gradient-to-r from-[#333] to-[#555] transition-all duration-500"
                                     style={{ width: `${progress.progress}%` }}
                                 />
                             </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 truncate max-w-[200px]">{progress.message}</span>
-                            <span className="text-indigo-400 font-medium">{progress.progress}%</span>
+                            <span className="text-[#666] truncate max-w-[200px]">{progress.message}</span>
+                            <span className="text-[#333] font-medium">{progress.progress}%</span>
                         </div>
                     </>
                 )}
 
                 {isCompleted && (
                     <div className="text-center py-1">
-                        <p className="text-sm text-slate-300 mb-2">文章已生成完成 🎉</p>
+                        <p className="text-sm text-[#333] mb-2">文章已生成完成 🎉</p>
                         {articleId ? (
                             <Link
                                 href={`/articles/${articleId}`}
@@ -171,7 +171,7 @@ export function FloatingProgress({
                 {isError && (
                     <div className="text-center py-1">
                         <p className="text-sm text-red-300 mb-1">{progress.message}</p>
-                        <p className="text-xs text-slate-500">请检查 AI 配置后重试</p>
+                        <p className="text-xs text-[#999]">请检查 AI 配置后重试</p>
                     </div>
                 )}
             </div>

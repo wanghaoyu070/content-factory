@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import { Toaster } from "sonner";
 import Providers from "./providers";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "内容工厂 - AI驱动的内容创作平台",
@@ -24,12 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">
+      <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           {/* 跳到主内容链接 - 可访问性 */}
           <a
             href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:outline-none"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#333] focus:text-white focus:rounded-lg focus:outline-none"
           >
             跳到主内容
           </a>
@@ -44,9 +50,10 @@ export default function RootLayout({
             position="top-right"
             toastOptions={{
               style: {
-                background: "#16162a",
-                border: "1px solid #2d2d44",
-                color: "#e2e8f0",
+                background: "#FFFFFF",
+                border: "1px solid rgba(0, 0, 0, 0.06)",
+                color: "#1A1A1A",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
               },
             }}
           />

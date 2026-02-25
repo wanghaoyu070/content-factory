@@ -23,8 +23,8 @@ export default function UserMenu() {
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center gap-2 text-slate-400">
-        <div className="w-8 h-8 rounded-full bg-[#1a1a2e] animate-pulse" />
+      <div className="flex items-center gap-2 text-[#999]">
+        <div className="w-8 h-8 rounded-full bg-[#F0EFE9] animate-pulse" />
         <span className="text-sm">加载中...</span>
       </div>
     );
@@ -34,7 +34,7 @@ export default function UserMenu() {
     return (
       <button
         onClick={() => signIn('github', { callbackUrl: '/post-login' })}
-        className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-purple-500"
+        className="px-4 py-2 rounded-xl bg-[#333] text-white text-sm font-medium hover:bg-[#444] shadow-md"
       >
         登录
       </button>
@@ -48,7 +48,7 @@ export default function UserMenu() {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[#1a1a2e] border border-[#2d2d44] hover:bg-[#24243a] transition-colors"
+        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white border border-[rgba(0,0,0,0.06)] hover:bg-[#F7F6F0] transition-colors"
       >
         {/* 头像：优先使用 GitHub 头像 */}
         {avatarUrl ? (
@@ -58,23 +58,23 @@ export default function UserMenu() {
             className="w-9 h-9 rounded-full object-cover"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+          <div className="w-9 h-9 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#666] font-semibold">
             {user.name?.[0] || user.githubLogin?.[0]?.toUpperCase() || 'U'}
           </div>
         )}
         <div className="text-left hidden sm:block">
-          <p className="text-sm text-white font-medium">{user.name || user.githubLogin || '未命名用户'}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm text-[#1A1A1A] font-medium">{user.name || user.githubLogin || '未命名用户'}</p>
+          <p className="text-xs text-[#999]">
             {user.role === 'admin' ? '管理员' : '普通用户'}
           </p>
         </div>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-[#999] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-[#1a1a2e] border border-[#2d2d44] rounded-2xl shadow-2xl z-50 animate-fade-in">
-          {/* 用户信息头部 */}
-          <div className="px-4 py-3 border-b border-[#2d2d44] flex items-center gap-3">
+        <div className="absolute right-0 mt-2 w-56 bg-white border border-[rgba(0,0,0,0.06)] rounded-2xl shadow-xl z-50 animate-fade-in">
+          {/* User info header */}
+          <div className="px-4 py-3 border-b border-[rgba(0,0,0,0.06)] flex items-center gap-3">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -82,13 +82,13 @@ export default function UserMenu() {
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#666] font-semibold">
                 {user.name?.[0] || user.githubLogin?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{user.name || user.githubLogin || '未命名用户'}</p>
-              <p className="text-xs text-slate-500 truncate">@{user.githubLogin || 'GitHub 用户'}</p>
+              <p className="text-sm font-semibold text-[#1A1A1A] truncate">{user.name || user.githubLogin || '未命名用户'}</p>
+              <p className="text-xs text-[#999] truncate">@{user.githubLogin || 'GitHub 用户'}</p>
             </div>
           </div>
 
@@ -97,34 +97,34 @@ export default function UserMenu() {
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:bg-[#24243a] transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#666] hover:bg-[rgba(0,0,0,0.02)] transition-colors"
             >
               <SettingsIcon className="w-4 h-4" />
               <div>
                 <span>系统设置</span>
-                <p className="text-xs text-slate-500">API 配置、偏好设置</p>
+                <p className="text-xs text-[#999]">API 配置、偏好设置</p>
               </div>
             </Link>
             {user.role === 'admin' && (
               <Link
                 href="/admin"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-indigo-300 hover:bg-[#24243a] transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#666] hover:bg-[rgba(0,0,0,0.02)] transition-colors"
               >
                 <Shield className="w-4 h-4" />
                 <div>
                   <span>管理后台</span>
-                  <p className="text-xs text-slate-500">用户管理、邀请码</p>
+                  <p className="text-xs text-[#999]">用户管理、邀请码</p>
                 </div>
               </Link>
             )}
           </div>
 
           {/* 退出登录 */}
-          <div className="py-2 border-t border-[#2d2d44]">
+          <div className="py-2 border-t border-[rgba(0,0,0,0.06)]">
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-4 h-4" />
               退出登录

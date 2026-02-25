@@ -38,7 +38,7 @@ export default function SidebarFooter({ collapsed }: SidebarFooterProps) {
           target={link.external ? '_blank' : undefined}
           rel={link.external ? 'noopener noreferrer' : undefined}
           className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-[#1a1a2e] transition-colors group',
+            'flex items-center gap-3 px-3 py-2 rounded-xl text-[#666] hover:text-[#1A1A1A] hover:bg-[rgba(0,0,0,0.02)] transition-colors group',
             collapsed && 'justify-center'
           )}
         >
@@ -55,17 +55,17 @@ export default function SidebarFooter({ collapsed }: SidebarFooterProps) {
       {/* 键盘快捷键提示（仅展开时显示） */}
       {!collapsed && (
         <div className="px-3 py-2 mt-2">
-          <div className="flex items-center gap-2 text-xs text-slate-600">
+          <div className="flex items-center gap-2 text-xs text-[#999]">
             <Keyboard className="w-3 h-3" />
-            <span>按 <kbd className="px-1 py-0.5 bg-[#1a1a2e] rounded text-slate-400">?</kbd> 查看快捷键</span>
+            <span>按 <kbd className="px-1 py-0.5 bg-[#F5F5F5] rounded text-[#666] border border-[rgba(0,0,0,0.06)]">?</kbd> 查看快捷键</span>
           </div>
         </div>
       )}
 
       {/* 版本号 */}
       {!collapsed && (
-        <div className="px-3 pt-2 border-t border-[#2d2d44]">
-          <p className="text-xs text-slate-600">
+        <div className="px-3 pt-2 border-t border-[rgba(0,0,0,0.06)]">
+          <p className="text-xs text-[#999]">
             Content Factory v1.0.0
           </p>
         </div>

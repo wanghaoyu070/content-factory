@@ -90,7 +90,7 @@ export default function FavoriteButton({
                 touchTargetClasses[size],
                 favorited
                     ? 'text-amber-400 hover:text-amber-300'
-                    : 'text-slate-500 hover:text-amber-400',
+                    : 'text-[#999] hover:text-amber-400',
                 loading && 'opacity-50 cursor-not-allowed'
             )}
             title={favorited ? '取消收藏' : '收藏'}

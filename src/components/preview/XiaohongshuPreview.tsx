@@ -35,7 +35,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
   return (
     <div className="bg-white rounded-[40px] overflow-hidden shadow-2xl w-[480px] mx-auto">
       {/* 手机顶部状态栏 */}
-      <div className="bg-black text-white px-6 py-2 flex items-center justify-between text-xs">
+      <div className="bg-black text-[#1A1A1A] px-6 py-2 flex items-center justify-between text-xs">
         <span>9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex gap-0.5">
@@ -55,7 +55,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b border-gray-100">
         <span className="text-gray-600 text-lg">←</span>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-[#1A1A1A] text-xs font-bold">
             小
           </div>
           <span className="text-gray-800 font-medium text-sm">小红书</span>
@@ -76,7 +76,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
               />
             </div>
             {displayImages.length > 1 && (
-              <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+              <div className="absolute bottom-3 right-3 bg-black/50 text-[#1A1A1A] text-xs px-2 py-1 rounded-full">
                 1/{displayImages.length}
               </div>
             )}
@@ -86,7 +86,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
         {/* 作者信息 */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-[#1A1A1A] text-sm font-bold">
               AI
             </div>
             <div>
@@ -94,7 +94,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
               <div className="text-xs text-gray-400">刚刚发布</div>
             </div>
           </div>
-          <button className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-full font-medium">
+          <button className="px-4 py-1.5 bg-red-500 text-[#1A1A1A] text-sm rounded-full font-medium">
             + 关注
           </button>
         </div>

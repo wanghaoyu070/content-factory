@@ -51,10 +51,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                         </div>
 
                         {/* 标题 */}
-                        <h1 className="text-2xl font-bold text-slate-100 mb-2">
+                        <h1 className="text-2xl font-bold text-[#1A1A1A] mb-2">
                             哎呀，出错了
                         </h1>
-                        <p className="text-slate-400 mb-6">
+                        <p className="text-[#666] mb-6">
                             页面遇到了一些问题，请尝试刷新或返回首页
                         </p>
 
@@ -65,7 +65,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                                     {this.state.error.toString()}
                                 </p>
                                 {this.state.errorInfo && (
-                                    <pre className="text-xs text-slate-500 mt-2 whitespace-pre-wrap">
+                                    <pre className="text-xs text-[#999] mt-2 whitespace-pre-wrap">
                                         {this.state.errorInfo.componentStack}
                                     </pre>
                                 )}
@@ -83,7 +83,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                             </button>
                             <Link
                                 href="/"
-                                className="px-5 py-2.5 bg-white/5 text-slate-300 rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2"
+                                className="px-5 py-2.5 bg-white/5 text-[#333] rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2"
                             >
                                 <Home className="w-4 h-4" />
                                 返回首页
@@ -113,8 +113,8 @@ export function ErrorFallback({
                     <AlertTriangle className="w-5 h-5 text-danger" />
                 </div>
                 <div>
-                    <h3 className="font-medium text-slate-200">加载失败</h3>
-                    <p className="text-sm text-slate-400">{error.message}</p>
+                    <h3 className="font-medium text-[#1A1A1A]">加载失败</h3>
+                    <p className="text-sm text-[#666]">{error.message}</p>
                 </div>
             </div>
             <button

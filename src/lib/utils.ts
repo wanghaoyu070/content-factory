@@ -93,7 +93,7 @@ export const STATUS_CONFIG: Record<ArticleStatus, {
     label: '草稿',
     color: '#64748b',
     bgColor: 'bg-slate-500/10',
-    textColor: 'text-slate-400',
+    textColor: 'text-[#666]',
     badgeColor: 'default'
   },
   pending_review: {
@@ -113,8 +113,8 @@ export const STATUS_CONFIG: Record<ArticleStatus, {
   published: {
     label: '已发布',
     color: '#6366f1',
-    bgColor: 'bg-indigo-500/10',
-    textColor: 'text-indigo-400',
+    bgColor: 'bg-[rgba(0,0,0,0.04)]',
+    textColor: 'text-[#333]',
     badgeColor: 'success'
   },
   failed: {

@@ -15,9 +15,9 @@ export default function Logo({ className = 'w-8 h-8' }: LogoProps) {
       {/* 背景渐变圆角方块 */}
       <defs>
         <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="50%" stopColor="#8b5cf6" />
-          <stop offset="100%" stopColor="#a855f7" />
+          <stop offset="0%" stopColor="#333333" />
+          <stop offset="50%" stopColor="#444444" />
+          <stop offset="100%" stopColor="#555555" />
         </linearGradient>
         <linearGradient id="sparkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#fbbf24" />

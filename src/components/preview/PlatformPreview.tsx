@@ -32,18 +32,18 @@ export default function PlatformPreview({
     };
 
     return (
-        <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden">
             {/* 平台切换 */}
-            <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-400">平台预览</h3>
-                <div className="flex items-center gap-1 bg-[#1a1a2e] rounded-lg p-1">
+            <div className="p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+                <h3 className="text-sm font-medium text-[#666]">平台预览</h3>
+                <div className="flex items-center gap-1 bg-[#F7F6F0] rounded-lg p-1">
                     <button
                         onClick={() => setPlatform('wechat')}
                         className={cn(
                             'px-3 py-1.5 text-xs rounded-md transition-all',
                             platform === 'wechat'
                                 ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'text-slate-400 hover:text-slate-200'
+                                : 'text-[#666] hover:text-[#1A1A1A]'
                         )}
                     >
                         微信公众号
@@ -54,7 +54,7 @@ export default function PlatformPreview({
                             'px-3 py-1.5 text-xs rounded-md transition-all',
                             platform === 'xiaohongshu'
                                 ? 'bg-red-500/20 text-red-400'
-                                : 'text-slate-400 hover:text-slate-200'
+                                : 'text-[#666] hover:text-[#1A1A1A]'
                         )}
                     >
                         小红书
@@ -83,7 +83,7 @@ export default function PlatformPreview({
 
             {/* 提示信息 */}
             <div className="px-4 pb-4">
-                <div className="text-xs text-slate-500 text-center">
+                <div className="text-xs text-[#999] text-center">
                     {platform === 'wechat'
                         ? '💡 预览效果仅供参考，实际效果以微信文章页为准'
                         : '💡 预览效果仅供参考，建议使用真机预览'}
@@ -120,7 +120,7 @@ function WechatPreview({
                     </div>
                 ) : (
                     <div className="aspect-[2.35/1] bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                        <span className="text-white text-2xl">📝</span>
+                        <span className="text-[#1A1A1A] text-2xl">📝</span>
                     </div>
                 )}
 
@@ -145,7 +145,7 @@ function WechatPreview({
             {/* 订阅号消息展示 */}
             <div className="mt-4 p-3 bg-[#f5f5f5] rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-[#1A1A1A] text-xs">
                         CF
                     </div>
                     <div>
@@ -204,7 +204,7 @@ function XiaohongshuPreview({
                     </div>
                 ) : (
                     <div className="aspect-[3/4] bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center">
-                        <span className="text-white text-4xl">📝</span>
+                        <span className="text-[#1A1A1A] text-4xl">📝</span>
                     </div>
                 )}
 
@@ -216,7 +216,7 @@ function XiaohongshuPreview({
 
                     <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center text-white text-[8px]">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-400 to-pink-500 flex items-center justify-center text-[#1A1A1A] text-[8px]">
                                 CF
                             </div>
                             <span className="text-xs text-gray-500">{author}</span>

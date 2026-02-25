@@ -29,8 +29,8 @@ interface ProgressTrackerProps {
 }
 
 const stepConfig: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-    validating: { icon: Circle, label: '验证配置', color: 'text-slate-400' },
-    generating: { icon: FileText, label: '生成文章', color: 'text-indigo-400' },
+    validating: { icon: Circle, label: '验证配置', color: 'text-[#666]' },
+    generating: { icon: FileText, label: '生成文章', color: 'text-[#333]' },
     generating_prompts: { icon: Sparkles, label: '分析配图', color: 'text-purple-400' },
     generating_images: { icon: ImageIcon, label: '生成图片', color: 'text-pink-400' },
     saving: { icon: Save, label: '保存文章', color: 'text-emerald-400' },
@@ -118,8 +118,8 @@ export default function ProgressTracker({
                     className={cn(
                         'w-8 h-8 rounded-full flex items-center justify-center transition-colors',
                         status === 'done' && 'bg-emerald-500/20 text-emerald-400',
-                        status === 'active' && 'bg-indigo-500/20 text-indigo-400',
-                        status === 'pending' && 'bg-slate-700/50 text-slate-500',
+                        status === 'active' && 'bg-[rgba(0,0,0,0.06)] text-[#333]',
+                        status === 'pending' && 'bg-slate-700/50 text-[#999]',
                         status === 'error' && 'bg-red-500/20 text-red-400'
                     )}
                 >
@@ -138,15 +138,15 @@ export default function ProgressTracker({
                         className={cn(
                             'text-sm font-medium transition-colors',
                             status === 'done' && 'text-emerald-400',
-                            status === 'active' && 'text-slate-200',
-                            status === 'pending' && 'text-slate-500',
+                            status === 'active' && 'text-[#1A1A1A]',
+                            status === 'pending' && 'text-[#999]',
                             status === 'error' && 'text-red-400'
                         )}
                     >
                         {config.label}
                     </div>
                     {status === 'active' && progress?.message && (
-                        <div className="text-xs text-slate-400 mt-0.5 truncate animate-pulse">
+                        <div className="text-xs text-[#666] mt-0.5 truncate animate-pulse">
                             {progress.message}
                         </div>
                     )}
@@ -158,14 +158,14 @@ export default function ProgressTracker({
     if (!progress) return null;
 
     return (
-        <div className="bg-[#16162a] rounded-2xl border border-[#2d2d44] p-6 shadow-2xl w-full max-w-md">
+        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-6 shadow-2xl w-full max-w-md">
             {/* 标题 */}
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-400" />
                     AI 创作中
                 </h3>
-                <div className="flex items-center gap-3 text-sm text-slate-400">
+                <div className="flex items-center gap-3 text-sm text-[#666]">
                     <span>⏱️ {formatTime(elapsedTime)}</span>
                 </div>
             </div>
@@ -173,10 +173,10 @@ export default function ProgressTracker({
             {/* 进度条 */}
             <div className="mb-6">
                 <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-slate-400">{progress.message}</span>
-                    <span className="text-indigo-400 font-medium">{progress.progress}%</span>
+                    <span className="text-[#666]">{progress.message}</span>
+                    <span className="text-[#333] font-medium">{progress.progress}%</span>
                 </div>
-                <div className="h-2 bg-[#1a1a2e] rounded-full overflow-hidden">
+                <div className="h-2 bg-[#F7F6F0] rounded-full overflow-hidden">
                     <div
                         className={cn(
                             'h-full rounded-full transition-all duration-500',
@@ -184,7 +184,7 @@ export default function ProgressTracker({
                                 ? 'bg-red-500'
                                 : progress.step === 'completed'
                                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                                    : 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                                    : 'bg-gradient-to-r from-[#333] to-[#555]'
                         )}
                         style={{ width: `${progress.progress}%` }}
                     />
@@ -198,7 +198,7 @@ export default function ProgressTracker({
 
             {/* 预估时间 */}
             {progress.step !== 'completed' && progress.step !== 'error' && (
-                <div className="text-center text-sm text-slate-500">
+                <div className="text-center text-sm text-[#999]">
                     预计剩余时间: {estimateRemainingTime()}
                 </div>
             )}
@@ -208,7 +208,7 @@ export default function ProgressTracker({
                 <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center">
                     <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                     <div className="text-emerald-400 font-medium">🎉 创作完成！</div>
-                    <div className="text-sm text-slate-400 mt-1">
+                    <div className="text-sm text-[#666] mt-1">
                         文章已保存，正在跳转编辑页面...
                     </div>
                 </div>
@@ -219,7 +219,7 @@ export default function ProgressTracker({
                 <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
                     <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-2" />
                     <div className="text-red-400 font-medium">创作失败</div>
-                    <div className="text-sm text-slate-400 mt-1">
+                    <div className="text-sm text-[#666] mt-1">
                         {progress.message}
                     </div>
                 </div>
@@ -231,7 +231,7 @@ export default function ProgressTracker({
                     {minimizable && onMinimize && (
                         <button
                             onClick={onMinimize}
-                            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                            className="text-sm text-[#999] hover:text-[#333] transition-colors"
                         >
                             最小化到后台
                         </button>

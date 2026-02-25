@@ -43,11 +43,11 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
     if (data.length === 0) {
         return (
             <div className={cn('glass-card rounded-2xl p-6', className)}>
-                <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
                     <Flame className="w-5 h-5 text-orange-400" />
                     热门关键词 TOP10
                 </h3>
-                <div className="h-64 flex items-center justify-center text-slate-500">
+                <div className="h-64 flex items-center justify-center text-[#999]">
                     暂无关键词数据
                 </div>
             </div>
@@ -57,11 +57,11 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
     return (
         <div className={cn('glass-card rounded-2xl p-6', className)}>
             <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
                     <Flame className="w-5 h-5 text-orange-400" />
                     热门关键词 TOP10
                 </h3>
-                <span className="text-xs text-slate-500">点击可快速搜索</span>
+                <span className="text-xs text-[#999]">点击可快速搜索</span>
             </div>
 
             <div className="space-y-3">
@@ -87,7 +87,7 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
                                     'w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 transition-transform',
                                     isTop3
                                         ? `bg-gradient-to-br ${rankColors[index + 1 as 1 | 2 | 3]} shadow-lg`
-                                        : 'bg-slate-700/50 text-slate-400',
+                                        : 'bg-slate-700/50 text-[#666]',
                                     isHovered && 'scale-110'
                                 )}
                             >
@@ -99,7 +99,7 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
                                 <div className="flex items-center justify-between mb-1.5">
                                     <span className={cn(
                                         'text-sm font-medium truncate transition-colors',
-                                        isHovered ? 'text-indigo-400' : 'text-slate-200'
+                                        isHovered ? 'text-[#333]' : 'text-[#1A1A1A]'
                                     )}>
                                         {item.keyword}
                                     </span>
@@ -119,7 +119,7 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
                                             </span>
                                         )}
                                         {/* 数量 */}
-                                        <span className="text-sm font-semibold text-slate-300 tabular-nums">
+                                        <span className="text-sm font-semibold text-[#333] tabular-nums">
                                             {item.count}
                                         </span>
                                     </div>
@@ -145,7 +145,7 @@ export function TopKeywordsChart({ data, className }: TopKeywordsChartProps) {
                             <Search
                                 className={cn(
                                     'w-4 h-4 flex-shrink-0 transition-all duration-200',
-                                    isHovered ? 'text-indigo-400 opacity-100 translate-x-0' : 'text-slate-600 opacity-0 -translate-x-2'
+                                    isHovered ? 'text-[#333] opacity-100 translate-x-0' : 'text-slate-600 opacity-0 -translate-x-2'
                                 )}
                             />
                         </Link>

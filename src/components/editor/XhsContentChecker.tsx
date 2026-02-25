@@ -104,11 +104,11 @@ export function XhsContentChecker({ content, className }: XhsContentCheckerProps
                             <span className={cn('font-medium', config.textColor)}>
                                 {config.message}
                             </span>
-                            <span className="text-sm text-slate-400">
+                            <span className="text-sm text-[#666]">
                                 {charCount} / {XHS_CHAR_LIMIT} 字
                             </span>
                         </div>
-                        <p className="text-xs text-slate-500">{config.description}</p>
+                        <p className="text-xs text-[#999]">{config.description}</p>
                     </div>
                 </div>
             </div>
@@ -135,9 +135,9 @@ export function XhsContentChecker({ content, className }: XhsContentCheckerProps
 
             {/* 优化建议（仅当超出时显示） */}
             {isOverLimit && (
-                <div className="bg-[#1a1a2e] rounded-lg p-3 text-xs">
-                    <p className="text-slate-400 mb-2">💡 <strong>精简建议：</strong></p>
-                    <ul className="space-y-1 text-slate-500">
+                <div className="bg-[#F7F6F0] rounded-lg p-3 text-xs">
+                    <p className="text-[#666] mb-2">💡 <strong>精简建议：</strong></p>
+                    <ul className="space-y-1 text-[#999]">
                         <li>• 删除冗余的过渡句和修饰语</li>
                         <li>• 将长段落拆分为要点列表</li>
                         <li>• 保留核心观点，删除次要内容</li>

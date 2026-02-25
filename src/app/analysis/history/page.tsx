@@ -106,14 +106,14 @@ export default function AnalysisHistoryPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       {/* Header */}
-      <div className="bg-[#16162a] border-b border-[#2d2d44]">
+      <div className="bg-white border-b border-[rgba(0,0,0,0.06)]">
         <div className="px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-slate-100">选题历史</h1>
+          <h1 className="text-xl font-semibold text-[#1A1A1A]">选题历史</h1>
           <Link
             href="/analysis"
-            className="px-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-sm text-slate-300 hover:border-indigo-500/50 hover:text-indigo-400 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-sm text-[#333] hover:border-[rgba(0,0,0,0.15)] hover:text-[#333] transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             返回选题分析
@@ -123,36 +123,36 @@ export default function AnalysisHistoryPage() {
 
       <div className="p-6">
         {/* Search Filter */}
-        <div className="bg-[#16162a] rounded-2xl p-4 border border-[#2d2d44] mb-6">
+        <div className="bg-white rounded-2xl p-4 border border-[rgba(0,0,0,0.06)] mb-6">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索关键词..."
-              className="w-full pl-10 pr-4 py-2.5 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm"
             />
           </div>
         </div>
 
         {/* Cards Grid */}
         {loading ? (
-          <div className="py-12 text-center text-slate-500">
+          <div className="py-12 text-center text-[#999]">
             <div className="inline-flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-[rgba(0,0,0,0.15)] border-t-transparent rounded-full animate-spin"></div>
               加载中...
             </div>
           </div>
         ) : filteredRecords.length === 0 ? (
-          <div className="bg-[#16162a] rounded-2xl p-12 border border-[#2d2d44] text-center">
-            <div className="w-16 h-16 bg-[#1a1a2e] rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white rounded-2xl p-12 border border-[rgba(0,0,0,0.06)] text-center">
+            <div className="w-16 h-16 bg-[#F7F6F0] rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-slate-600" />
             </div>
-            <h3 className="text-lg font-medium text-slate-300 mb-2">
+            <h3 className="text-lg font-medium text-[#333] mb-2">
               {searchQuery ? '未找到匹配的记录' : '暂无选题历史'}
             </h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <p className="text-sm text-[#999] mb-6">
               {searchQuery
                 ? '尝试使用其他关键词搜索'
                 : '开始分析选题后，历史记录将显示在这里'}
@@ -160,7 +160,7 @@ export default function AnalysisHistoryPage() {
             {!searchQuery && (
               <Link
                 href="/analysis"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] transition-all"
               >
                 <Search className="w-4 h-4" />
                 开始分析选题
@@ -173,7 +173,7 @@ export default function AnalysisHistoryPage() {
               {filteredRecords.map((record) => (
                 <div
                   key={record.searchId}
-                  className="bg-[#16162a] rounded-2xl p-5 border border-[#2d2d44] hover:border-indigo-500/50 transition-all group"
+                  className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] transition-all group"
                 >
                   {/* Keyword/Account Title */}
                   <div className="flex items-start justify-between mb-4">
@@ -186,17 +186,17 @@ export default function AnalysisHistoryPage() {
                         />
                       ) : (
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          record.searchType === 'account' ? 'bg-emerald-500/20' : 'bg-indigo-500/20'
+                          record.searchType === 'account' ? 'bg-emerald-500/20' : 'bg-[rgba(0,0,0,0.06)]'
                         }`}>
                           {record.searchType === 'account' ? (
                             <User className="w-5 h-5 text-emerald-400" />
                           ) : (
-                            <Search className="w-5 h-5 text-indigo-400" />
+                            <Search className="w-5 h-5 text-[#333]" />
                           )}
                         </div>
                       )}
                       <div>
-                        <h3 className="text-lg font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors">
+                        <h3 className="text-lg font-semibold text-[#1A1A1A] group-hover:text-[#333] transition-colors">
                           {record.accountName || record.keyword}
                         </h3>
                         {record.searchType === 'account' && (
@@ -210,44 +210,44 @@ export default function AnalysisHistoryPage() {
 
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-[#1a1a2e] rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-slate-400 mb-1">
+                    <div className="bg-[#F7F6F0] rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-[#666] mb-1">
                         <FileText className="w-4 h-4 text-blue-400" />
                         <span className="text-xs">文章数量</span>
                       </div>
-                      <p className="text-xl font-bold text-slate-100">
+                      <p className="text-xl font-bold text-[#1A1A1A]">
                         {record.articleCount}
                       </p>
                     </div>
-                    <div className="bg-[#1a1a2e] rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-slate-400 mb-1">
+                    <div className="bg-[#F7F6F0] rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-[#666] mb-1">
                         <Lightbulb className="w-4 h-4 text-amber-400" />
                         <span className="text-xs">洞察数量</span>
                       </div>
-                      <p className="text-xl font-bold text-slate-100">
+                      <p className="text-xl font-bold text-[#1A1A1A]">
                         {record.insightCount}
                       </p>
                     </div>
                   </div>
 
                   {/* Time */}
-                  <div className="flex items-center gap-2 text-sm text-slate-500 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-[#999] mb-4">
                     <Clock className="w-4 h-4" />
                     <span>{formatDate(record.createdAt)}</span>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-4 border-t border-[#2d2d44]">
+                  <div className="flex items-center gap-2 pt-4 border-t border-[rgba(0,0,0,0.06)]">
                     <Link
                       href={`/analysis/history/${record.searchId}`}
-                      className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] transition-all flex items-center justify-center gap-2"
                     >
                       <Eye className="w-4 h-4" />
                       查看详情
                     </Link>
                     <button
                       onClick={() => handleDelete(record.searchId)}
-                      className="px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] text-slate-400 rounded-lg hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      className="px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] text-[#666] rounded-lg hover:border-red-500/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
                       title="删除"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -258,7 +258,7 @@ export default function AnalysisHistoryPage() {
             </div>
 
             {/* Stats Footer */}
-            <div className="mt-6 text-sm text-slate-500 text-center">
+            <div className="mt-6 text-sm text-[#999] text-center">
               共 {filteredRecords.length} 条选题记录
               {searchQuery && records.length !== filteredRecords.length && (
                 <span className="ml-2">

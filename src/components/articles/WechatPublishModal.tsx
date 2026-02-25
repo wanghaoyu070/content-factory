@@ -100,10 +100,10 @@ export function WechatPublishModal({
                             <div className="absolute inset-0 w-24 h-24 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
                         </div>
 
-                        <h3 className="text-xl font-semibold text-slate-200 mb-2">
+                        <h3 className="text-xl font-semibold text-[#1A1A1A] mb-2">
                             正在发布到微信公众号
                         </h3>
-                        <p className="text-sm text-slate-400 text-center max-w-xs mb-6">
+                        <p className="text-sm text-[#666] text-center max-w-xs mb-6">
                             正在将文章同步到公众号草稿箱，请稍候...
                         </p>
 
@@ -111,9 +111,9 @@ export function WechatPublishModal({
                         <div className="w-full max-w-xs space-y-3 px-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                    <CheckCircle2 className="w-3 h-3 text-[#1A1A1A]" />
                                 </div>
-                                <span className="text-sm text-slate-300">准备文章内容</span>
+                                <span className="text-sm text-[#333]">准备文章内容</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center">
@@ -125,7 +125,7 @@ export function WechatPublishModal({
                                 <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center">
                                     <div className="w-2 h-2 rounded-full bg-slate-500" />
                                 </div>
-                                <span className="text-sm text-slate-500">完成发布</span>
+                                <span className="text-sm text-[#999]">完成发布</span>
                             </div>
                         </div>
 
@@ -156,7 +156,7 @@ export function WechatPublishModal({
                         <h3 className="text-xl font-semibold text-green-400 mb-2">
                             发布成功！
                         </h3>
-                        <p className="text-sm text-slate-300 text-center max-w-xs">
+                        <p className="text-sm text-[#333] text-center max-w-xs">
                             文章已成功发布到微信公众号草稿箱
                         </p>
 
@@ -164,21 +164,21 @@ export function WechatPublishModal({
                         <div className="w-full max-w-xs space-y-3 px-4 mt-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                    <CheckCircle2 className="w-3 h-3 text-[#1A1A1A]" />
                                 </div>
-                                <span className="text-sm text-slate-300">准备文章内容</span>
+                                <span className="text-sm text-[#333]">准备文章内容</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                    <CheckCircle2 className="w-3 h-3 text-[#1A1A1A]" />
                                 </div>
-                                <span className="text-sm text-slate-300">上传到微信服务器</span>
+                                <span className="text-sm text-[#333]">上传到微信服务器</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                    <CheckCircle2 className="w-3 h-3 text-white" />
+                                    <CheckCircle2 className="w-3 h-3 text-[#1A1A1A]" />
                                 </div>
-                                <span className="text-sm text-slate-300">完成发布</span>
+                                <span className="text-sm text-[#333]">完成发布</span>
                             </div>
                         </div>
 
@@ -190,7 +190,7 @@ export function WechatPublishModal({
                         </div>
 
                         {/* 自动关闭提示 */}
-                        <div className="mt-4 text-xs text-slate-500">
+                        <div className="mt-4 text-xs text-[#999]">
                             窗口将在 2 秒后自动关闭...
                         </div>
                     </div>
@@ -223,14 +223,14 @@ export function WechatPublishModal({
                         <div className="mt-8 flex items-center gap-3">
                             <button
                                 onClick={handleRetry}
-                                className="px-5 py-2.5 text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+                                className="px-5 py-2.5 text-sm text-[#1A1A1A] bg-gradient-to-r from-[#333] to-[#555] rounded-lg hover:from-[#444] hover:to-[#666] transition-all flex items-center gap-2 shadow-lg shadow-black/8"
                             >
                                 <RefreshCw className="w-4 h-4" />
                                 重新发布
                             </button>
                             <button
                                 onClick={onClose}
-                                className="px-5 py-2.5 text-sm text-slate-300 bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
+                                className="px-5 py-2.5 text-sm text-[#333] bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
                             >
                                 关闭
                             </button>
@@ -243,18 +243,18 @@ export function WechatPublishModal({
                     <>
                         {/* 公众号选择 */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-slate-300 mb-3">
+                            <label className="block text-sm font-medium text-[#333] mb-3">
                                 选择公众号
                             </label>
                             {loadingAccounts ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-                                    <span className="ml-2 text-slate-400">加载中...</span>
+                                    <Loader2 className="w-6 h-6 animate-spin text-[#333]" />
+                                    <span className="ml-2 text-[#666]">加载中...</span>
                                 </div>
                             ) : accounts.length === 0 ? (
-                                <div className="text-center py-6 bg-[#1a1a2e] rounded-xl border border-[#2d2d44]">
-                                    <p className="text-slate-400">暂无可用的公众号</p>
-                                    <p className="text-sm text-slate-500 mt-2">
+                                <div className="text-center py-6 bg-[#F7F6F0] rounded-xl border border-[rgba(0,0,0,0.06)]">
+                                    <p className="text-[#666]">暂无可用的公众号</p>
+                                    <p className="text-sm text-[#999] mt-2">
                                         请先在设置页面配置公众号发布API
                                     </p>
                                 </div>
@@ -267,8 +267,8 @@ export function WechatPublishModal({
                                                 onConfigChange({ ...config, wechatAppid: account.wechatAppid })
                                             }
                                             className={`w-full p-3 rounded-xl border transition-all flex items-center gap-3 text-left ${config.wechatAppid === account.wechatAppid
-                                                ? 'bg-indigo-500/20 border-indigo-500'
-                                                : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                                                ? 'bg-[rgba(0,0,0,0.06)] border-[rgba(0,0,0,0.15)]'
+                                                : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)]'
                                                 }`}
                                         >
                                             {account.avatar ? (
@@ -278,15 +278,15 @@ export function WechatPublishModal({
                                                     className="w-10 h-10 rounded-full"
                                                 />
                                             ) : (
-                                                <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                                <div className="w-10 h-10 rounded-full bg-[rgba(0,0,0,0.06)] flex items-center justify-center text-[#333]">
                                                     📗
                                                 </div>
                                             )}
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-200 truncate">
+                                                <p className="text-sm font-medium text-[#1A1A1A] truncate">
                                                     {account.name}
                                                 </p>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="text-xs text-[#999]">
                                                     {account.type === 'subscription' ? '订阅号' : '服务号'}
                                                     {account.verified && ' · 已认证'}
                                                 </p>
@@ -294,7 +294,7 @@ export function WechatPublishModal({
                                             {config.wechatAppid === account.wechatAppid && (
                                                 <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
                                                     <svg
-                                                        className="w-3 h-3 text-white"
+                                                        className="w-3 h-3 text-[#1A1A1A]"
                                                         fill="none"
                                                         viewBox="0 0 24 24"
                                                         stroke="currentColor"
@@ -319,11 +319,11 @@ export function WechatPublishModal({
 
                         {/* 发布配置 */}
                         <div className="space-y-4">
-                            <h4 className="text-sm font-medium text-slate-300">发布配置</h4>
+                            <h4 className="text-sm font-medium text-[#333]">发布配置</h4>
 
                             {/* 摘要 */}
                             <div>
-                                <label className="block text-xs text-slate-400 mb-1.5">
+                                <label className="block text-xs text-[#666] mb-1.5">
                                     文章摘要（选填，最多120字）
                                 </label>
                                 <textarea
@@ -333,16 +333,16 @@ export function WechatPublishModal({
                                     }
                                     rows={3}
                                     placeholder="用于公众号摘要展示"
-                                    className="w-full px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                                    className="w-full px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm resize-none"
                                 />
-                                <div className="text-right text-xs text-slate-500 mt-1">
+                                <div className="text-right text-xs text-[#999] mt-1">
                                     {config.summary.length}/120
                                 </div>
                             </div>
 
                             {/* 作者名称 */}
                             <div>
-                                <label className="block text-xs text-slate-400 mb-1.5">
+                                <label className="block text-xs text-[#666] mb-1.5">
                                     作者名称（选填）
                                 </label>
                                 <input
@@ -352,20 +352,20 @@ export function WechatPublishModal({
                                         onConfigChange({ ...config, author: e.target.value })
                                     }
                                     placeholder="留空则不显示作者"
-                                    className="w-full px-3 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    className="w-full px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm"
                                 />
                             </div>
 
                             {/* 文章类型 */}
                             <div>
-                                <label className="block text-xs text-slate-400 mb-1.5">
+                                <label className="block text-xs text-[#666] mb-1.5">
                                     文章类型
                                 </label>
                                 <div className="flex gap-3">
                                     <label
                                         className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${config.articleType === 'news'
-                                            ? 'bg-indigo-500/20 border-indigo-500'
-                                            : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                                            ? 'bg-[rgba(0,0,0,0.06)] border-[rgba(0,0,0,0.15)]'
+                                            : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)]'
                                             }`}
                                     >
                                         <input
@@ -381,15 +381,15 @@ export function WechatPublishModal({
                                             }
                                             className="sr-only"
                                         />
-                                        <div className="text-sm font-medium text-slate-200">普通文章</div>
-                                        <div className="text-xs text-slate-500 mt-0.5">
+                                        <div className="text-sm font-medium text-[#1A1A1A]">普通文章</div>
+                                        <div className="text-xs text-[#999] mt-0.5">
                                             适合图文混排内容
                                         </div>
                                     </label>
                                     <label
                                         className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${config.articleType === 'newspic'
-                                            ? 'bg-indigo-500/20 border-indigo-500'
-                                            : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                                            ? 'bg-[rgba(0,0,0,0.06)] border-[rgba(0,0,0,0.15)]'
+                                            : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)]'
                                             }`}
                                     >
                                         <input
@@ -405,22 +405,22 @@ export function WechatPublishModal({
                                             }
                                             className="sr-only"
                                         />
-                                        <div className="text-sm font-medium text-slate-200">小绿书</div>
-                                        <div className="text-xs text-slate-500 mt-0.5">图片为主的内容</div>
+                                        <div className="text-sm font-medium text-[#1A1A1A]">小绿书</div>
+                                        <div className="text-xs text-[#999] mt-0.5">图片为主的内容</div>
                                     </label>
                                 </div>
                             </div>
 
                             {/* 内容格式 */}
                             <div>
-                                <label className="block text-xs text-slate-400 mb-1.5">
+                                <label className="block text-xs text-[#666] mb-1.5">
                                     内容格式
                                 </label>
                                 <div className="flex gap-3">
                                     <label
                                         className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${config.contentFormat === 'html'
-                                            ? 'bg-indigo-500/20 border-indigo-500'
-                                            : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                                            ? 'bg-[rgba(0,0,0,0.06)] border-[rgba(0,0,0,0.15)]'
+                                            : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)]'
                                             }`}
                                     >
                                         <input
@@ -436,13 +436,13 @@ export function WechatPublishModal({
                                             }
                                             className="sr-only"
                                         />
-                                        <div className="text-sm font-medium text-slate-200">HTML</div>
-                                        <div className="text-xs text-slate-500 mt-0.5">推荐，保留样式</div>
+                                        <div className="text-sm font-medium text-[#1A1A1A]">HTML</div>
+                                        <div className="text-xs text-[#999] mt-0.5">推荐，保留样式</div>
                                     </label>
                                     <label
                                         className={`flex-1 p-3 rounded-lg border cursor-pointer transition-all ${config.contentFormat === 'markdown'
-                                            ? 'bg-indigo-500/20 border-indigo-500'
-                                            : 'bg-[#1a1a2e] border-[#2d2d44] hover:border-indigo-500/50'
+                                            ? 'bg-[rgba(0,0,0,0.06)] border-[rgba(0,0,0,0.15)]'
+                                            : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)]'
                                             }`}
                                     >
                                         <input
@@ -458,8 +458,8 @@ export function WechatPublishModal({
                                             }
                                             className="sr-only"
                                         />
-                                        <div className="text-sm font-medium text-slate-200">Markdown</div>
-                                        <div className="text-xs text-slate-500 mt-0.5">自动转换格式</div>
+                                        <div className="text-sm font-medium text-[#1A1A1A]">Markdown</div>
+                                        <div className="text-xs text-[#999] mt-0.5">自动转换格式</div>
                                     </label>
                                 </div>
                             </div>
@@ -477,14 +477,14 @@ export function WechatPublishModal({
             <>
                 <button
                     onClick={onClose}
-                    className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                    className="px-4 py-2 text-sm text-[#666] hover:text-[#1A1A1A] transition-colors"
                 >
                     取消
                 </button>
                 <button
                     onClick={handlePublish}
                     disabled={!config.wechatAppid}
-                    className="px-4 py-2 text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 text-sm text-[#1A1A1A] bg-gradient-to-r from-[#333] to-[#555] rounded-lg hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                     <Send className="w-4 h-4" />
                     确认发布

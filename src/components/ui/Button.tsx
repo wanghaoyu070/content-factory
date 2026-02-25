@@ -16,11 +16,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-    primary: 'btn-primary bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/20',
+    primary: 'btn-primary bg-[#333] text-white hover:bg-[#444] shadow-md shadow-black/10',
     secondary: 'btn-secondary',
     ghost: 'btn-ghost',
     danger: 'btn-danger',
-    success: 'bg-success/20 text-success hover:bg-success/30 border border-success/20',
+    success: 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

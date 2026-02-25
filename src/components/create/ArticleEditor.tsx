@@ -58,7 +58,7 @@ export default function ArticleEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-indigo-400 hover:text-indigo-300 underline',
+          class: 'text-[#333] hover:text-[#444] underline',
         },
       }),
       Underline,
@@ -155,13 +155,13 @@ export default function ArticleEditor({
   return (
     <div className="flex flex-col h-full">
       {/* 标题输入 */}
-      <div className="p-4 border-b border-[#2d2d44]">
+      <div className="p-4 border-b border-[rgba(0,0,0,0.06)]">
         <input
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="请输入文章标题..."
-          className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-medium"
+          className="w-full px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-lg font-medium"
         />
       </div>
 
@@ -169,7 +169,7 @@ export default function ArticleEditor({
       <EditorToolbar editor={editor} onInsertImage={() => { }} />
 
       {/* 编辑器内容区域 */}
-      <div className="flex-1 overflow-y-auto bg-[#16162a] relative">
+      <div className="flex-1 overflow-y-auto bg-white relative">
         <EditorContent editor={editor} />
 
         {/* AI 助手工具栏 */}
@@ -193,16 +193,16 @@ export default function ArticleEditor({
       />
 
       {/* 底部状态栏 */}
-      <div className="px-4 py-3 border-t border-[#2d2d44] bg-[#1a1a2e] flex items-center justify-between text-sm">
-        <div className="flex items-center gap-4 text-slate-400">
+      <div className="px-4 py-3 border-t border-[rgba(0,0,0,0.06)] bg-[#F7F6F0] flex items-center justify-between text-sm">
+        <div className="flex items-center gap-4 text-[#666]">
           <span>字数: {getWordCount()}</span>
           <span>图片: {getUsedImageCount()}/{images.length}</span>
-          <span className="text-xs text-slate-500">💡 选中10+字符可使用 AI 助手</span>
+          <span className="text-xs text-[#999]">💡 选中10+字符可使用 AI 助手</span>
         </div>
         {onSave && (
           <button
             onClick={onSave}
-            className="px-3 py-1 text-xs bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors"
+            className="px-3 py-1 text-xs bg-[rgba(0,0,0,0.06)] text-[#333] rounded-lg hover:bg-indigo-500/30 transition-colors"
           >
             手动保存
           </button>

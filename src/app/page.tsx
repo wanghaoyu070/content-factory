@@ -107,19 +107,19 @@ export default function DashboardPage() {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'analysis':
-        return <Search className="w-4 h-4 text-indigo-400" />;
+        return <Search className="w-4 h-4 text-[#333]" />;
       case 'article':
         return <PenTool className="w-4 h-4 text-purple-400" />;
       case 'publish':
         return <Send className="w-4 h-4 text-emerald-400" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock className="w-4 h-4 text-[#666]" />;
     }
   };
 
   if (!isAuthenticated && status !== 'loading') {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="仪表盘" />
         <div className="p-6">
           <LoginPrompt description="登录后即可查看专属仪表盘与数据统计" />
@@ -130,7 +130,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="仪表盘" />
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -146,8 +146,8 @@ export default function DashboardPage() {
             <div className="lg:col-span-2">
               <ChartSkeleton />
             </div>
-            <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-              <div className="h-6 w-24 bg-[#1a1a2e] rounded mb-4" />
+            <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+              <div className="h-6 w-24 bg-[#F7F6F0] rounded mb-4" />
               {Array.from({ length: 5 }).map((_, i) => (
                 <ListItemSkeleton key={i} />
               ))}
@@ -170,7 +170,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       <Header title="仪表盘" />
 
       <div className="p-6">
@@ -227,9 +227,9 @@ export default function DashboardPage() {
           />
 
           {/* 最近活动 */}
-          <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-slate-400" />
+          <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-[#666]" />
               最近活动
             </h3>
             {(data?.recentActivities || []).length > 0 ? (
@@ -237,14 +237,14 @@ export default function DashboardPage() {
                 {(data?.recentActivities || []).map((activity, index) => (
                   <div
                     key={index}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#1a1a2e] transition-colors"
+                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#F7F6F0] transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[#1a1a2e] flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#F7F6F0] flex items-center justify-center flex-shrink-0">
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 truncate">{activity.title}</p>
-                      <p className="text-xs text-slate-500">{formatTime(activity.time)}</p>
+                      <p className="text-sm text-[#333] truncate">{activity.title}</p>
+                      <p className="text-xs text-[#999]">{formatTime(activity.time)}</p>
                     </div>
                   </div>
                 ))}
@@ -266,14 +266,14 @@ export default function DashboardPage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Link
             href="/analysis"
-            className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-6 border border-indigo-500/30 hover:border-indigo-500/50 transition-all group"
+            className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-6 border border-[rgba(0,0,0,0.08)] hover:border-[rgba(0,0,0,0.15)] transition-all group"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-lg font-semibold text-slate-200 mb-1">选题分析</h4>
-                <p className="text-sm text-slate-400">搜索关键词，发现热门选题</p>
+                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">选题分析</h4>
+                <p className="text-sm text-[#666]">搜索关键词，发现热门选题</p>
               </div>
-              <Search className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+              <Search className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
             </div>
           </Link>
           <Link
@@ -282,8 +282,8 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-lg font-semibold text-slate-200 mb-1">内容创作</h4>
-                <p className="text-sm text-slate-400">AI一键生成高质量文章</p>
+                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">内容创作</h4>
+                <p className="text-sm text-[#666]">AI一键生成高质量文章</p>
               </div>
               <PenTool className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
             </div>
@@ -294,8 +294,8 @@ export default function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-lg font-semibold text-slate-200 mb-1">发布管理</h4>
-                <p className="text-sm text-slate-400">管理和发布你的文章</p>
+                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">发布管理</h4>
+                <p className="text-sm text-[#666]">管理和发布你的文章</p>
               </div>
               <Send className="w-8 h-8 text-emerald-400 group-hover:scale-110 transition-transform" />
             </div>
@@ -320,7 +320,7 @@ function StatCard({
   trend?: number;
 }) {
   const colorClasses = {
-    indigo: 'from-indigo-600/20 to-indigo-600/5 border-indigo-500/30 text-indigo-400',
+    indigo: 'from-indigo-600/20 to-indigo-600/5 border-[rgba(0,0,0,0.08)] text-[#333]',
     purple: 'from-purple-600/20 to-purple-600/5 border-purple-500/30 text-purple-400',
     emerald: 'from-emerald-600/20 to-emerald-600/5 border-emerald-500/30 text-emerald-400',
     amber: 'from-amber-600/20 to-amber-600/5 border-amber-500/30 text-amber-400',
@@ -331,13 +331,13 @@ function StatCard({
       className={`bg-gradient-to-br ${colorClasses[color]} rounded-2xl p-6 border`}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-slate-400">{title}</span>
-        <div className={`w-10 h-10 rounded-xl bg-[#1a1a2e] flex items-center justify-center ${colorClasses[color].split(' ').pop()}`}>
+        <span className="text-sm text-[#666]">{title}</span>
+        <div className={`w-10 h-10 rounded-xl bg-[#F7F6F0] flex items-center justify-center ${colorClasses[color].split(' ').pop()}`}>
           {icon}
         </div>
       </div>
       <div className="flex items-end justify-between">
-        <span className="text-3xl font-bold text-slate-100">{value}</span>
+        <span className="text-3xl font-bold text-[#1A1A1A]">{value}</span>
         {trend !== undefined && (
           <div
             className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'

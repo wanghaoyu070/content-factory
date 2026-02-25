@@ -107,8 +107,8 @@ function ValidationResultModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-slate-200 mb-4">保存完成 - 验证结果</h3>
+      <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] max-w-md w-full mx-4">
+        <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4">保存完成 - 验证结果</h3>
         <div className="space-y-3 mb-6">
           {results.map((result, index) => (
             <div key={index} className="flex items-start gap-3">
@@ -119,25 +119,25 @@ function ValidationResultModal({
                 <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
               )}
               {result.status === 'skipped' && (
-                <SkipForward className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+                <SkipForward className="w-5 h-5 text-[#999] flex-shrink-0 mt-0.5" />
               )}
               <div>
                 <p className={cn(
                   'text-sm font-medium',
                   result.status === 'success' && 'text-emerald-400',
                   result.status === 'error' && 'text-red-400',
-                  result.status === 'skipped' && 'text-slate-500'
+                  result.status === 'skipped' && 'text-[#999]'
                 )}>
                   {result.name}
                 </p>
-                <p className="text-xs text-slate-400">{result.message}</p>
+                <p className="text-xs text-[#666]">{result.message}</p>
               </div>
             </div>
           ))}
         </div>
         <button
           onClick={onClose}
-          className="w-full px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors"
+          className="w-full px-4 py-2 bg-indigo-600 text-[#1A1A1A] rounded-xl hover:bg-indigo-500 transition-colors"
         >
           知道了
         </button>
@@ -196,8 +196,8 @@ export default function SettingsPage() {
     setShowKeys((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const inputBaseClass = 'w-full px-4 py-2 bg-[#1a1a2e] rounded-xl text-slate-200 text-sm focus:outline-none focus:ring-2 transition-colors border';
-  const normalInputClass = 'border-[#2d2d44] focus:border-indigo-500 focus:ring-indigo-500/20';
+  const inputBaseClass = 'w-full px-4 py-2 bg-[#F7F6F0] rounded-xl text-[#1A1A1A] text-sm focus:outline-none focus:ring-2 transition-colors border';
+  const normalInputClass = 'border-[rgba(0,0,0,0.06)] focus:border-[rgba(0,0,0,0.15)] focus:ring-[rgba(0,0,0,0.1)]/20';
   const errorInputClass = 'border-red-500 focus:border-red-500 focus:ring-red-500/20';
 
   // 验证单个 API 配置
@@ -306,7 +306,7 @@ export default function SettingsPage() {
 
   if (status !== 'loading' && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="设置" />
         <div className="p-6">
           <LoginPrompt description="登录后即可配置各类 API 和偏好设置" />
@@ -317,17 +317,17 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f23]">
+      <div className="min-h-screen bg-[#FDFCF6]">
         <Header title="设置" />
         <div className="p-6 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#333]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f23]">
+    <div className="min-h-screen bg-[#FDFCF6]">
       <Header title="设置" />
 
       {validationResults && (
@@ -339,8 +339,8 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl space-y-6">
         {/* 配置状态概览 */}
-        <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16162a] rounded-2xl p-6 border border-[#2d2d44]">
-          <h2 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+        <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16162a] rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+          <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
             <span className="text-xl">⚙️</span>
             配置状态
           </h2>
@@ -383,12 +383,12 @@ export default function SettingsPage() {
                     ? 'bg-emerald-500/10 border-emerald-500/30'
                     : item.required
                       ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'bg-[#1a1a2e] border-[#2d2d44]'
+                      : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)]'
                   }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-lg">{item.icon}</span>
-                  <span className="text-xs font-medium text-slate-300">{item.name}</span>
+                  <span className="text-xs font-medium text-[#333]">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {item.configured ? (
@@ -402,7 +402,7 @@ export default function SettingsPage() {
                       <span className="text-xs text-amber-400">必填</span>
                     </>
                   ) : (
-                    <span className="text-xs text-slate-500">可选</span>
+                    <span className="text-xs text-[#999]">可选</span>
                   )}
                 </div>
               </div>
@@ -411,19 +411,19 @@ export default function SettingsPage() {
         </div>
 
         {/* API Configuration */}
-        <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
-          <h2 className="text-lg font-semibold text-slate-200 mb-6">API 配置</h2>
+        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6">
+          <h2 className="text-lg font-semibold text-[#1A1A1A] mb-6">API 配置</h2>
 
           {/* AI API */}
           <div className="mb-8">
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded flex items-center justify-center text-xs">🤖</span>
               AI 接口 (OpenAI兼容)
-              <span className="text-xs text-slate-500 ml-2">核心功能，建议配置</span>
+              <span className="text-xs text-[#999] ml-2">核心功能，建议配置</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Base URL</label>
+                <label className="block text-sm text-[#999] mb-1">API Base URL</label>
                 <input
                   type="text"
                   {...register('ai.baseUrl')}
@@ -433,7 +433,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.ai?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">Model</label>
+                <label className="block text-sm text-[#999] mb-1">Model</label>
                 <select
                   {...register('ai.model')}
                   className={cn(inputBaseClass, errors.ai?.model ? errorInputClass : normalInputClass)}
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.ai?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-[#999] mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['ai'] ? 'text' : 'password'}
@@ -457,7 +457,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => toggleShowKey('ai')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                   >
                     {showKeys['ai'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -469,14 +469,14 @@ export default function SettingsPage() {
 
           {/* WeChat Article API */}
           <div className="mb-8">
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📰</span>
               公众号文章 API
-              <span className="text-xs text-slate-500 ml-2">用于搜索文章素材</span>
+              <span className="text-xs text-[#999] ml-2">用于搜索文章素材</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-[#999] mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('wechatArticle.endpoint')}
@@ -486,7 +486,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.wechatArticle?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-[#999] mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatArticle'] ? 'text' : 'password'}
@@ -496,7 +496,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => toggleShowKey('wechatArticle')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                   >
                     {showKeys['wechatArticle'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -508,14 +508,14 @@ export default function SettingsPage() {
 
           {/* AI Image Generation API */}
           <div className="mb-8">
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-pink-500/20 text-pink-400 rounded flex items-center justify-center text-xs">🎨</span>
               AI 图片生成 API
-              <span className="text-xs text-slate-500 ml-2">用于生成文章配图</span>
+              <span className="text-xs text-[#999] ml-2">用于生成文章配图</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API URL</label>
+                <label className="block text-sm text-[#999] mb-1">API URL</label>
                 <input
                   type="text"
                   {...register('imageGen.baseUrl')}
@@ -525,7 +525,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.imageGen?.baseUrl?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">Model</label>
+                <label className="block text-sm text-[#999] mb-1">Model</label>
                 <input
                   type="text"
                   {...register('imageGen.model')}
@@ -535,7 +535,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.imageGen?.model?.message} />
               </div>
               <div className="col-span-2">
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-[#999] mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['imageGen'] ? 'text' : 'password'}
@@ -545,7 +545,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => toggleShowKey('imageGen')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                   >
                     {showKeys['imageGen'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -557,14 +557,14 @@ export default function SettingsPage() {
 
           {/* Xiaohongshu API */}
           <div className="mb-8">
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-red-500/20 text-red-400 rounded flex items-center justify-center text-xs">📕</span>
               小红书发布 API
-              <span className="text-xs text-slate-500 ml-2">可选，用于发布到小红书</span>
+              <span className="text-xs text-[#999] ml-2">可选，用于发布到小红书</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-[#999] mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('xiaohongshu.endpoint')}
@@ -574,7 +574,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.xiaohongshu?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-[#999] mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['xiaohongshu'] ? 'text' : 'password'}
@@ -584,7 +584,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => toggleShowKey('xiaohongshu')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                   >
                     {showKeys['xiaohongshu'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -596,14 +596,14 @@ export default function SettingsPage() {
 
           {/* WeChat Publish API */}
           <div>
-            <h3 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📗</span>
               公众号发布 API
-              <span className="text-xs text-slate-500 ml-2">可选，用于发布到公众号</span>
+              <span className="text-xs text-[#999] ml-2">可选，用于发布到公众号</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Endpoint</label>
+                <label className="block text-sm text-[#999] mb-1">API Endpoint</label>
                 <input
                   type="text"
                   {...register('wechatPublish.endpoint')}
@@ -613,7 +613,7 @@ export default function SettingsPage() {
                 <FieldError message={errors.wechatPublish?.endpoint?.message} />
               </div>
               <div>
-                <label className="block text-sm text-slate-500 mb-1">API Key</label>
+                <label className="block text-sm text-[#999] mb-1">API Key</label>
                 <div className="relative">
                   <input
                     type={showKeys['wechatPublish'] ? 'text' : 'password'}
@@ -623,7 +623,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => toggleShowKey('wechatPublish')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#333]"
                   >
                     {showKeys['wechatPublish'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -635,12 +635,12 @@ export default function SettingsPage() {
         </div>
 
         {/* Preferences */}
-        <div className="bg-[#16162a] rounded-2xl p-6 border border-[#2d2d44] mb-6">
-          <h2 className="text-lg font-semibold text-slate-200 mb-6">创作偏好</h2>
+        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6">
+          <h2 className="text-lg font-semibold text-[#1A1A1A] mb-6">创作偏好</h2>
 
           <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">默认插入图片数量</label>
+              <label className="block text-sm text-[#999] mb-1">默认插入图片数量</label>
               <select
                 {...register('preferences.imageCount', { valueAsNumber: true })}
                 className={cn(inputBaseClass, errors.preferences?.imageCount ? errorInputClass : normalInputClass)}
@@ -655,7 +655,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-500 mb-1">文章风格偏好</label>
+              <label className="block text-sm text-[#999] mb-1">文章风格偏好</label>
               <select
                 {...register('preferences.style')}
                 className={cn(inputBaseClass, errors.preferences?.style ? errorInputClass : normalInputClass)}
@@ -668,20 +668,20 @@ export default function SettingsPage() {
             </div>
 
             <div className="col-span-2">
-              <label className="block text-sm text-slate-500 mb-1">目标字数范围</label>
+              <label className="block text-sm text-[#999] mb-1">目标字数范围</label>
               <div className="flex items-center gap-4">
                 <input
                   type="number"
                   {...register('preferences.minWords', { valueAsNumber: true })}
                   className={cn('w-32', inputBaseClass, errors.preferences?.minWords ? errorInputClass : normalInputClass)}
                 />
-                <span className="text-slate-500">-</span>
+                <span className="text-[#999]">-</span>
                 <input
                   type="number"
                   {...register('preferences.maxWords', { valueAsNumber: true })}
                   className={cn('w-32', inputBaseClass, errors.preferences?.maxWords ? errorInputClass : normalInputClass)}
                 />
-                <span className="text-slate-500 text-sm">字</span>
+                <span className="text-[#999] text-sm">字</span>
               </div>
               <div className="flex items-center gap-4">
                 <FieldError message={errors.preferences?.minWords?.message} />
@@ -696,7 +696,7 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/20"
+            className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/8"
           >
             {isSubmitting ? (
               <>

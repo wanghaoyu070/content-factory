@@ -1,49 +1,54 @@
 @import "tailwindcss";
 @import "./animations.css";
 
+/* ===== Deep Read Inspired Design System ===== */
 :root {
-  /* ===== 核心基调色 (VisionOS Midnight) ===== */
-  /* Apple 风格的深色不是纯黑，而是极深且通透的蓝灰色 */
-  --background: #050511;
-  --background-secondary: #0f0f26;
+  /* Core palette — warm, organic, minimal */
+  --background: #FDFCF6;
+  --background-secondary: #F7F6F0;
+  --foreground: #1A1A1A;
+  --foreground-muted: #666666;
+  --foreground-dim: #999999;
 
-  /* ===== 文本色 (Titanium White) ===== */
-  --foreground: #f8fafc;
-  /* 接近纯白但柔和 */
-  --foreground-muted: #94a3b8;
-  /* 冷灰 */
-  --foreground-dim: #64748b;
-  /* 暗灰 */
+  /* Brand — monochrome authority */
+  --primary: #333333;
+  --primary-hover: #444444;
+  --primary-glow: rgba(0, 0, 0, 0.08);
+  --primary-subtle: rgba(0, 0, 0, 0.04);
 
-  /* ===== 品牌色 (Vibrant Indigo) ===== */
-  /* 更高亮、更通透的蓝紫色 */
-  --primary: #5b6cf9;
-  --primary-hover: #7584fc;
-  --primary-glow: rgba(91, 108, 249, 0.6);
-  --primary-subtle: rgba(91, 108, 249, 0.15);
+  /* Surface system — clean whites */
+  --card-surface: #FFFFFF;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  --card-shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
 
-  /* ===== 材质系统 (Material System) ===== */
-  /* 玻璃本体：极低透明度的白色/灰色 */
-  --glass-surface: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-highlight: rgba(255, 255, 255, 0.15);
-  /* 顶部高光 */
-
-  /* ===== 功能色 (Human Interface Colors) ===== */
+  /* Functional colors */
   --success: #34d399;
-  /* Emerald-400 */
-  --danger: #ff5f57;
-  /* macOS Red */
-  --warning: #ffbd2e;
-  /* macOS Yellow */
-  --info: #28c840;
-  /* macOS Green */
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
 
-  /* ===== 渐变预设 ===== */
-  --accent-gradient: linear-gradient(135deg, #5b6cf9 0%, #a855f7 100%);
+  /* Sidebar */
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: rgba(0, 0, 0, 0.06);
+  --sidebar-active-bg: rgba(0, 0, 0, 0.04);
 
-  /* ===== 噪点纹理 (Ultra Fine Noise) ===== */
-  --noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  /* Design tokens */
+  --border-radius: 20px;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  /* Premium transition — Deep Read signature */
+  --transition-premium: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
 }
 
 @theme inline {
@@ -54,17 +59,8 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --sidebar-width: 15rem;
-
-  /* ===== 核心：Deep Depth Background ===== */
-  /* 多层光晕叠加，营造深邃空间感 */
-  background-image:
-    var(--noise-pattern),
-    radial-gradient(circle at 15% 50%, rgba(57, 60, 204, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.10) 0%, transparent 40%),
-    radial-gradient(circle at 50% 0%, rgba(91, 108, 249, 0.05) 0%, transparent 50%);
-  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -78,13 +74,6 @@ body.sidebar-collapsed {
   body.sidebar-collapsed {
     --sidebar-width: 0px;
   }
-
-  /* 移动端性能优化：简化背景效果 */
-  body {
-    background-image: none;
-    background-attachment: scroll;
-    background-color: var(--background);
-  }
 }
 
 .main-content {
@@ -92,90 +81,133 @@ body.sidebar-collapsed {
   transition: margin-left 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* 滚动条隐藏，保持极简 */
+/* Scrollbar — subtle */
 ::-webkit-scrollbar {
-  width: 0px;
+  width: 4px;
   background: transparent;
 }
 
-/* Gradient text utility */
-.gradient-text {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  /* 增加一点文字发光 */
-  filter: drop-shadow(0 0 10px rgba(91, 108, 249, 0.2));
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
 }
 
-/* ===== Apple Style Glassmorphism (核心材质) ===== */
+/* ===== Card System ===== */
 .glass-card {
-  /* 1. 背景材质 */
-  background: var(--glass-surface);
-
-  /* 2. 强力模糊 */
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-
-  /* 3. 边框：模拟物理光照 (顶部亮，底部暗) */
-  border: 1px solid transparent;
-  border-top-color: var(--glass-border);
-  border-left-color: rgba(255, 255, 255, 0.05);
-  border-right-color: rgba(255, 255, 255, 0.05);
-  border-bottom-color: rgba(0, 0, 0, 0.2);
-
-  /* 4. 阴影：柔和的扩散阴影 */
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-  /* 内发光描边 */
-
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-premium);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    0 8px 32px -4px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  border-top-color: rgba(255, 255, 255, 0.2);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-4px);
 }
 
-/* 侧边栏材质：更通透，融合度更高 */
+/* Sidebar */
 .glass-sidebar {
-  background: rgba(5, 5, 17, 0.7);
-  /* 更深的底色 */
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 1px 0 20px rgba(0, 0, 0, 0.2);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  box-shadow: 1px 0 8px rgba(0, 0, 0, 0.02);
 }
 
-/* 顶部 Header：完全通透 */
+/* Header */
 header {
-  background: rgba(5, 5, 17, 0.6) !important;
-  backdrop-filter: blur(20px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(253, 252, 246, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-/* 按钮材质：宝石质感 */
+/* ===== Buttons ===== */
 .btn-primary {
   background: var(--primary);
-  /* 顶部高光，底部阴影 */
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.2) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
-    0 4px 12px rgba(91, 108, 249, 0.3);
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  border: none;
+  border-radius: var(--radius-md);
+  transition: var(--transition-premium);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:active {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) inset;
-  transform: translateY(1px);
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Card glow effect - 优化版 */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--foreground-muted);
+  border-radius: var(--radius-md);
+  transition: var(--transition-premium);
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: var(--foreground);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--foreground-muted);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--foreground);
+}
+
+/* ===== Input ===== */
+.input-base {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  transition: all 0.2s ease;
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.input-base::placeholder {
+  color: var(--foreground-dim);
+}
+
+/* Card base */
+.card-base {
+  background: var(--card-surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+}
+
+/* Card glow — subtle top highlight */
 .card-glow {
   position: relative;
   overflow: hidden;
@@ -188,8 +220,8 @@ header {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  opacity: 0.5;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.06), transparent);
+  opacity: 0;
   transition: opacity 0.3s;
 }
 
@@ -197,7 +229,15 @@ header {
   opacity: 1;
 }
 
-/* ===== 移动端安全区域支持 ===== */
+/* Gradient text — muted for light theme */
+.gradient-text {
+  background: linear-gradient(135deg, #333 0%, #666 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Mobile support ===== */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -206,96 +246,13 @@ header {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* 底部导航栏样式 */
 @media (max-width: 1023px) {
   .main-content {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
-/* ===== 设计规范系统 (Design System) ===== */
-:root {
-  /* 圆角规范 */
-  --radius-sm: 0.5rem;    /* 8px - 小元素、标签 */
-  --radius-md: 0.75rem;   /* 12px - 按钮、输入框 */
-  --radius-lg: 1rem;      /* 16px - 卡片、模态框 */
-  --radius-xl: 1.5rem;    /* 24px - 大卡片、页面容器 */
-
-  /* 间距规范 */
-  --spacing-xs: 0.5rem;   /* 8px */
-  --spacing-sm: 0.75rem;  /* 12px */
-  --spacing-md: 1rem;     /* 16px */
-  --spacing-lg: 1.5rem;   /* 24px */
-  --spacing-xl: 2rem;     /* 32px */
-}
-
-/* 次要按钮 */
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--foreground-muted);
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--foreground);
-}
-
-/* 危险按钮 */
-.btn-danger {
-  background: rgba(255, 95, 87, 0.15);
-  border: 1px solid rgba(255, 95, 87, 0.3);
-  color: var(--danger);
-  transition: all 0.2s ease;
-}
-
-.btn-danger:hover {
-  background: rgba(255, 95, 87, 0.25);
-  border-color: rgba(255, 95, 87, 0.5);
-}
-
-/* 幽灵按钮 */
-.btn-ghost {
-  background: transparent;
-  border: none;
-  color: var(--foreground-muted);
-  transition: all 0.2s ease;
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--foreground);
-}
-
-/* 统一输入框样式 */
-.input-base {
-  background: rgba(26, 26, 46, 0.8);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  color: var(--foreground);
-  transition: all 0.2s ease;
-}
-
-.input-base:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-subtle);
-}
-
-.input-base::placeholder {
-  color: var(--foreground-dim);
-}
-
-/* 统一卡片样式 */
-.card-base {
-  background: rgba(22, 22, 42, 0.8);
-  border: 1px solid rgba(45, 45, 68, 0.8);
-  border-radius: var(--radius-lg);
-}
-
-/* 统一标签样式 */
+/* Badge */
 .badge-base {
   display: inline-flex;
   align-items: center;
@@ -303,4 +260,6 @@ header {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 9999px;
+  background: #F5F5F5;
+  color: var(--foreground-muted);
 }

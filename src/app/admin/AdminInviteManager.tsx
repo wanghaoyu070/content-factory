@@ -104,16 +104,16 @@ export default function AdminInviteManager() {
   };
 
   return (
-    <div className="bg-[#16162a] border border-[#2d2d44] rounded-2xl p-6 space-y-4">
+    <div className="bg-white border border-[rgba(0,0,0,0.06)] rounded-2xl p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-white">邀请码管理</h2>
-          <p className="text-sm text-slate-400 mt-1">生成、复制或删除邀请码，邀请新用户加入系统</p>
+          <h2 className="text-xl font-semibold text-[#1A1A1A]">邀请码管理</h2>
+          <p className="text-sm text-[#666] mt-1">生成、复制或删除邀请码，邀请新用户加入系统</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => loadInvites()}
-            className="p-2 rounded-lg border border-[#2d2d44] text-slate-400 hover:text-white hover:bg-[#1a1a2e]"
+            className="p-2 rounded-lg border border-[rgba(0,0,0,0.06)] text-[#666] hover:text-[#1A1A1A] hover:bg-[#F7F6F0]"
             title="刷新"
           >
             <RefreshCw className="w-4 h-4" />
@@ -121,7 +121,7 @@ export default function AdminInviteManager() {
           <button
             onClick={() => handleGenerate(1)}
             disabled={creating}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#333] to-[#555] text-white font-medium hover:from-[#444] hover:to-[#666] disabled:opacity-60"
           >
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             生成邀请码
@@ -130,7 +130,7 @@ export default function AdminInviteManager() {
       </div>
 
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-slate-400">过滤：</span>
+        <span className="text-[#666]">过滤：</span>
         {[
           { key: 'all', label: '全部' },
           { key: 'unused', label: '未使用' },
@@ -140,7 +140,7 @@ export default function AdminInviteManager() {
             key={item.key}
             onClick={() => setFilter(item.key as typeof filter)}
             className={`px-3 py-1.5 rounded-lg transition-colors ${
-              filter === item.key ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:text-white'
+              filter === item.key ? 'bg-[rgba(0,0,0,0.06)] text-[#444]' : 'text-[#666] hover:text-[#1A1A1A]'
             }`}
           >
             {item.label}
@@ -148,9 +148,9 @@ export default function AdminInviteManager() {
         ))}
       </div>
 
-      <div className="border border-[#2d2d44] rounded-2xl overflow-hidden">
+      <div className="border border-[rgba(0,0,0,0.06)] rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[#1a1a2e] text-slate-400">
+          <thead className="bg-[#F7F6F0] text-[#666]">
             <tr>
               <th className="px-4 py-3 text-left">邀请码</th>
               <th className="px-4 py-3 text-left">状态</th>
@@ -164,42 +164,42 @@ export default function AdminInviteManager() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-20 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-20 text-center text-[#666]">
                   <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
                   正在加载...
                 </td>
               </tr>
             ) : filteredInvites.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-12 text-center text-[#666]">
                   暂无邀请码
                 </td>
               </tr>
             ) : (
               filteredInvites.map((invite) => (
-                <tr key={invite.id} className="border-t border-[#2d2d44]">
-                  <td className="px-4 py-3 font-mono text-white">
+                <tr key={invite.id} className="border-t border-[rgba(0,0,0,0.06)]">
+                  <td className="px-4 py-3 font-mono text-[#1A1A1A]">
                     {invite.code}
                   </td>
                   <td className="px-4 py-3">
                     {invite.used_by ? (
                       <span className="px-2 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-300">已使用</span>
                     ) : (
-                      <span className="px-2 py-1 text-xs rounded-full bg-slate-500/20 text-slate-300">未使用</span>
+                      <span className="px-2 py-1 text-xs rounded-full bg-slate-500/20 text-[#333]">未使用</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3 text-[#333]">
                     {invite.creator_login || '系统'}
                   </td>
-                  <td className="px-4 py-3 text-slate-400">{formatDate(invite.created_at)}</td>
-                  <td className="px-4 py-3 text-slate-300">
+                  <td className="px-4 py-3 text-[#666]">{formatDate(invite.created_at)}</td>
+                  <td className="px-4 py-3 text-[#333]">
                     {invite.used_login || '-'}
                   </td>
-                  <td className="px-4 py-3 text-slate-400">{formatDate(invite.used_at)}</td>
+                  <td className="px-4 py-3 text-[#666]">{formatDate(invite.used_at)}</td>
                   <td className="px-4 py-3 flex items-center gap-2">
                     <button
                       onClick={() => copyCode(invite.code)}
-                      className="p-2 rounded-lg border border-[#2d2d44] text-slate-400 hover:text-white hover:bg-[#1a1a2e]"
+                      className="p-2 rounded-lg border border-[rgba(0,0,0,0.06)] text-[#666] hover:text-[#1A1A1A] hover:bg-[#F7F6F0]"
                       title="复制"
                     >
                       <Copy className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function AdminInviteManager() {
                     {!invite.used_by && (
                       <button
                         onClick={() => handleDelete(invite.id)}
-                        className="p-2 rounded-lg border border-[#2d2d44] text-slate-400 hover:text-red-400 hover:bg-[#1a1a2e]"
+                        className="p-2 rounded-lg border border-[rgba(0,0,0,0.06)] text-[#666] hover:text-red-400 hover:bg-[#F7F6F0]"
                         title="删除"
                       >
                         <Trash2 className="w-4 h-4" />

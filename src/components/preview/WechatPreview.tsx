@@ -12,7 +12,7 @@ export default function WechatPreview({ title, content, coverImage }: WechatPrev
   return (
     <div className="bg-white rounded-[40px] overflow-hidden shadow-2xl w-[480px] mx-auto">
       {/* 手机顶部状态栏 */}
-      <div className="bg-black text-white px-6 py-2 flex items-center justify-between text-xs">
+      <div className="bg-black text-[#1A1A1A] px-6 py-2 flex items-center justify-between text-xs">
         <span>9:41</span>
         <div className="flex items-center gap-1">
           <div className="flex gap-0.5">
@@ -53,7 +53,7 @@ export default function WechatPreview({ title, content, coverImage }: WechatPrev
 
         {/* 作者信息 */}
         <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-100">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#333] to-[#555] flex items-center justify-center text-[#1A1A1A] text-xs font-bold">
             AI
           </div>
           <div>

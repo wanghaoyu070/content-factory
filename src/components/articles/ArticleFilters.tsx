@@ -45,7 +45,7 @@ export function ArticleFilters({
                         <select
                             value={statusFilter}
                             onChange={(e) => onStatusChange(e.target.value as ArticleStatus | 'all')}
-                            className="appearance-none pl-4 pr-10 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                            className="appearance-none pl-4 pr-10 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm"
                         >
                             <option value="all">全部状态</option>
                             <option value="draft">草稿</option>
@@ -54,20 +54,20 @@ export function ArticleFilters({
                             <option value="published">已发布</option>
                             <option value="failed">发布失败</option>
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] pointer-events-none" />
                     </div>
                 </div>
 
                 {/* 搜索框 */}
                 <div className="relative flex-1 max-w-md group">
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 z-10" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] z-10" />
                     <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
                         placeholder="搜索标题..."
-                        className="relative w-full pl-10 pr-4 py-2 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        className="relative w-full pl-10 pr-4 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.1)] text-sm"
                     />
                 </div>
             </div>
@@ -79,8 +79,8 @@ export function ArticleFilters({
                         key={tab.key}
                         onClick={() => onStatusChange(tab.key as ArticleStatus | 'all')}
                         className={`px-4 py-2 text-sm rounded-xl transition-colors ${statusFilter === tab.key
-                                ? 'bg-indigo-500/20 text-indigo-400 font-medium'
-                                : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                ? 'bg-[rgba(0,0,0,0.06)] text-[#333] font-medium'
+                                : 'text-[#666] hover:bg-white/5 hover:text-[#1A1A1A]'
                             }`}
                     >
                         {tab.label} ({statusCounts[tab.key as keyof StatusCount]})

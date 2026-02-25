@@ -84,13 +84,13 @@ function ArticleInfoSection({ article, source, status, statusConfig }: ArticleIn
       <h3 className="font-medium text-slate-800 mb-4">文章信息</h3>
       <div className="space-y-3 text-sm">
         <div className="flex justify-between">
-          <span className="text-slate-500">状态</span>
+          <span className="text-[#999]">状态</span>
           <span className={`px-2 py-0.5 rounded-full text-xs ${config.bgColor} ${config.color}`}>
             {config.label}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500">来源</span>
+          <span className="text-[#999]">来源</span>
           <span className="text-slate-700 text-right max-w-[150px] truncate" title={source}>
             {source || '手动创建'}
           </span>
@@ -98,11 +98,11 @@ function ArticleInfoSection({ article, source, status, statusConfig }: ArticleIn
         {article && (
           <>
             <div className="flex justify-between">
-              <span className="text-slate-500">创建时间</span>
+              <span className="text-[#999]">创建时间</span>
               <span className="text-slate-700">{new Date(article.createdAt).toLocaleDateString('zh-CN')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">更新时间</span>
+              <span className="text-[#999]">更新时间</span>
               <span className="text-slate-700">{new Date(article.updatedAt).toLocaleDateString('zh-CN')}</span>
             </div>
           </>
@@ -128,7 +128,7 @@ function ImageManagerSection({ images, onRemoveImage, onAddImageClick }: ImageMa
             <img src={img} alt="" className="w-full h-16 object-cover rounded-lg" />
             <button
               onClick={() => onRemoveImage(index)}
-              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-[#1A1A1A] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
             >
               <X className="w-3 h-3" />
             </button>
@@ -137,7 +137,7 @@ function ImageManagerSection({ images, onRemoveImage, onAddImageClick }: ImageMa
       </div>
       <button
         onClick={onAddImageClick}
-        className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
+        className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-[#999] hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2"
       >
         <Plus className="w-4 h-4" />
         添加图片
@@ -161,7 +161,7 @@ function XhsTagsSection({ xhsTags, onTagsChange }: XhsTagsSectionProps) {
       <XhsTagsManager
         tags={xhsTags}
         onChange={onTagsChange}
-        className="[&_*]:!bg-transparent [&_input]:!bg-slate-50 [&>div:first-child]:!bg-slate-50 [&>div:first-child]:!border-slate-200 [&_span]:!text-slate-600 [&_p]:!text-slate-500 [&>div:last-child]:!bg-slate-50"
+        className="[&_*]:!bg-transparent [&_input]:!bg-slate-50 [&>div:first-child]:!bg-slate-50 [&>div:first-child]:!border-slate-200 [&_span]:!text-slate-600 [&_p]:!text-[#999] [&>div:last-child]:!bg-slate-50"
       />
     </div>
   );
@@ -176,7 +176,7 @@ function XhsContentCheckerSection({ content }: { content: string }) {
       </h3>
       <XhsContentChecker
         content={content}
-        className="[&_div]:!bg-slate-50 [&_div]:!border-slate-200 [&_p]:!text-slate-500"
+        className="[&_div]:!bg-slate-50 [&_div]:!border-slate-200 [&_p]:!text-[#999]"
       />
     </div>
   );
@@ -211,7 +211,7 @@ function QuickActionsSection({
           <button
             onClick={() => handleSave('pending_review')}
             disabled={saving}
-            className="w-full py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
+            className="w-full py-2 bg-amber-500 text-[#1A1A1A] rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
           >
             提交审核
           </button>
@@ -220,7 +220,7 @@ function QuickActionsSection({
           <button
             onClick={() => handleSave('approved')}
             disabled={saving}
-            className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
+            className="w-full py-2 bg-green-500 text-[#1A1A1A] rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
           >
             通过审核
           </button>
@@ -230,7 +230,7 @@ function QuickActionsSection({
             <button
               onClick={() => openXhsPublishModal(articleId)}
               disabled={isPublishingCurrent}
-              className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-2 bg-red-500 text-[#1A1A1A] rounded-lg hover:bg-red-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isPublishingCurrent ? <Loader2 className="w-4 h-4 animate-spin" /> : '📕'}
               发布到小红书
@@ -238,7 +238,7 @@ function QuickActionsSection({
             <button
               onClick={() => openWechatPublishModal(articleId)}
               disabled={isPublishingCurrent}
-              className="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-2 bg-green-500 text-[#1A1A1A] rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isPublishingCurrent ? <Loader2 className="w-4 h-4 animate-spin" /> : '📗'}
               发布到公众号

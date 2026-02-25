@@ -12,7 +12,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const variantStyles = {
     default: 'glass-card',
     interactive: 'glass-card card-interactive cursor-pointer',
-    bordered: 'bg-transparent border border-white/10 hover:border-white/20',
+    bordered: 'bg-transparent border border-[rgba(0,0,0,0.08)] hover:border-[rgba(0,0,0,0.15)]',
 };
 
 const paddingStyles = {
@@ -72,13 +72,13 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
             >
                 <div className="flex items-center gap-3">
                     {icon && (
-                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                        <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] flex items-center justify-center text-[#666]">
                             {icon}
                         </div>
                     )}
                     <div>
-                        <h3 className="font-semibold text-slate-100">{title}</h3>
-                        {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
+                        <h3 className="font-semibold text-[#1A1A1A]">{title}</h3>
+                        {subtitle && <p className="text-sm text-[#666]">{subtitle}</p>}
                     </div>
                 </div>
                 {action && <div>{action}</div>}
@@ -109,7 +109,7 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
             <div
                 ref={ref}
                 className={cn(
-                    'mt-4 pt-4 border-t border-white/5 flex items-center justify-between',
+                    'mt-4 pt-4 border-t border-[rgba(0,0,0,0.06)] flex items-center justify-between',
                     className
                 )}
                 {...props}

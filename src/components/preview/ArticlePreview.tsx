@@ -18,22 +18,22 @@ export default function ArticlePreview({ title, content, coverImage, images = []
   const [mode, setMode] = useState<PreviewMode>('wechat');
 
   return (
-    <div className="flex flex-col h-full bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden">
       {/* 预览头部 */}
-      <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
-        <div className="flex items-center gap-2 text-slate-200">
-          <Eye className="w-5 h-5 text-indigo-400" />
+      <div className="p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[#1A1A1A]">
+          <Eye className="w-5 h-5 text-[#333]" />
           <span className="font-medium">预览</span>
         </div>
 
         {/* 模式切换 */}
-        <div className="flex items-center gap-1 bg-[#1a1a2e] rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-[#F7F6F0] rounded-lg p-1">
           <button
             onClick={() => setMode('wechat')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               mode === 'wechat'
-                ? 'bg-indigo-500 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-indigo-500 text-[#1A1A1A]'
+                : 'text-[#666] hover:text-[#1A1A1A]'
             }`}
           >
             公众号
@@ -42,8 +42,8 @@ export default function ArticlePreview({ title, content, coverImage, images = []
             onClick={() => setMode('xiaohongshu')}
             className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
               mode === 'xiaohongshu'
-                ? 'bg-red-500 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-red-500 text-[#1A1A1A]'
+                : 'text-[#666] hover:text-[#1A1A1A]'
             }`}
           >
             小红书

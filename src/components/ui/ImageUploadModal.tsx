@@ -169,16 +169,16 @@ export function ImageUploadModal({
             />
 
             {/* 模态框 */}
-            <div className="relative bg-[#16162a] rounded-2xl border border-[#2d2d44] w-full max-w-lg shadow-2xl animate-slide-up">
+            <div className="relative bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] w-full max-w-lg shadow-2xl animate-slide-up">
                 {/* 头部 */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#2d2d44]">
-                    <h2 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-                        <ImageIcon className="w-5 h-5 text-indigo-400" />
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+                    <h2 className="text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-[#333]" />
                         添加图片
                     </h2>
                     <button
                         onClick={handleClose}
-                        className="p-2 text-slate-400 hover:text-slate-200 hover:bg-[#1a1a2e] rounded-lg transition-colors"
+                        className="p-2 text-[#666] hover:text-[#1A1A1A] hover:bg-[#F7F6F0] rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -186,7 +186,7 @@ export function ImageUploadModal({
 
                 {/* Tab 切换 */}
                 <div className="px-6 pt-4">
-                    <div className="flex items-center gap-1 bg-[#1a1a2e] rounded-xl p-1">
+                    <div className="flex items-center gap-1 bg-[#F7F6F0] rounded-xl p-1">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
@@ -194,8 +194,8 @@ export function ImageUploadModal({
                                 className={cn(
                                     'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg transition-all',
                                     activeTab === tab.id
-                                        ? 'bg-indigo-500/20 text-indigo-400'
-                                        : 'text-slate-400 hover:text-slate-200'
+                                        ? 'bg-[rgba(0,0,0,0.06)] text-[#333]'
+                                        : 'text-[#666] hover:text-[#1A1A1A]'
                                 )}
                             >
                                 <tab.icon className="w-4 h-4" />
@@ -213,8 +213,8 @@ export function ImageUploadModal({
                             className={cn(
                                 'border-2 border-dashed rounded-xl p-8 text-center transition-all',
                                 dragOver
-                                    ? 'border-indigo-400 bg-indigo-500/10'
-                                    : 'border-[#2d2d44] hover:border-[#3d3d5c]'
+                                    ? 'border-indigo-400 bg-[rgba(0,0,0,0.04)]'
+                                    : 'border-[rgba(0,0,0,0.06)] hover:border-[#3d3d5c]'
                             )}
                             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                             onDragLeave={() => setDragOver(false)}
@@ -233,8 +233,8 @@ export function ImageUploadModal({
 
                             {uploading ? (
                                 <div className="py-4">
-                                    <Loader2 className="w-10 h-10 mx-auto text-indigo-400 animate-spin mb-3" />
-                                    <p className="text-slate-400">上传中...</p>
+                                    <Loader2 className="w-10 h-10 mx-auto text-[#333] animate-spin mb-3" />
+                                    <p className="text-[#666]">上传中...</p>
                                 </div>
                             ) : previewUrl ? (
                                 <div className="py-2">
@@ -247,12 +247,12 @@ export function ImageUploadModal({
                                 </div>
                             ) : (
                                 <>
-                                    <Upload className="w-10 h-10 mx-auto text-slate-500 mb-3" />
-                                    <p className="text-slate-300 mb-1">拖拽图片到这里</p>
-                                    <p className="text-sm text-slate-500 mb-4">或者</p>
+                                    <Upload className="w-10 h-10 mx-auto text-[#999] mb-3" />
+                                    <p className="text-[#333] mb-1">拖拽图片到这里</p>
+                                    <p className="text-sm text-[#999] mb-4">或者</p>
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="px-4 py-2 bg-indigo-500/20 text-indigo-400 rounded-lg hover:bg-indigo-500/30 transition-colors"
+                                        className="px-4 py-2 bg-[rgba(0,0,0,0.06)] text-[#333] rounded-lg hover:bg-indigo-500/30 transition-colors"
                                     >
                                         选择文件
                                     </button>
@@ -266,20 +266,20 @@ export function ImageUploadModal({
                     {activeTab === 'ai' && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-2">
+                                <label className="block text-sm text-[#666] mb-2">
                                     描述你想要的图片
                                 </label>
                                 <textarea
                                     value={aiPrompt}
                                     onChange={(e) => setAiPrompt(e.target.value)}
                                     placeholder="例如：一个现代化的办公室场景，明亮的自然光，简洁的设计风格"
-                                    className="w-full h-24 px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+                                    className="w-full h-24 px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:border-[rgba(0,0,0,0.15)] resize-none"
                                 />
                             </div>
 
-                            <div className="bg-[#1a1a2e] rounded-xl p-4">
-                                <p className="text-xs text-slate-500 mb-2">💡 提示</p>
-                                <ul className="text-xs text-slate-400 space-y-1">
+                            <div className="bg-[#F7F6F0] rounded-xl p-4">
+                                <p className="text-xs text-[#999] mb-2">💡 提示</p>
+                                <ul className="text-xs text-[#666] space-y-1">
                                     <li>• 详细描述场景、风格、颜色</li>
                                     <li>• 使用英文描述效果更好</li>
                                     <li>• 生成大约需要 10-30 秒</li>
@@ -289,7 +289,7 @@ export function ImageUploadModal({
                             <button
                                 onClick={handleAiGenerate}
                                 disabled={generating || !aiPrompt.trim()}
-                                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {generating ? (
                                     <>
@@ -310,7 +310,7 @@ export function ImageUploadModal({
                     {activeTab === 'url' && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm text-slate-400 mb-2">
+                                <label className="block text-sm text-[#666] mb-2">
                                     图片链接
                                 </label>
                                 <input
@@ -318,13 +318,13 @@ export function ImageUploadModal({
                                     value={urlInput}
                                     onChange={(e) => setUrlInput(e.target.value)}
                                     placeholder="https://example.com/image.jpg"
-                                    className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2d2d44] rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                                    className="w-full px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:border-[rgba(0,0,0,0.15)]"
                                 />
                             </div>
 
                             {urlInput && (
-                                <div className="bg-[#1a1a2e] rounded-xl p-4">
-                                    <p className="text-xs text-slate-500 mb-2">图片预览</p>
+                                <div className="bg-[#F7F6F0] rounded-xl p-4">
+                                    <p className="text-xs text-[#999] mb-2">图片预览</p>
                                     <img
                                         src={urlInput}
                                         alt="预览"
@@ -339,7 +339,7 @@ export function ImageUploadModal({
                             <button
                                 onClick={handleUrlAdd}
                                 disabled={!urlInput.trim()}
-                                className="w-full py-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-[rgba(0,0,0,0.06)] text-[#333] rounded-xl hover:bg-indigo-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <LinkIcon className="w-5 h-5" />
                                 添加图片

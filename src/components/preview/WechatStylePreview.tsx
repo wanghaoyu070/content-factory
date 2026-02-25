@@ -34,10 +34,10 @@ export default function WechatStylePreview({
     const themeNames = Object.keys(WECHAT_THEMES);
 
     return (
-        <div className={`bg-[#16162a] rounded-2xl border border-[#2d2d44] overflow-hidden ${className}`}>
+        <div className={`bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden ${className}`}>
             {/* 头部 - 主题选择 */}
-            <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-400">
+            <div className="p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[#666]">
                     <Smartphone className="w-4 h-4" />
                     <span className="text-sm font-medium">微信预览</span>
                 </div>
@@ -46,7 +46,7 @@ export default function WechatStylePreview({
                 <div className="relative">
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a2e] rounded-lg text-sm text-slate-300 hover:text-white transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[#F7F6F0] rounded-lg text-sm text-[#333] hover:text-[#1A1A1A] transition-colors"
                     >
                         <span
                             className="w-3 h-3 rounded-full"
@@ -62,7 +62,7 @@ export default function WechatStylePreview({
                                 className="fixed inset-0 z-10"
                                 onClick={() => setIsDropdownOpen(false)}
                             />
-                            <div className="absolute right-0 mt-2 py-1 bg-[#1a1a2e] rounded-lg border border-[#2d2d44] shadow-xl z-20 min-w-[120px]">
+                            <div className="absolute right-0 mt-2 py-1 bg-[#F7F6F0] rounded-lg border border-[rgba(0,0,0,0.06)] shadow-xl z-20 min-w-[120px]">
                                 {themeNames.map((name) => (
                                     <button
                                         key={name}
@@ -71,8 +71,8 @@ export default function WechatStylePreview({
                                             setIsDropdownOpen(false);
                                         }}
                                         className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${themeName === name
-                                                ? 'text-white bg-indigo-500/20'
-                                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                ? 'text-[#1A1A1A] bg-[rgba(0,0,0,0.06)]'
+                                                : 'text-[#666] hover:text-[#1A1A1A] hover:bg-white/5'
                                             }`}
                                     >
                                         <span
@@ -133,8 +133,8 @@ export default function WechatStylePreview({
             </div>
 
             {/* 提示信息 */}
-            <div className="px-4 py-3 border-t border-[#2d2d44] bg-[#1a1a2e]/50">
-                <p className="text-xs text-slate-500 text-center">
+            <div className="px-4 py-3 border-t border-[rgba(0,0,0,0.06)] bg-[#F7F6F0]/50">
+                <p className="text-xs text-[#999] text-center">
                     💡 预览效果与发布到微信后的实际效果一致
                 </p>
             </div>

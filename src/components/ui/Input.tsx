@@ -19,38 +19,38 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="block text-sm font-medium text-slate-300"
+                        className="block text-sm font-medium text-[#1A1A1A]"
                     >
                         {label}
                     </label>
                 )}
                 <div className="relative group">
                     {icon && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]">
                             {icon}
                         </div>
                     )}
-                    {/* 发光效果 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
+                    {/* Focus ring */}
+                    <div className="absolute inset-0 rounded-xl ring-2 ring-transparent group-focus-within:ring-[rgba(0,0,0,0.08)] transition-all pointer-events-none" />
                     <input
                         ref={ref}
                         id={inputId}
                         className={cn(
-                            'relative w-full px-4 py-3 bg-[#0f0f23]/80 border rounded-xl',
-                            'text-slate-100 placeholder-slate-500',
-                            'focus:outline-none focus:ring-2 focus:ring-primary/50',
+                            'relative w-full px-4 py-3 bg-white border rounded-xl',
+                            'text-[#1A1A1A] placeholder-[#999]',
+                            'focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.08)]',
                             'transition-all',
                             icon && 'pl-10',
                             error
                                 ? 'border-danger/50 focus:ring-danger/50'
-                                : 'border-white/10 hover:border-white/20',
+                                : 'border-[rgba(0,0,0,0.1)] hover:border-[rgba(0,0,0,0.2)]',
                             className
                         )}
                         {...props}
                     />
                 </div>
                 {error && <p className="text-sm text-danger">{error}</p>}
-                {hint && !error && <p className="text-sm text-slate-500">{hint}</p>}
+                {hint && !error && <p className="text-sm text-[#999]">{hint}</p>}
             </div>
         );
     }
@@ -74,31 +74,31 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
                 {label && (
                     <label
                         htmlFor={textareaId}
-                        className="block text-sm font-medium text-slate-300"
+                        className="block text-sm font-medium text-[#1A1A1A]"
                     >
                         {label}
                     </label>
                 )}
                 <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 rounded-xl ring-2 ring-transparent group-focus-within:ring-[rgba(0,0,0,0.08)] transition-all pointer-events-none" />
                     <textarea
                         ref={ref}
                         id={textareaId}
                         className={cn(
-                            'relative w-full px-4 py-3 bg-[#0f0f23]/80 border rounded-xl',
-                            'text-slate-100 placeholder-slate-500',
-                            'focus:outline-none focus:ring-2 focus:ring-primary/50',
+                            'relative w-full px-4 py-3 bg-white border rounded-xl',
+                            'text-[#1A1A1A] placeholder-[#999]',
+                            'focus:outline-none focus:ring-2 focus:ring-[rgba(0,0,0,0.08)]',
                             'transition-all resize-none',
                             error
                                 ? 'border-danger/50 focus:ring-danger/50'
-                                : 'border-white/10 hover:border-white/20',
+                                : 'border-[rgba(0,0,0,0.1)] hover:border-[rgba(0,0,0,0.2)]',
                             className
                         )}
                         {...props}
                     />
                 </div>
                 {error && <p className="text-sm text-danger">{error}</p>}
-                {hint && !error && <p className="text-sm text-slate-500">{hint}</p>}
+                {hint && !error && <p className="text-sm text-[#999]">{hint}</p>}
             </div>
         );
     }
