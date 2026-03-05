@@ -1,6 +1,7 @@
 'use client';
 
 import { ThumbsUp, MessageCircle, Share2, Star } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface WechatPreviewProps {
   title: string;
@@ -65,7 +66,7 @@ export default function WechatPreview({ title, content, coverImage }: WechatPrev
         {/* 文章正文 */}
         <div
           className="px-4 py-4 wechat-article-content"
-          dangerouslySetInnerHTML={{ __html: content || '<p class="text-gray-400">文章内容预览...</p>' }}
+          dangerouslySetInnerHTML={{ __html: content ? sanitizeHtml(content) : '<p class="text-gray-400">文章内容预览...</p>' }}
         />
 
         {/* 底部互动区 */}

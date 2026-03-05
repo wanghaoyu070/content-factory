@@ -229,14 +229,6 @@ header {
   opacity: 1;
 }
 
-/* Gradient text — muted for light theme */
-.gradient-text {
-  background: linear-gradient(135deg, #333 0%, #666 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* ===== Mobile support ===== */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);

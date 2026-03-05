@@ -1,0 +1,336 @@
+/* ── Cockpit-specific utilities & device shell styling ── */
+
+/* Hide scrollbar but keep scrolling */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Glass effects */
+.glass {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    filter: saturate(1.8);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass {
+    background: rgba(28, 28, 30, 0.6);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.glass-toolbar {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.dark .glass-toolbar {
+    background: rgba(44, 44, 46, 0.7);
+    border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Copy / Export buttons ── */
+.apple-copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    background: black;
+    color: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.apple-copy-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.apple-copy-btn:active {
+    transform: scale(0.95);
+}
+
+.dark .apple-copy-btn {
+    background: white;
+    color: black;
+    box-shadow: 0 2px 16px rgba(255, 255, 255, 0.15);
+}
+
+.dark .apple-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.apple-copy-btn-success {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    background: #34c759;
+    color: white;
+    box-shadow: 0 2px 12px rgba(52, 199, 89, 0.3);
+}
+
+.apple-copy-btn-success:active {
+    transform: scale(0.95);
+}
+
+.dark .apple-copy-btn-success {
+    background: #32d74b;
+    box-shadow: 0 2px 12px rgba(50, 215, 75, 0.3);
+}
+
+.apple-export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    background: #f2f2f7;
+    color: #1d1d1f;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.apple-export-btn:hover {
+    background: #e5e5ea;
+}
+
+.apple-export-btn:active {
+    transform: scale(0.95);
+}
+
+.dark .apple-export-btn {
+    background: #2c2c2e;
+    color: #f5f5f7;
+    border-color: rgba(255, 255, 255, 0.04);
+}
+
+.dark .apple-export-btn:hover {
+    background: #3a3a3c;
+}
+
+/* ── Device Shell (iPhone / iPad frame) ── */
+.preview-device-shell {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.6),
+        0 8px 32px -8px rgba(0, 0, 0, 0.1),
+        0 20px 48px -16px rgba(0, 0, 0, 0.06);
+    transform-origin: center top;
+    transform: scale(var(--device-scale, 1));
+    z-index: 10;
+}
+
+.preview-device-shell::before {
+    content: '';
+    position: absolute;
+    inset: -40px;
+    background: radial-gradient(circle at 50% 60%, rgba(200, 210, 230, 0.6) 0%, transparent 60%);
+    z-index: -1;
+    border-radius: inherit;
+    filter: blur(30px);
+    opacity: 0.9;
+    pointer-events: none;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .preview-device-shell::before {
+    background: radial-gradient(circle at 50% 60%, rgba(10, 132, 255, 0.15) 0%, rgba(0, 0, 0, 0.5) 60%);
+    opacity: 1;
+}
+
+.dark .preview-device-shell {
+    background: rgba(50, 50, 55, 0.5);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.08),
+        0 8px 32px -8px rgba(0, 0, 0, 0.4),
+        0 20px 48px -16px rgba(0, 0, 0, 0.3);
+}
+
+.preview-device-mobile {
+    width: 520px;
+    height: 1080px;
+    flex-shrink: 0;
+    border-radius: 56px;
+    padding: 12px;
+}
+
+.preview-device-tablet {
+    width: 720px;
+    height: 960px;
+    flex-shrink: 0;
+    border-radius: 40px;
+    padding: 16px;
+}
+
+.preview-device-screen {
+    overflow: hidden;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 40px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    pointer-events: auto;
+}
+
+.dark .preview-device-screen {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.preview-device-tablet .preview-device-screen {
+    border-radius: 28px;
+}
+
+.preview-device-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background: transparent;
+}
+
+.preview-device-tablet .preview-device-scroll {
+    border-radius: 16px;
+}
+
+.dark .preview-device-side {
+    background: linear-gradient(180deg, #5a5d65 0%, #303236 100%);
+    box-shadow:
+        inset 1px 0 2px rgba(255, 255, 255, 0.15),
+        -1px 0 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Side Dock ── */
+.side-dock {
+    width: 72px;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.25rem 0;
+    gap: 0.75rem;
+    background-color: rgba(253, 252, 246, 0.5);
+    flex-shrink: 0;
+}
+
+.dark .side-dock {
+    background-color: rgba(28, 28, 30, 0.5);
+}
+
+.dock-item {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8E8E93;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dock-item:hover {
+    background: white;
+    color: black;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transform: scale(1.1);
+}
+
+.dark .dock-item:hover {
+    background: #2c2c2e;
+    color: white;
+}
+
+.dock-item:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+.dock-item.active {
+    background: white;
+    color: black;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+}
+
+.dark .dock-item.active {
+    background: #2c2c2e;
+    color: white;
+}
+
+.dock-item.dock-cta {
+    background: black;
+    color: white;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.dock-item.dock-cta:hover {
+    background: #333;
+    color: white;
+    transform: scale(1.1);
+}
+
+.dark .dock-item.dock-cta {
+    background: white;
+    color: black;
+}
+
+.dark .dock-item.dock-cta:hover {
+    background: #e5e5e5;
+    color: black;
+}
+
+.dock-item.dock-cta.success {
+    background: #22c55e;
+    color: white;
+}
+
+.dock-divider {
+    width: 28px;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+}
+
+.dark .dock-divider {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.dock-spacer {
+    flex: 1;
+}

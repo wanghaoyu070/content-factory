@@ -1,0 +1,30 @@
+# Environment files with secrets
+.env*
+
+# Git history
+.git
+.gitignore
+
+# Dependencies (reinstalled in Docker)
+node_modules
+
+# Database files
+data/*.db
+
+# Test/debug files
+test_ai_key.js
+u00261
+
+# IDE and tool config
+.claude/
+.vscode/
+.idea/
+
+# Build artifacts
+.next/
+out/
+build/
+coverage/
+
+# OS files
+.DS_Store

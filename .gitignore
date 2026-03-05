@@ -42,3 +42,6 @@ next-env.d.ts
 
 # database
 /data/*.db
+
+# dangerous test files
+test_ai_key.js

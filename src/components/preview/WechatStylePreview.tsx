@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Smartphone, ChevronDown } from 'lucide-react';
 import { WECHAT_THEMES, type Theme } from '@/lib/theme';
 import { htmlToThemedHtml } from '@/lib/wechatMarkdown';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface WechatStylePreviewProps {
     content: string;
@@ -117,7 +118,7 @@ export default function WechatStylePreview({
                         style={{ maxHeight: 'calc(667px - 120px)' }}
                     >
                         {renderedHtml ? (
-                            <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+                            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(renderedHtml) }} />
                         ) : (
                             <div className="p-4 text-gray-400 text-center text-sm">
                                 暂无内容

@@ -1,6 +1,7 @@
 'use client';
 
 import { Heart, MessageCircle, Star, Share2 } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface XiaohongshuPreviewProps {
   title: string;
@@ -12,9 +13,7 @@ interface XiaohongshuPreviewProps {
 export default function XiaohongshuPreview({ title, content, coverImage, images = [] }: XiaohongshuPreviewProps) {
   // 从内容中提取纯文本
   const getPlainText = (html: string) => {
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.textContent || div.innerText || '';
+    return html.replace(/<[^>]+>/g, '').trim();
   };
 
   // 从内容中提取所有图片
@@ -109,7 +108,7 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
         {/* 笔记正文 */}
         <div
           className="px-4 py-2 xiaohongshu-content"
-          dangerouslySetInnerHTML={{ __html: content || '<p class="text-gray-400">笔记内容预览...</p>' }}
+          dangerouslySetInnerHTML={{ __html: content ? sanitizeHtml(content) : '<p class="text-gray-400">笔记内容预览...</p>' }}
         />
 
         {/* 标签区域 */}

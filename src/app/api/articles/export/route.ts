@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getArticleById } from '@/lib/db';
+import { escapeHtml, sanitizeHtml } from '@/lib/sanitize';
 
 // 将HTML转换为Markdown的简单实现
 function htmlToMarkdown(html: string): string {
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     body {
       max-width: 800px;
@@ -156,8 +157,8 @@ export async function GET(request: NextRequest) {
   </style>
 </head>
 <body>
-  <h1>${title}</h1>
-  ${content}
+  <h1>${escapeHtml(title)}</h1>
+  ${sanitizeHtml(content)}
 </body>
 </html>`;
       const filename = `${title.replace(/[/\\?%*:|"<>]/g, '-')}.html`;

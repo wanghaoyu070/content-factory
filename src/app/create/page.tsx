@@ -580,7 +580,7 @@ function CreatePageContent() {
               {/* 提交按钮 - 移动端只显示图标 */}
               <button
                 onClick={handleSubmitReview}
-                className="p-2 sm:px-4 sm:py-2 bg-indigo-600 text-[#1A1A1A] rounded-lg hover:bg-indigo-500 transition-colors flex items-center gap-2 active:scale-95"
+                className="p-2 sm:px-4 sm:py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors flex items-center gap-2 active:scale-95"
                 title="提交审核"
               >
                 <Send className="w-4 h-4" />
@@ -601,7 +601,7 @@ function CreatePageContent() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <span className="hidden sm:inline text-[#999] flex-shrink-0">当前选题:</span>
-              <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full flex-shrink-0">
+              <span className="px-2 py-0.5 text-xs bg-[#F7F6F0] text-[#666] rounded-full flex-shrink-0">
                 {currentInsight?.keyword}
               </span>
               <span className="text-[#1A1A1A] font-medium truncate text-sm sm:text-base">
@@ -653,11 +653,11 @@ function CreatePageContent() {
 
       <div className="p-4 sm:p-6">
         {/* 自由创作入口 */}
-        <div className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[rgba(0,0,0,0.08)] mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[rgba(0,0,0,0.06)] mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-r from-[#333] to-[#555] flex items-center justify-center flex-shrink-0">
-                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-[#1A1A1A]" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#F7F6F0] flex items-center justify-center flex-shrink-0">
+                <PenTool className="w-5 h-5 sm:w-6 sm:h-6 text-[#333]" />
               </div>
               <div>
                 <h3 className="font-semibold text-[#1A1A1A] text-sm sm:text-base mb-0.5 sm:mb-1">自由创作模式</h3>
@@ -680,7 +680,7 @@ function CreatePageContent() {
                 });
                 setShowFreeCreateModal(true);
               }}
-              className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium flex items-center justify-center gap-2 shadow-lg shadow-black/8 active:scale-95 text-sm sm:text-base"
+              className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 bg-[#333] text-white rounded-xl hover:bg-[#444] transition-all font-medium flex items-center justify-center gap-2 active:scale-95 text-sm sm:text-base"
             >
               <Zap className="w-4 h-4" />
               开始创作
@@ -755,7 +755,7 @@ function CreatePageContent() {
             <div className="bg-white rounded-xl sm:rounded-2xl border border-[rgba(0,0,0,0.06)]">
               <div className="p-3 sm:p-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
                 <h3 className="text-base sm:text-lg font-semibold text-[#1A1A1A] flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <Sparkles className="w-5 h-5 text-[#333]" />
                   <span className="hidden sm:inline">选题洞察库</span>
                   <span className="sm:hidden">洞察库</span>
                   <span className="text-xs sm:text-sm font-normal text-[#999]">
@@ -794,7 +794,7 @@ function CreatePageContent() {
                         <div className="flex items-start justify-between gap-2 sm:gap-4">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 flex-wrap">
-                              <span className="px-1.5 sm:px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                              <span className="px-1.5 sm:px-2 py-0.5 text-xs bg-[#F7F6F0] text-[#666] rounded-full">
                                 {insight.keyword}
                               </span>
                               <span className="text-xs text-[#999]">
@@ -803,7 +803,7 @@ function CreatePageContent() {
                             </div>
                             <h4 className="font-medium text-[#1A1A1A] flex items-center gap-2 text-sm sm:text-base">
                               {isSelected && (
-                                <span className="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-[#333] flex-shrink-0" />
                               )}
                               <span className="line-clamp-2">{insight.title}</span>
                             </h4>
@@ -826,7 +826,7 @@ function CreatePageContent() {
                                       {insight.suggestedTopics.map((topic: string, i: number) => (
                                         <span
                                           key={i}
-                                          className="px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded-full"
+                                          className="px-2 py-1 text-xs bg-[#F7F6F0] text-[#666] rounded-full border border-[rgba(0,0,0,0.06)]"
                                         >
                                           {topic}
                                         </span>
@@ -963,15 +963,15 @@ function CreatePageContent() {
                   {/* 功能说明 */}
                   <div className="p-3 bg-[#F7F6F0] rounded-xl space-y-2">
                     <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <ImageIcon className="w-4 h-4 text-emerald-400" />
+                      <ImageIcon className="w-4 h-4 text-[#333]" />
                       AI 自动生成配图并插入文章
                     </div>
                     <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <FileText className="w-4 h-4 text-amber-400" />
+                      <FileText className="w-4 h-4 text-[#333]" />
                       生成 1500-2500 字高质量文章
                     </div>
                     <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <Zap className="w-4 h-4 text-purple-400" />
+                      <Zap className="w-4 h-4 text-[#333]" />
                       AI 智能优化标题和结构
                     </div>
                   </div>
@@ -980,7 +980,7 @@ function CreatePageContent() {
                   <button
                     onClick={handleGenerate}
                     disabled={generating}
-                    className="w-full py-3 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-black/8"
+                    className="w-full py-3 bg-[#333] text-white rounded-xl hover:bg-[#444] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {generating ? (
                       <>
@@ -1012,7 +1012,7 @@ function CreatePageContent() {
               <div className="space-y-2">
                 <a
                   href="/"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors"
                 >
                   <Search className="w-5 h-5 text-[#333]" />
                   <div>
@@ -1022,9 +1022,9 @@ function CreatePageContent() {
                 </a>
                 <a
                   href="/articles"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#1e1e38] transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors"
                 >
-                  <FileText className="w-5 h-5 text-emerald-400" />
+                  <FileText className="w-5 h-5 text-[#333]" />
                   <div>
                     <div className="text-sm text-[#1A1A1A]">发布管理</div>
                     <div className="text-xs text-[#999]">管理已生成的文章</div>
@@ -1082,10 +1082,10 @@ function CreatePageContent() {
           />
           <div className="relative w-full max-w-lg bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] shadow-2xl overflow-hidden">
             {/* 头部 */}
-            <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+            <div className="h-1.5 bg-[#333]" />
             <div className="p-6 border-b border-[rgba(0,0,0,0.06)]">
               <h2 className="text-xl font-semibold text-[#1A1A1A] flex items-center gap-2">
-                <PenTool className="w-5 h-5 text-purple-400" />
+                <PenTool className="w-5 h-5 text-[#333]" />
                 自由创作
               </h2>
               <p className="text-sm text-[#666] mt-1">
@@ -1119,8 +1119,8 @@ function CreatePageContent() {
                       key={opt.value}
                       onClick={() => setStyle(opt.value)}
                       className={`flex-1 px-3 py-2 rounded-xl text-sm transition-colors ${style === opt.value
-                          ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.15)]/50'
-                          : 'bg-[#F7F6F0] text-[#666] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)]'
+                        ? 'bg-[rgba(0,0,0,0.06)] text-[#333] border border-[rgba(0,0,0,0.15)]/50'
+                        : 'bg-[#F7F6F0] text-[#666] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)]'
                         }`}
                     >
                       {opt.label}
@@ -1172,7 +1172,7 @@ function CreatePageContent() {
                   handleGenerate();
                 }}
                 disabled={!freeCreateTopic.trim() || generating}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 bg-[#333] text-white rounded-xl hover:bg-[#444] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 <Sparkles className="w-4 h-4" />
                 开始创作

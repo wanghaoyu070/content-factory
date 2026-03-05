@@ -29,6 +29,7 @@ export async function GET(
         id: article.id.toString(),
         title: article.title,
         content: article.content,
+        markdown_content: article.markdown_content,
         coverImage: article.cover_image,
         images: JSON.parse(article.images || '[]'),
         status: article.status,
@@ -78,6 +79,7 @@ export async function PUT(
       {
         title: body.title,
         content: body.content,
+        markdown_content: body.markdown_content,
         coverImage: body.coverImage,
         images: body.images,
         status: body.status,

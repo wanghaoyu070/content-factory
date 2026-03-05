@@ -1,16 +1,34 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'data', 'content-factory.db');
-
-// Ensure data directory exists
 import fs from 'fs';
-const dataDir = path.dirname(dbPath);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+
+// Lazy singleton: DB is only initialized when first accessed, not on import.
+// This prevents blocking dev server startup when editing frontend-only pages.
+let _db: InstanceType<typeof Database> | null = null;
+let _initialized = false;
+
+function getDb(): InstanceType<typeof Database> {
+  if (!_db) {
+    const dbPath = path.join(process.cwd(), 'data', 'content-factory.db');
+    const dataDir = path.dirname(dbPath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    _db = new Database(dbPath);
+  }
+  if (!_initialized) {
+    _initialized = true;
+    initializeDatabase(_db);
+  }
+  return _db;
 }
 
-const db = new Database(dbPath);
+// Proxy: keeps all existing `db.xxx()` calls working without changes
+const db = new Proxy({} as InstanceType<typeof Database>, {
+  get(_target, prop) {
+    return (getDb() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 
 // 安全性：表名白名单，防止 SQL 注入
 const ALLOWED_TABLES = [
@@ -107,157 +125,155 @@ function ensureColumn(
   }
 }
 
-// Initialize tables
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    github_id TEXT NOT NULL UNIQUE,
-    github_login TEXT,
-    name TEXT,
-    email TEXT,
-    avatar_url TEXT,
-    role TEXT DEFAULT 'user',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+// All table creation and migration logic, called lazily on first DB access.
+function initializeDatabase(db: InstanceType<typeof Database>) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      github_id TEXT NOT NULL UNIQUE,
+      github_login TEXT,
+      name TEXT,
+      email TEXT,
+      avatar_url TEXT,
+      role TEXT DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS invite_codes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    code TEXT NOT NULL UNIQUE,
-    created_by INTEGER,
-    used_by INTEGER,
-    used_at DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-    FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL
-  );
+    CREATE TABLE IF NOT EXISTS invite_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      created_by INTEGER,
+      used_by INTEGER,
+      used_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+      FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS search_records (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL DEFAULT 1,
-    keyword TEXT NOT NULL,
-    article_count INTEGER DEFAULT 0,
-    search_type TEXT DEFAULT 'keyword',
-    account_name TEXT,
-    account_avatar TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    CREATE TABLE IF NOT EXISTS search_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL DEFAULT 1,
+      keyword TEXT NOT NULL,
+      article_count INTEGER DEFAULT 0,
+      search_type TEXT DEFAULT 'keyword',
+      account_name TEXT,
+      account_avatar TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS source_articles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    search_id INTEGER NOT NULL,
-    title TEXT,
-    content TEXT,
-    cover_image TEXT,
-    read_count INTEGER DEFAULT 0,
-    like_count INTEGER DEFAULT 0,
-    wow_count INTEGER DEFAULT 0,
-    publish_time TEXT,
-    source_url TEXT,
-    wx_name TEXT,
-    wx_id TEXT,
-    is_original INTEGER DEFAULT 0,
-    FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS source_articles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      search_id INTEGER NOT NULL,
+      title TEXT,
+      content TEXT,
+      cover_image TEXT,
+      read_count INTEGER DEFAULT 0,
+      like_count INTEGER DEFAULT 0,
+      wow_count INTEGER DEFAULT 0,
+      publish_time TEXT,
+      source_url TEXT,
+      wx_name TEXT,
+      wx_id TEXT,
+      is_original INTEGER DEFAULT 0,
+      FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_search_keyword ON search_records(keyword);
-  CREATE INDEX IF NOT EXISTS idx_articles_search_id ON source_articles(search_id);
+    CREATE INDEX IF NOT EXISTS idx_search_keyword ON search_records(keyword);
+    CREATE INDEX IF NOT EXISTS idx_articles_search_id ON source_articles(search_id);
 
-  CREATE TABLE IF NOT EXISTS settings (
-    user_id INTEGER NOT NULL,
-    key TEXT NOT NULL,
-    value TEXT NOT NULL,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, key)
-  );
+    CREATE TABLE IF NOT EXISTS settings (
+      user_id INTEGER NOT NULL,
+      key TEXT NOT NULL,
+      value TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, key)
+    );
 
-  CREATE TABLE IF NOT EXISTS article_summaries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    search_id INTEGER NOT NULL,
-    article_id INTEGER NOT NULL,
-    title TEXT,
-    summary TEXT,
-    key_points TEXT,
-    keywords TEXT,
-    highlights TEXT,
-    content_type TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE,
-    FOREIGN KEY (article_id) REFERENCES source_articles(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS article_summaries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      search_id INTEGER NOT NULL,
+      article_id INTEGER NOT NULL,
+      title TEXT,
+      summary TEXT,
+      key_points TEXT,
+      keywords TEXT,
+      highlights TEXT,
+      content_type TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE,
+      FOREIGN KEY (article_id) REFERENCES source_articles(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS topic_insights (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    search_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    evidence TEXT,
-    suggested_topics TEXT,
-    related_articles TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS topic_insights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      search_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      evidence TEXT,
+      suggested_topics TEXT,
+      related_articles TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_summaries_search_id ON article_summaries(search_id);
-  CREATE INDEX IF NOT EXISTS idx_insights_search_id ON topic_insights(search_id);
+    CREATE INDEX IF NOT EXISTS idx_summaries_search_id ON article_summaries(search_id);
+    CREATE INDEX IF NOT EXISTS idx_insights_search_id ON topic_insights(search_id);
 
-  CREATE TABLE IF NOT EXISTS articles (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL DEFAULT 1,
-    title TEXT NOT NULL,
-    content TEXT,
-    cover_image TEXT,
-    images TEXT,
-    status TEXT DEFAULT 'draft',
-    source TEXT,
-    source_insight_id INTEGER,
-    source_search_id INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (source_insight_id) REFERENCES topic_insights(id),
-    FOREIGN KEY (source_search_id) REFERENCES search_records(id)
-  );
+    CREATE TABLE IF NOT EXISTS articles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL DEFAULT 1,
+      title TEXT NOT NULL,
+      content TEXT,
+      cover_image TEXT,
+      images TEXT,
+      status TEXT DEFAULT 'draft',
+      source TEXT,
+      source_insight_id INTEGER,
+      source_search_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (source_insight_id) REFERENCES topic_insights(id),
+      FOREIGN KEY (source_search_id) REFERENCES search_records(id)
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
-  CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
-`);
+    CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+    CREATE INDEX IF NOT EXISTS idx_articles_created_at ON articles(created_at);
+  `);
 
-ensureSettingsTable();
-ensureColumn('search_records', 'user_id', 'INTEGER DEFAULT 1', () => {
-  db.exec('UPDATE search_records SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
-});
-ensureColumn('articles', 'user_id', 'INTEGER DEFAULT 1', () => {
-  db.exec('UPDATE articles SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
-});
-db.exec('CREATE INDEX IF NOT EXISTS idx_search_user ON search_records(user_id)');
-db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
+  ensureSettingsTable();
+  ensureColumn('search_records', 'user_id', 'INTEGER DEFAULT 1', () => {
+    db.exec('UPDATE search_records SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
+  });
+  ensureColumn('articles', 'user_id', 'INTEGER DEFAULT 1', () => {
+    db.exec('UPDATE articles SET user_id = 1 WHERE user_id IS NULL OR user_id = 0');
+  });
+  db.exec('CREATE INDEX IF NOT EXISTS idx_search_user ON search_records(user_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_articles_user ON articles(user_id)');
 
-// Add status column to search_records
-ensureColumn('search_records', 'status', "TEXT DEFAULT 'completed'");
+  ensureColumn('search_records', 'status', "TEXT DEFAULT 'completed'");
+  ensureColumn('users', 'onboarding_completed', 'INTEGER DEFAULT 0');
 
-// Add onboarding_completed column to users table
-ensureColumn('users', 'onboarding_completed', 'INTEGER DEFAULT 0');
+  ensureColumn('articles', 'xhs_tags', 'TEXT');
+  ensureColumn('articles', 'xhs_content', 'TEXT');
+  ensureColumn('articles', 'xhs_title', 'TEXT');
+  ensureColumn('articles', 'markdown_content', 'TEXT');
 
-// Add Xiaohongshu related fields to articles
-ensureColumn('articles', 'xhs_tags', 'TEXT'); // 小红书话题标签 JSON 数组
-ensureColumn('articles', 'xhs_content', 'TEXT'); // 小红书版本内容（精简版）
-ensureColumn('articles', 'xhs_title', 'TEXT'); // 小红书版本标题（可选不同标题）
-
-// Create insight_favorites table for user favorites
-db.exec(`
-  CREATE TABLE IF NOT EXISTS insight_favorites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    insight_id INTEGER NOT NULL,
-    note TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (insight_id) REFERENCES topic_insights(id) ON DELETE CASCADE,
-    UNIQUE(user_id, insight_id)
-  );
-  CREATE INDEX IF NOT EXISTS idx_favorites_user ON insight_favorites(user_id);
-  CREATE INDEX IF NOT EXISTS idx_favorites_insight ON insight_favorites(insight_id);
-`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS insight_favorites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      insight_id INTEGER NOT NULL,
+      note TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (insight_id) REFERENCES topic_insights(id) ON DELETE CASCADE,
+      UNIQUE(user_id, insight_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_favorites_user ON insight_favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_favorites_insight ON insight_favorites(insight_id);
+  `);
+}
 
 // Types
 export interface SearchRecord {
@@ -317,6 +333,7 @@ export interface ArticleRecord {
   user_id: number;
   title: string;
   content: string;
+  markdown_content: string | null;
   cover_image: string;
   images: string;
   status: 'draft' | 'pending_review' | 'approved' | 'published' | 'failed' | 'archived';
@@ -829,6 +846,7 @@ export function updateArticle(
   updates: {
     title?: string;
     content?: string;
+    markdown_content?: string;
     coverImage?: string;
     images?: string[];
     status?: string;
@@ -848,6 +866,10 @@ export function updateArticle(
   if (updates.content !== undefined) {
     fields.push('content = ?');
     values.push(updates.content);
+  }
+  if (updates.markdown_content !== undefined) {
+    fields.push('markdown_content = ?');
+    values.push(updates.markdown_content);
   }
   if (updates.coverImage !== undefined) {
     fields.push('cover_image = ?');

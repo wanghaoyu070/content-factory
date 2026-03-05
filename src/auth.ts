@@ -87,5 +87,21 @@ const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 
 export function auth() {
+  // Dev mode bypass: return mock admin session for fast UI iteration
+  if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
+    return Promise.resolve({
+      user: {
+        id: 1,
+        name: 'wanghaoyu',
+        email: 'wanghaoyu070@gmail.com',
+        image: 'https://avatars.githubusercontent.com/u/203200849?v=4',
+        role: 'admin',
+        githubLogin: 'wanghaoyu070',
+        isPending: false,
+        onboardingCompleted: true,
+      },
+      expires: '2099-12-31T23:59:59.999Z',
+    });
+  }
   return getServerSession(authOptions);
 }

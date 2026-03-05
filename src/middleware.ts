@@ -19,6 +19,12 @@ const publicPaths = ['/', '/login', '/api/auth'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // DEV MODE: skip all auth checks for fast UI iteration.
+  // Set NEXT_PUBLIC_DEV_BYPASS_AUTH=true in .env.local to enable.
+  if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
+    return NextResponse.next();
+  }
+
   // 跳过公开路径
   if (publicPaths.some((path) => pathname === path || pathname.startsWith(path + '/'))) {
     return NextResponse.next();

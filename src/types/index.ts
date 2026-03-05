@@ -32,6 +32,7 @@ export interface Article {
   id: string;
   title: string;
   content: string;
+  markdown_content?: string;
   coverImage: string;
   images: string[];
   status: ArticleStatus;

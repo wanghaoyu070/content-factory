@@ -109,11 +109,11 @@ export default function DashboardPage() {
       case 'analysis':
         return <Search className="w-4 h-4 text-[#333]" />;
       case 'article':
-        return <PenTool className="w-4 h-4 text-purple-400" />;
+        return <PenTool className="w-4 h-4 text-[#333]" />;
       case 'publish':
-        return <Send className="w-4 h-4 text-emerald-400" />;
+        return <Send className="w-4 h-4 text-[#333]" />;
       default:
-        return <Clock className="w-4 h-4 text-[#666]" />;
+        return <Clock className="w-4 h-4 text-[#999]" />;
     }
   };
 
@@ -266,7 +266,7 @@ export default function DashboardPage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Link
             href="/analysis"
-            className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-2xl p-6 border border-[rgba(0,0,0,0.08)] hover:border-[rgba(0,0,0,0.15)] transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -278,26 +278,26 @@ export default function DashboardPage() {
           </Link>
           <Link
             href="/create"
-            className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl p-6 border border-purple-500/30 hover:border-purple-500/50 transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
           >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">内容创作</h4>
                 <p className="text-sm text-[#666]">AI一键生成高质量文章</p>
               </div>
-              <PenTool className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
+              <PenTool className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
             </div>
           </Link>
           <Link
             href="/articles"
-            className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 rounded-2xl p-6 border border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
           >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">发布管理</h4>
                 <p className="text-sm text-[#666]">管理和发布你的文章</p>
               </div>
-              <Send className="w-8 h-8 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <Send className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
             </div>
           </Link>
         </div>
@@ -310,29 +310,21 @@ function StatCard({
   title,
   value,
   icon,
-  color,
   trend,
 }: {
   title: string;
   value: number;
   icon: React.ReactNode;
-  color: 'indigo' | 'purple' | 'emerald' | 'amber';
+  color?: string;
   trend?: number;
 }) {
-  const colorClasses = {
-    indigo: 'from-indigo-600/20 to-indigo-600/5 border-[rgba(0,0,0,0.08)] text-[#333]',
-    purple: 'from-purple-600/20 to-purple-600/5 border-purple-500/30 text-purple-400',
-    emerald: 'from-emerald-600/20 to-emerald-600/5 border-emerald-500/30 text-emerald-400',
-    amber: 'from-amber-600/20 to-amber-600/5 border-amber-500/30 text-amber-400',
-  };
-
   return (
     <div
-      className={`bg-gradient-to-br ${colorClasses[color]} rounded-2xl p-6 border`}
+      className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]"
     >
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-[#666]">{title}</span>
-        <div className={`w-10 h-10 rounded-xl bg-[#F7F6F0] flex items-center justify-center ${colorClasses[color].split(' ').pop()}`}>
+        <div className="w-10 h-10 rounded-xl bg-[#F7F6F0] flex items-center justify-center text-[#333]">
           {icon}
         </div>
       </div>
@@ -340,7 +332,7 @@ function StatCard({
         <span className="text-3xl font-bold text-[#1A1A1A]">{value}</span>
         {trend !== undefined && (
           <div
-            className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-emerald-400' : 'text-red-400'
+            className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-[#333]' : 'text-red-400'
               }`}
           >
             {trend >= 0 ? (

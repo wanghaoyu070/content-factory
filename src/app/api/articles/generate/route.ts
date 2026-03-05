@@ -4,6 +4,7 @@ import { getSetting, createArticle, getSearchById } from '@/lib/db';
 import { generateArticle, generateImagePrompts, ImageInsertPosition } from '@/lib/ai';
 import { generateImagesParallel, GeneratedImage } from '@/lib/image-gen';
 import { getImageGenConfig, getAIConfig as getAIUserConfig } from '@/lib/config';
+import { escapeHtml } from '@/lib/sanitize';
 
 interface GenerateRequest {
   insightId: number;
@@ -69,8 +70,8 @@ function insertImagesIntoContent(
 
     const imgHtml = `
 <figure class="article-image" style="margin: 24px 0; text-align: center;">
-  <img src="${image.url}" alt="${pos.description}" style="max-width: 100%; height: auto; border-radius: 8px;" />
-  <figcaption style="text-align: center; color: #666; font-size: 14px; margin-top: 8px;">${pos.description}</figcaption>
+  <img src="${escapeHtml(image.url)}" alt="${escapeHtml(pos.description)}" style="max-width: 100%; height: auto; border-radius: 8px;" />
+  <figcaption style="text-align: center; color: #666; font-size: 14px; margin-top: 8px;">${escapeHtml(pos.description)}</figcaption>
 </figure>`;
 
     insertions.push({ position: insertPosition, html: imgHtml });

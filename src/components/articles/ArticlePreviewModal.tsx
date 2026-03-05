@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, Smartphone, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 import PlatformPreview from '@/components/preview/PlatformPreview';
 
 interface Article {
@@ -153,7 +154,7 @@ export function ArticlePreviewModal({ article, isOpen, onClose }: ArticlePreview
                                 } as React.CSSProperties}
                             >
                                 {article.content ? (
-                                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                                 ) : (
                                     <p className="text-[#999] italic">暂无内容</p>
                                 )}

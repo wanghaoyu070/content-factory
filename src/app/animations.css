@@ -43,13 +43,13 @@
   border-color: rgba(0, 0, 0, 0.15);
 }
 
-/* 图标按钮旋转效果 */
+/* Icon button — subtle scale only */
 .btn-icon {
   transition: transform var(--transition-normal) var(--ease-spring);
 }
 
 .btn-icon:hover {
-  transform: rotate(15deg) scale(1.1);
+  transform: scale(1.05);
 }
 
 /* ===== 卡片微交互 ===== */
@@ -76,16 +76,13 @@
 
 /* ===== 列表项动画 ===== */
 
-/* 列表项悬停效果 */
+/* List item hover — bg only, no padding shift */
 .list-item-hover {
-  transition:
-    background var(--transition-fast) ease-out,
-    padding-left var(--transition-fast) var(--ease-spring);
+  transition: background var(--transition-fast) ease-out;
 }
 
 .list-item-hover:hover {
   background: rgba(0, 0, 0, 0.02);
-  padding-left: 1.25rem;
 }
 
 /* 列表项淡入动画 */
@@ -295,28 +292,7 @@
   animation: star-pop 0.4s var(--ease-spring);
 }
 
-/* ===== 涟漪效果 ===== */
-
-.ripple {
-  position: relative;
-  overflow: hidden;
-}
-
-.ripple::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.06) 0%, transparent 70%);
-  transform: scale(0);
-  opacity: 0;
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-}
-
-.ripple:active::after {
-  transform: scale(2);
-  opacity: 1;
-  transition-duration: 0.1s;
-}
+/* Ripple effect removed — too Material Design for minimalist theme */
 
 /* ===== 数字跳动动画 ===== */
 
@@ -375,53 +351,9 @@
   animation: page-enter 0.4s var(--ease-out-expo);
 }
 
-/* ===== 悬浮标签动画 ===== */
+/* Float animation removed — continuous motion distracts in minimalist UI */
 
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* ===== 渐变文字动画 ===== */
-
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.text-gradient-animated {
-  background: linear-gradient(90deg,
-      #333333,
-      #666666,
-      #999999,
-      #666666,
-      #333333);
-  background-size: 200% 200%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: gradient-shift 4s ease infinite;
-}
+/* Gradient text animation removed — too decorative for minimalist style */
 
 /* ===== 工具提示动画 ===== */
 
