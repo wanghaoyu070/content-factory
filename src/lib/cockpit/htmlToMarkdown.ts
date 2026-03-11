@@ -1,5 +1,6 @@
+import { toast } from 'sonner';
 import TurndownService from 'turndown';
-// @ts-ignore
+// @ts-expect-error - turndown-plugin-gfm has no bundled TS types
 import { gfm } from 'turndown-plugin-gfm';
 import { addImage } from './imageStore';
 
@@ -18,7 +19,7 @@ turndownService.use(gfm);
 // Rule to optimize images
 turndownService.addRule('image', {
     filter: 'img',
-    replacement: (_content, node: any) => {
+    replacement: (_content, node: { alt?: string; src?: string; title?: string }) => {
         const alt = node.alt || '图片';
         const src = node.src || '';
         const title = node.title || '';
@@ -150,7 +151,7 @@ export function handleSmartPaste(
             })
             .catch((err) => {
                 console.error('Clipboard image conversion failed:', err);
-                alert('粘贴图片失败，请重试');
+                toast.error('粘贴图片失败，请重试');
             });
         return;
     }

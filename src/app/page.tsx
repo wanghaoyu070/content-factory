@@ -71,23 +71,22 @@ export default function DashboardPage() {
       setData(null);
       return;
     }
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        const result = await response.json();
+        if (result.success) {
+          setData(result.data);
+        }
+      } catch (err) {
+        console.error('获取仪表盘数据失败:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDashboardData();
   }, [isAuthenticated]);
-
-  const fetchDashboardData = async () => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await fetch('/api/dashboard');
-      const result = await response.json();
-      if (result.success) {
-        setData(result.data);
-      }
-    } catch (err) {
-      console.error('获取仪表盘数据失败:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
@@ -266,38 +265,41 @@ export default function DashboardPage() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           <Link
             href="/analysis"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">选题分析</h4>
                 <p className="text-sm text-[#666]">搜索关键词，发现热门选题</p>
               </div>
-              <Search className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
+              <Search className="w-8 h-8 text-[#333]" />
             </div>
           </Link>
           <Link
             href="/create"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">内容创作</h4>
                 <p className="text-sm text-[#666]">AI一键生成高质量文章</p>
               </div>
-              <PenTool className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
+              <PenTool className="w-8 h-8 text-[#333]" />
             </div>
           </Link>
           <Link
             href="/articles"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all group"
+            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
+            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">发布管理</h4>
                 <p className="text-sm text-[#666]">管理和发布你的文章</p>
               </div>
-              <Send className="w-8 h-8 text-[#333] group-hover:scale-110 transition-transform" />
+              <Send className="w-8 h-8 text-[#333]" />
             </div>
           </Link>
         </div>

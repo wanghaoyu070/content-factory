@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Search,
   ArrowLeft,
   Eye,
   Trash2,
-  Calendar,
   FileText,
   Lightbulb,
   Clock,
@@ -160,7 +160,7 @@ export default function AnalysisHistoryPage() {
             {!searchQuery && (
               <Link
                 href="/analysis"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all"
               >
                 <Search className="w-4 h-4" />
                 开始分析选题
@@ -173,21 +173,23 @@ export default function AnalysisHistoryPage() {
               {filteredRecords.map((record) => (
                 <div
                   key={record.searchId}
-                  className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] transition-all group"
+                  className="bg-white rounded-2xl p-5 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] hover:scale-[1.01] transition-all duration-200 group" style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                 >
                   {/* Keyword/Account Title */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {record.searchType === 'account' && record.accountAvatar ? (
-                        <img
+                        <Image
                           src={record.accountAvatar}
                           alt={record.accountName || record.keyword}
+                          width={40}
+                          height={40}
+                          unoptimized
                           className="w-10 h-10 rounded-xl object-cover"
                         />
                       ) : (
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          record.searchType === 'account' ? 'bg-emerald-500/20' : 'bg-[rgba(0,0,0,0.06)]'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${record.searchType === 'account' ? 'bg-emerald-500/20' : 'bg-[rgba(0,0,0,0.06)]'
+                          }`}>
                           {record.searchType === 'account' ? (
                             <User className="w-5 h-5 text-emerald-400" />
                           ) : (
@@ -240,7 +242,7 @@ export default function AnalysisHistoryPage() {
                   <div className="flex items-center gap-2 pt-4 border-t border-[rgba(0,0,0,0.06)]">
                     <Link
                       href={`/analysis/history/${record.searchId}`}
-                      className="flex-1 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] transition-all flex items-center justify-center gap-2"
+                      className="flex-1 px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white text-sm rounded-lg hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all flex items-center justify-center gap-2"
                     >
                       <Eye className="w-4 h-4" />
                       查看详情

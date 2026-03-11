@@ -2,9 +2,41 @@ import {
     updateSearchStatus,
     saveArticles,
     saveTopicInsights,
-    getSetting
+    type SourceArticle
 } from '@/lib/db';
 import { getWechatArticleConfig, getAIConfig } from '@/lib/config';
+import { canUseMockFallback, isPlaceholderEndpoint } from '@/lib/mock-policy';
+import { batchParseArticles } from '@/lib/coze-service';
+
+type SourceArticleInput = Omit<SourceArticle, 'id' | 'search_id'>;
+type TopicInsightInput = {
+    title: string;
+    description: string;
+    evidence: string;
+    suggestedTopics: string[];
+    relatedArticles: string[];
+};
+
+interface RawWechatArticle {
+    title?: string;
+    content?: string;
+    avatar?: string;
+    read?: number;
+    praise?: number;
+    looking?: number;
+    publish_time_str?: string;
+    url?: string;
+    wx_name?: string;
+    wx_id?: string;
+    is_original?: number;
+}
+
+function toRawWechatArticle(value: unknown): RawWechatArticle {
+    if (typeof value !== 'object' || value === null) {
+        return {};
+    }
+    return value as RawWechatArticle;
+}
 
 // 真实感的标题模板
 const TITLE_TEMPLATES = [
@@ -74,7 +106,7 @@ function generateMockArticles(keyword: string, count = 8) {
 }
 
 // 调用真实微信文章 API
-async function fetchRealArticles(keyword: string, config: { endpoint: string; apiKey: string }): Promise<{ success: boolean; articles: any[]; isMock: boolean }> {
+async function fetchRealArticles(keyword: string, config: { endpoint: string; apiKey: string }): Promise<{ success: boolean; articles: SourceArticleInput[]; isMock: boolean }> {
     try {
         const response = await fetch(config.endpoint, {
             method: 'POST',
@@ -93,27 +125,24 @@ async function fetchRealArticles(keyword: string, config: { endpoint: string; ap
 
         if (response.ok) {
             const data = await response.json();
-            if (data && data.code === 0 && data.data && data.data.length > 0) {
-                const articles = data.data.map((article: any) => ({
-                    title: article.title,
-                    content: article.content || '',
-                    cover_image: article.avatar,
-                    read_count: article.read,
-                    readCount: article.read,
-                    like_count: article.praise,
-                    likeCount: article.praise,
-                    wow_count: article.looking,
-                    wowCount: article.looking,
-                    publish_time: article.publish_time_str,
-                    publishTime: article.publish_time_str,
-                    source_url: article.url,
-                    sourceUrl: article.url,
-                    wx_name: article.wx_name,
-                    wxName: article.wx_name,
-                    author: article.wx_name,
-                    wx_id: article.wx_id,
-                    is_original: article.is_original === 1 ? 1 : 0,
-                }));
+            const rawData = data as { code?: number; data?: unknown };
+            if (rawData.code === 0 && Array.isArray(rawData.data) && rawData.data.length > 0) {
+                const articles = rawData.data.map((item): SourceArticleInput => {
+                    const article = toRawWechatArticle(item);
+                    return {
+                        title: String(article.title ?? ''),
+                        content: String(article.content ?? ''),
+                        cover_image: String(article.avatar ?? ''),
+                        read_count: Number(article.read ?? 0),
+                        like_count: Number(article.praise ?? 0),
+                        wow_count: Number(article.looking ?? 0),
+                        publish_time: String(article.publish_time_str ?? ''),
+                        source_url: String(article.url ?? ''),
+                        wx_name: String(article.wx_name ?? ''),
+                        wx_id: String(article.wx_id ?? ''),
+                        is_original: article.is_original === 1 ? 1 : 0,
+                    };
+                });
                 return { success: true, articles, isMock: false };
             }
         }
@@ -132,33 +161,35 @@ export async function runAnalysisTask(
     keyword: string,
     userId: number,
     searchType: 'keyword' | 'account' = 'keyword'
-) {
+): Promise<'completed' | 'failed'> {
+    const mockFallbackEnabled = canUseMockFallback();
+
     if (process.env.NODE_ENV === 'development') {
-        console.log(`[Task ${searchId}] Starting analysis for: ${keyword}`);
+        console.log(`[Task ${searchId}] Starting analysis for (${searchType}): ${keyword}`);
     }
 
     try {
         // Step 1: 搜索文章 - 优先使用真实 API
         const config = getWechatArticleConfig(userId);
-        let articles: any[] = [];
-        let isMockData = true;
+        let articles: SourceArticleInput[] = [];
 
         // 尝试调用真实 API
-        if (config && config.endpoint && config.apiKey && !config.endpoint.includes('example.com')) {
+        if (config && config.endpoint && config.apiKey && !isPlaceholderEndpoint(config.endpoint)) {
             const result = await fetchRealArticles(keyword, config);
             if (result.success) {
                 articles = result.articles;
-                isMockData = false;
                 if (process.env.NODE_ENV === 'development') {
                     console.log(`[Task ${searchId}] Fetched ${articles.length} real articles`);
                 }
             }
         }
 
-        // 如果真实 API 失败或未配置，使用 Mock 数据作为降级方案
+        // 如果真实 API 失败或未配置，使用 Mock 数据作为降级方案（生产默认禁用）
         if (articles.length === 0) {
+            if (!mockFallbackEnabled) {
+                throw new Error('未配置可用的数据源，且生产环境未启用 Mock 回退');
+            }
             articles = generateMockArticles(keyword);
-            isMockData = true;
             if (process.env.NODE_ENV === 'development') {
                 console.log(`[Task ${searchId}] Using mock data (API not configured or failed)`);
             }
@@ -168,11 +199,48 @@ export async function runAnalysisTask(
         saveArticles(searchId, articles);
 
         // 更新状态：已获取文章，正在分析
-        updateSearchStatus(searchId, 'processing', articles.length);
+        updateSearchStatus(searchId, 'processing', articles.length, userId);
+
+        // Step 2.5: Fetch full text for top N articles via Coze workflow
+        const TOP_N_FULL_TEXT = 3;
+        const sortedByReads = [...articles]
+            .filter(a => a.source_url && a.source_url !== '#')
+            .sort((a, b) => (b.read_count || 0) - (a.read_count || 0))
+            .slice(0, TOP_N_FULL_TEXT);
+
+        if (sortedByReads.length > 0) {
+            try {
+                const urls = sortedByReads.map(a => a.source_url);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`[Task ${searchId}] Fetching full text for ${urls.length} top articles via Coze`);
+                }
+                const parsed = await batchParseArticles(urls, 3);
+
+                // Enrich articles with full text where available
+                for (let i = 0; i < sortedByReads.length; i++) {
+                    if (parsed[i]?.content) {
+                        const target = articles.find(a => a.source_url === sortedByReads[i].source_url);
+                        if (target) {
+                            target.content = parsed[i]!.content;
+                        }
+                    }
+                }
+
+                if (process.env.NODE_ENV === 'development') {
+                    const successCount = parsed.filter(Boolean).length;
+                    console.log(`[Task ${searchId}] Full text fetched: ${successCount}/${urls.length} succeeded`);
+                }
+            } catch (err) {
+                // Graceful degradation: if Coze fails entirely, continue with summaries
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn(`[Task ${searchId}] Coze full text fetch failed, using summaries:`, err);
+                }
+            }
+        }
 
         // Step 3: AI 分析
         const aiConfig = getAIConfig(userId);
-        let insights = [];
+        let insights: TopicInsightInput[] = [];
 
         if (aiConfig) {
             // 调用 AI 生成洞察
@@ -203,7 +271,11 @@ export async function runAnalysisTask(
                             },
                             {
                                 role: "user",
-                                content: `分析关键词：${keyword}\n\n文章列表：\n${articles.map(a => `- ${a.title} (阅读: ${a.read_count})`).join('\n')}`
+                                content: `分析关键词：${keyword}\n\n文章列表：\n${articles.map(a => {
+                                    const excerpt = (a.content || '').slice(0, 500);
+                                    const contentLine = excerpt ? `\n  正文摘要：${excerpt}` : '';
+                                    return `- ${a.title} (阅读: ${a.read_count})${contentLine}`;
+                                }).join('\n\n')}`
                             }
                         ]
                     })
@@ -225,7 +297,7 @@ export async function runAnalysisTask(
                             jsonStr = cleanContent.substring(firstBracket, lastBracket + 1);
                         }
 
-                        insights = JSON.parse(jsonStr);
+                        insights = JSON.parse(jsonStr) as TopicInsightInput[];
                     } catch (parseError) {
                         if (process.env.NODE_ENV === 'development') {
                             console.error(`[Task ${searchId}] JSON Parse failed`);
@@ -267,15 +339,17 @@ export async function runAnalysisTask(
         saveTopicInsights(searchId, insights);
 
         // Step 5: 任务完成
-        updateSearchStatus(searchId, 'completed');
+        updateSearchStatus(searchId, 'completed', undefined, userId);
         if (process.env.NODE_ENV === 'development') {
             console.log(`[Task ${searchId}] Analysis completed successfully.`);
         }
+        return 'completed';
 
     } catch (error) {
         if (process.env.NODE_ENV === 'development') {
             console.error(`[Task ${searchId}] Task failed:`, error);
         }
-        updateSearchStatus(searchId, 'failed');
+        updateSearchStatus(searchId, 'failed', undefined, userId);
+        return 'failed';
     }
 }

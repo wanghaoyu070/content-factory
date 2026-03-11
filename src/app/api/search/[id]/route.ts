@@ -1,38 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { getSearchById, getArticlesBySearchId } from '@/lib/db';
+import { badRequestResponse, createRequestId, notFoundResponse, serverErrorResponse, successResponse, unauthorizedResponse } from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
 
 // GET - 获取搜索详情和关联文章
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { id } = await params;
-    const searchId = parseInt(id);
-
-    if (isNaN(searchId)) {
-      return NextResponse.json(
-        { error: '无效的 ID' },
-        { status: 400 }
-      );
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的 ID', requestId);
     }
+    const searchId = parsedId.data;
 
     const searchRecord = getSearchById(searchId, session.user.id);
 
     if (!searchRecord) {
-      return NextResponse.json(
-        { error: '搜索记录不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('搜索记录不存在', requestId);
     }
 
-    const articles = getArticlesBySearchId(searchId);
+    const articles = getArticlesBySearchId(searchId, session.user.id);
 
     // Transform articles to frontend format
     const transformedArticles = articles.map((article) => ({
@@ -50,18 +47,12 @@ export async function GET(
       isOriginal: article.is_original === 1,
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        search: searchRecord,
-        articles: transformedArticles,
-      },
-    });
+    return successResponse({
+      search: searchRecord,
+      articles: transformedArticles,
+    }, 200, requestId);
   } catch (error) {
-    console.error('Error fetching search detail:', error);
-    return NextResponse.json(
-      { error: '获取搜索详情失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] Error fetching search detail:`, error);
+    return serverErrorResponse('获取搜索详情失败', requestId);
   }
 }

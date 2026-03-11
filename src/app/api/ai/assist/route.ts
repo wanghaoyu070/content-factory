@@ -1,34 +1,37 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { callAI } from '@/lib/ai';
 import { getAIConfig } from '@/lib/config';
+import {
+    badRequestResponse,
+    createRequestId,
+    serverErrorResponse,
+    successResponse,
+    unauthorizedResponse,
+} from '@/lib/api-response';
 
 interface AssistRequest {
     action: 'rewrite' | 'expand' | 'simplify' | 'polish' | 'continue';
     text: string;
-    prompt: string;
 }
 
 export async function POST(request: Request) {
+    const requestId = createRequestId();
     const session = await auth();
     if (!session?.user?.id) {
-        return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+        return unauthorizedResponse('请先登录', requestId);
     }
 
     try {
-        const { action, text, prompt }: AssistRequest = await request.json();
+        const { action, text }: AssistRequest = await request.json();
 
         if (!text || !action) {
-            return NextResponse.json({ success: false, error: '缺少必要参数' }, { status: 400 });
+            return badRequestResponse('缺少必要参数', requestId);
         }
 
         // 获取 AI 配置
         const aiConfig = getAIConfig(session.user.id);
         if (!aiConfig) {
-            return NextResponse.json({
-                success: false,
-                error: '请先配置 AI 接口'
-            }, { status: 400 });
+            return badRequestResponse('请先配置 AI 接口', requestId);
         }
 
         // 构建系统提示词
@@ -63,7 +66,7 @@ ${text}`;
 ${text}`;
                 break;
             default:
-                return NextResponse.json({ success: false, error: '无效的操作类型' }, { status: 400 });
+                return badRequestResponse('无效的操作类型', requestId);
         }
 
         // 调用 AI
@@ -72,15 +75,11 @@ ${text}`;
             { role: 'user', content: userPrompt },
         ]);
 
-        return NextResponse.json({
-            success: true,
+        return successResponse({
             result: result.trim(),
-        });
+        }, 200, requestId);
     } catch (error) {
-        console.error('AI 处理失败:', error);
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'AI 处理失败'
-        }, { status: 500 });
+        console.error(`[API ${requestId}] AI 处理失败:`, error);
+        return serverErrorResponse(error instanceof Error ? error.message : 'AI 处理失败', requestId);
     }
 }

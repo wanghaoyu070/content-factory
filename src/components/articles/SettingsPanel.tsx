@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Loader2, Plus, X } from 'lucide-react';
 import { XhsTagsManager } from '@/components/editor/XhsTagsManager';
 import { XhsContentChecker } from '@/components/editor/XhsContentChecker';
@@ -125,7 +126,14 @@ function ImageManagerSection({ images, onRemoveImage, onAddImageClick }: ImageMa
       <div className="grid grid-cols-3 gap-2 mb-4">
         {images.map((img, index) => (
           <div key={index} className="relative group">
-            <img src={img} alt="" className="w-full h-16 object-cover rounded-lg" />
+            <Image
+              src={img}
+              alt=""
+              width={240}
+              height={64}
+              unoptimized
+              className="w-full h-16 object-cover rounded-lg"
+            />
             <button
               onClick={() => onRemoveImage(index)}
               className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-[#1A1A1A] rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"

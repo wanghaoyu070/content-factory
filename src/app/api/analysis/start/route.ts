@@ -1,47 +1,84 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
-import { createSearchRecord } from '@/lib/db';
-import { runAnalysisTask } from '@/lib/analysis-service';
+import { createSearchRecord, updateSearchStatus } from '@/lib/db';
+import {
+    ensureAnalysisJobRecord,
+    getAnalysisExecutionMode,
+    startAnalysisJobNow,
+    triggerAnalysisJobInBackground,
+} from '@/lib/analysis-jobs';
 import { startAnalysisSchema, validateBody } from '@/lib/validations';
+import {
+    badRequestResponse,
+    createRequestId,
+    serverErrorResponse,
+    successResponse,
+    unauthorizedResponse,
+} from '@/lib/api-response';
 
 export async function POST(request: NextRequest) {
+    const requestId = createRequestId();
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+            return unauthorizedResponse('请先登录', requestId);
         }
 
         // 使用 Zod 验证请求体
         const validation = await validateBody(request, startAnalysisSchema);
         if (!validation.success) {
-            return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
+            return badRequestResponse(validation.error, requestId);
         }
 
         const { keyword, searchType } = validation.data;
 
-        // 1. 创建搜索记录，标记为 processing
+        // 1. 创建搜索记录，并先标记为 pending
         const searchId = createSearchRecord(keyword, 0, session.user.id, {
             searchType,
-            status: 'pending' // 初始状态
-        } as any);
-
-        // 2. 触发后台任务 (Fire-and-forget)
-        // 注意：这里没有 await，故意让它在后台跑
-        runAnalysisTask(searchId, keyword, session.user.id, searchType).catch(err => {
-            console.error('Background task crashed:', err);
         });
+        updateSearchStatus(searchId, 'pending', 0, session.user.id);
+        const executionMode = getAnalysisExecutionMode();
+        ensureAnalysisJobRecord(searchId, session.user.id, executionMode);
 
-        // 3. 立即返回 ID
-        return NextResponse.json({
-            success: true,
-            data: {
+        if (executionMode === 'inline') {
+            const finalStatus = await startAnalysisJobNow({
                 searchId,
-                message: '分析任务已后台启动'
+                keyword,
+                userId: session.user.id,
+                searchType,
+            });
+            if (finalStatus === 'completed') {
+                return successResponse({
+                    searchId,
+                    status: 'completed',
+                    message: '分析任务已完成',
+                }, 200, requestId);
             }
+            if (finalStatus === 'skipped') {
+                return successResponse({
+                    searchId,
+                    status: 'processing',
+                    message: '分析任务已在执行中',
+                }, 200, requestId);
+            }
+            return serverErrorResponse('分析任务失败', requestId);
+        }
+
+        triggerAnalysisJobInBackground({
+            searchId,
+            keyword,
+            userId: session.user.id,
+            searchType,
         });
+
+        return successResponse({
+            searchId,
+            status: 'pending',
+            message: '分析任务已入队'
+        }, 200, requestId);
 
     } catch (error) {
-        console.error('Failed to start analysis:', error);
-        return NextResponse.json({ success: false, error: '启动任务失败' }, { status: 500 });
+        console.error(`[API ${requestId}] Failed to start analysis:`, error);
+        return serverErrorResponse('启动任务失败', requestId);
     }
 }

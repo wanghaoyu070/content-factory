@@ -11,6 +11,7 @@ import {
   PenTool,
   ChevronLeft,
   ChevronRight,
+  Flame,
 } from 'lucide-react';
 import Logo from '@/components/icons/Logo';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ import dynamic from 'next/dynamic';
 const navItems = [
   { href: '/', label: '仪表盘', icon: LayoutDashboard },
   { href: '/analysis', label: '选题分析', icon: Search },
+  { href: '/viral', label: '爆文发现', icon: Flame },
   { href: '/create', label: '内容创作', icon: PenTool },
   { href: '/articles', label: '发布管理', icon: FileText },
   { href: '/settings', label: '设置', icon: Settings },
@@ -29,27 +31,24 @@ const SidebarFooter = dynamic(() => import('./SidebarUser'), { ssr: false });
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (!saved) return false;
+    try {
+      return JSON.parse(saved) === true;
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-    if (saved) {
-      const value = JSON.parse(saved);
-      setCollapsed(value);
-      document.body.classList.toggle('sidebar-collapsed', value);
-    }
-    setHydrated(true);
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(collapsed));
     return () => {
       document.body.classList.remove('sidebar-collapsed');
     };
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    document.body.classList.toggle('sidebar-collapsed', collapsed);
-    localStorage.setItem(SIDEBAR_STORAGE_KEY, JSON.stringify(collapsed));
-  }, [collapsed, hydrated]);
+  }, [collapsed]);
 
   const toggleCollapse = () => setCollapsed((prev) => !prev);
 
@@ -88,8 +87,9 @@ export default function Sidebar() {
                       collapsed && 'justify-center',
                       isActive
                         ? 'bg-[rgba(0,0,0,0.04)] text-[#1A1A1A] font-medium'
-                        : 'text-[#666] hover:bg-[rgba(0,0,0,0.02)] hover:text-[#1A1A1A]'
+                        : 'text-[#666] hover:text-[#1A1A1A] hover:translate-x-[3px] hover:scale-[1.02] active:scale-[0.98]'
                     )}
+                    style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {!collapsed && <span>{item.label}</span>}

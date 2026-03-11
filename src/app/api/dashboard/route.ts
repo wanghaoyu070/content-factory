@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getAllDashboardData } from '@/lib/db';
+import {
+  createRequestId,
+  serverErrorResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
 
 // GET /api/dashboard - 获取仪表盘数据
 export async function GET() {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const userId = session.user.id;
@@ -29,21 +35,15 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        stats,
-        trend: trendWithAllDays,
-        statusDistribution,
-        topKeywords,
-        recentActivities,
-      },
-    });
+    return successResponse({
+      stats,
+      trend: trendWithAllDays,
+      statusDistribution,
+      topKeywords,
+      recentActivities,
+    }, 200, requestId);
   } catch (error) {
-    console.error('获取仪表盘数据失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取仪表盘数据失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 获取仪表盘数据失败:`, error);
+    return serverErrorResponse('获取仪表盘数据失败', requestId);
   }
 }

@@ -1,42 +1,50 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import {
-  getInviteCode,
-  markInviteCodeUsed,
-  updateUserRole,
+  consumeInviteCodeForPendingUser,
   getUserById,
 } from '@/lib/db';
 import { getToken } from 'next-auth/jwt';
 import { encode } from 'next-auth/jwt';
+import {
+  badRequestResponse,
+  createRequestId,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { completeInviteSchema } from '@/lib/validations';
 
 export async function POST(req: NextRequest) {
+  const requestId = createRequestId();
   const session = await auth();
 
   if (!session?.user) {
-    return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    return unauthorizedResponse('请先登录', requestId);
   }
 
   if (session.user.role !== 'pending') {
-    return NextResponse.json({ success: false, error: '无需邀请码' }, { status: 400 });
+    return badRequestResponse('无需邀请码', requestId);
   }
 
-  const { code } = await req.json().catch(() => ({ code: '' }));
-  if (!code || typeof code !== 'string') {
-    return NextResponse.json({ success: false, error: '请输入邀请码' }, { status: 400 });
+  const body = await req.json().catch(() => ({}));
+  const parsed = completeInviteSchema.safeParse(body);
+  if (!parsed.success) {
+    return badRequestResponse('请输入有效邀请码', requestId);
   }
+  const code = parsed.data.code.trim();
 
-  const inviteCode = getInviteCode(code.trim());
-  if (!inviteCode || inviteCode.used_by) {
-    return NextResponse.json({ success: false, error: '邀请码无效或已被使用' }, { status: 400 });
+  const consumeResult = consumeInviteCodeForPendingUser(code, session.user.id);
+  if (!consumeResult.success) {
+    if (consumeResult.reason === 'NOT_PENDING') {
+      return badRequestResponse('无需邀请码', requestId);
+    }
+    return badRequestResponse('邀请码无效或已被使用', requestId);
   }
-
-  updateUserRole(session.user.id, 'user');
-  markInviteCodeUsed(code.trim(), session.user.id);
 
   const user = getUserById(session.user.id);
 
   const token = await getToken({ req, raw: false });
-  const response = NextResponse.json({ success: true });
+  const response = successResponse({ completed: true }, 200, requestId);
 
   if (token && process.env.NEXTAUTH_SECRET) {
     token.role = 'user';

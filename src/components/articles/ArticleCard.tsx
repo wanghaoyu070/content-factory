@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import {
     Edit,
     MoreHorizontal,
@@ -16,7 +17,7 @@ import {
     Calendar,
     Image as ImageIcon,
 } from 'lucide-react';
-import { type ArticleStatus, STATUS_CONFIG, formatRelativeTime, stripHtml, truncateText } from '@/lib/utils';
+import { type ArticleStatus, STATUS_CONFIG, formatRelativeTime, stripMarkdown, truncateText } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 
 interface Article {
@@ -36,7 +37,6 @@ interface ArticleCardProps {
     isSelected: boolean;
     isPublishing: boolean;
     onToggleSelect: (id: string) => void;
-    onStatusChange: (id: string, status: ArticleStatus) => void;
     onDelete: (id: string) => void;
     onCopy: (id: string) => void;
     onArchive: (id: string) => void;
@@ -50,7 +50,6 @@ export function ArticleCard({
     isSelected,
     isPublishing,
     onToggleSelect,
-    onStatusChange,
     onDelete,
     onCopy,
     onArchive,
@@ -76,7 +75,7 @@ export function ArticleCard({
     }, [showDropdown]);
 
     // 提取纯文本摘要
-    const summary = truncateText(stripHtml(article.content), 100);
+    const summary = truncateText(stripMarkdown(article.content), 100);
 
     return (
         <div
@@ -86,9 +85,12 @@ export function ArticleCard({
             {/* 封面图 */}
             <div className="relative aspect-video bg-[#F7F6F0]">
                 {article.coverImage ? (
-                    <img
+                    <Image
                         src={article.coverImage}
                         alt={article.title}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 25vw"
+                        unoptimized
                         className="w-full h-full object-cover"
                     />
                 ) : (
@@ -272,7 +274,6 @@ interface ArticleCardGridProps {
     selectedIds: string[];
     publishingId: string | null;
     onToggleSelect: (id: string) => void;
-    onStatusChange: (id: string, status: ArticleStatus) => void;
     onDelete: (id: string) => void;
     onCopy: (id: string) => void;
     onArchive: (id: string) => void;
@@ -286,7 +287,6 @@ export function ArticleCardGrid({
     selectedIds,
     publishingId,
     onToggleSelect,
-    onStatusChange,
     onDelete,
     onCopy,
     onArchive,
@@ -307,7 +307,6 @@ export function ArticleCardGrid({
                         isSelected={selectedIds.includes(article.id)}
                         isPublishing={publishingId === article.id}
                         onToggleSelect={onToggleSelect}
-                        onStatusChange={onStatusChange}
                         onDelete={onDelete}
                         onCopy={onCopy}
                         onArchive={onArchive}

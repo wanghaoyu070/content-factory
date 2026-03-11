@@ -1,6 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { getWechatArticleConfig } from '@/lib/config';
+import {
+  badRequestResponse,
+  createRequestId,
+  errorResponse,
+  successResponseWithMeta,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { fetchWithTimeout, HttpTimeoutError } from '@/lib/http-client';
+import { canUseMockFallback, isPlaceholderEndpoint } from '@/lib/mock-policy';
+import { validateBody, wechatAccountSearchSchema } from '@/lib/validations';
 
 // post_condition API 返回的文章数据
 interface PostConditionArticle {
@@ -80,7 +90,7 @@ async function fetchArticleStats(
   apiKey: string
 ): Promise<{ read: number; zan: number; looking: number } | null> {
   try {
-    const response = await fetch(`${baseEndpoint}/read_zan`, {
+    const response = await fetchWithTimeout(`${baseEndpoint}/read_zan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +100,7 @@ async function fetchArticleStats(
         key: apiKey,
         verifycode: '',
       }),
-    });
+    }, 8000);
 
     if (!response.ok) {
       console.error(`Failed to fetch stats for ${articleUrl}: ${response.status}`);
@@ -115,21 +125,20 @@ async function fetchArticleStats(
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = createRequestId();
+  const mockFallbackEnabled = canUseMockFallback();
+
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
-    const body = await request.json();
-    const { accountName, page = 1 } = body;
-
-    if (!accountName) {
-      return NextResponse.json(
-        { success: false, error: '公众号名称不能为空' },
-        { status: 400 }
-      );
+    const parsedBody = await validateBody(request, wechatAccountSearchSchema);
+    if (!parsedBody.success) {
+      return badRequestResponse(parsedBody.error, requestId);
     }
+    const { accountName, page } = parsedBody.data;
 
     // 获取API配置
     const baseConfig = getWechatArticleConfig(session.user.id);
@@ -142,7 +151,11 @@ export async function POST(request: NextRequest) {
 
 
     // Fallback to mock data if config is missing
-    if (!config || !config.endpoint || !config.apiKey || config.endpoint.includes('example.com')) {
+    if (!config || isPlaceholderEndpoint(config.endpoint) || !config.apiKey) {
+      if (!mockFallbackEnabled) {
+        return errorResponse('未配置可用的公众号检索接口', 503, 'SERVICE_UNAVAILABLE', requestId);
+      }
+
       console.log('Using mock data for account:', accountName);
 
       const mockArticles = Array.from({ length: 12 }).map((_, i) => ({
@@ -163,26 +176,30 @@ export async function POST(request: NextRequest) {
         articleType: '群发'
       }));
 
-      return NextResponse.json({
-        success: true,
-        data: mockArticles,
-        accountInfo: {
-          name: accountName,
-          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${accountName}`,
-          ghid: `gh_${Math.random().toString(36).substr(2, 10)}`,
-          wxid: `wx_${Math.random().toString(36).substr(2, 8)}`,
-          totalArticles: 156,
-          masssendCount: 156,
-          publishCount: 0,
+      return successResponseWithMeta(
+        mockArticles,
+        {
+          source: 'mock',
+          accountInfo: {
+            name: accountName,
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${accountName}`,
+            ghid: `gh_${Math.random().toString(36).substr(2, 10)}`,
+            wxid: `wx_${Math.random().toString(36).substr(2, 8)}`,
+            totalArticles: 156,
+            masssendCount: 156,
+            publishCount: 0,
+          },
+          total: 156,
+          page: 1,
+          totalPage: 13,
         },
-        total: 156,
-        page: 1,
-        totalPage: 13,
-      });
+        200,
+        requestId
+      );
     }
 
     // Step 1: 调用 post_condition 获取公众号文章列表
-    const articlesResponse = await fetch(`${config.endpoint}/post_condition`, {
+    const articlesResponse = await fetchWithTimeout(`${config.endpoint}/post_condition`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -195,7 +212,7 @@ export async function POST(request: NextRequest) {
         verifycode: '',
         page: page,
       }),
-    });
+    }, 12000);
 
     if (!articlesResponse.ok) {
       throw new Error(`API request failed: ${articlesResponse.status}`);
@@ -205,18 +222,12 @@ export async function POST(request: NextRequest) {
 
     // 检查API返回状态
     if (articlesData.code !== 0) {
-      return NextResponse.json(
-        { success: false, error: articlesData.msg || '获取公众号文章失败' },
-        { status: 400 }
-      );
+      return badRequestResponse(articlesData.msg || '获取公众号文章失败', requestId);
     }
 
     // 检查是否有文章
     if (!articlesData.data || articlesData.data.length === 0) {
-      return NextResponse.json(
-        { success: false, error: '未找到该公众号的文章' },
-        { status: 404 }
-      );
+      return errorResponse('未找到该公众号的文章', 404, 'NOT_FOUND', requestId);
     }
 
     // Step 2: 过滤有效文章 (未删除、状态正常)
@@ -225,10 +236,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (validArticles.length === 0) {
-      return NextResponse.json(
-        { success: false, error: '该公众号暂无可分析的文章' },
-        { status: 404 }
-      );
+      return errorResponse('该公众号暂无可分析的文章', 404, 'NOT_FOUND', requestId);
     }
 
     // Step 3: 并发获取每篇文章的互动数据
@@ -258,27 +266,73 @@ export async function POST(request: NextRequest) {
     );
 
     // Step 4: 返回统一格式
-    return NextResponse.json({
-      success: true,
-      data: articlesWithStats,
-      accountInfo: {
-        name: articlesData.mp_nickname || accountName,
-        avatar: articlesData.head_img || '',
-        ghid: articlesData.mp_ghid || '',
-        wxid: articlesData.mp_wxid || '',
-        totalArticles: articlesData.total_num,
-        masssendCount: articlesData.masssend_count,
-        publishCount: articlesData.publish_count,
+    return successResponseWithMeta(
+      articlesWithStats,
+      {
+        source: 'api',
+        accountInfo: {
+          name: articlesData.mp_nickname || accountName,
+          avatar: articlesData.head_img || '',
+          ghid: articlesData.mp_ghid || '',
+          wxid: articlesData.mp_wxid || '',
+          totalArticles: articlesData.total_num,
+          masssendCount: articlesData.masssend_count,
+          publishCount: articlesData.publish_count,
+        },
+        total: articlesData.total_num,
+        page: articlesData.now_page,
+        totalPage: articlesData.total_page,
       },
-      total: articlesData.total_num,
-      page: articlesData.now_page,
-      totalPage: articlesData.total_page,
-    });
+      200,
+      requestId
+    );
   } catch (error) {
-    console.error('Error fetching wechat articles by account:', error);
-    return NextResponse.json(
-      { success: false, error: '获取公众号文章失败，请稍后重试' },
-      { status: 500 }
+    console.error(`[API ${requestId}] Error fetching wechat articles by account:`, error);
+    if (!mockFallbackEnabled) {
+      if (error instanceof HttpTimeoutError) {
+        return errorResponse(error.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+      }
+      return errorResponse('获取公众号文章失败，请稍后重试', 500, 'INTERNAL_ERROR', requestId);
+    }
+
+    const fallbackAccountName = '未知公众号';
+    const mockArticles = Array.from({ length: 12 }).map((_, i) => ({
+      id: `mock_acc_err_${Date.now()}_${i}`,
+      title: `${fallbackAccountName}近期干货第${i + 1}篇：深度复盘`,
+      content: `这是${fallbackAccountName}发布的一篇关于行业深度的思考文章...`,
+      coverImage: `https://api.dicebear.com/7.x/shapes/svg?seed=${fallbackAccountName}${i}`,
+      digest: `摘要：本文深度解析了${fallbackAccountName}对于当前热点的独到见解，点击阅读全文...`,
+      readCount: Math.floor(Math.random() * 50000) + 2000,
+      likeCount: Math.floor(Math.random() * 2000) + 50,
+      wowCount: Math.floor(Math.random() * 500) + 20,
+      publishTime: new Date(Date.now() - i * 86400000 * 2).toLocaleString('zh-CN'),
+      sourceUrl: '#',
+      wxName: fallbackAccountName,
+      wxId: `wx_${Math.random().toString(36).substring(2, 10)}`,
+      isOriginal: Math.random() > 0.4,
+      position: 1,
+      articleType: '群发',
+    }));
+
+    return successResponseWithMeta(
+      mockArticles,
+      {
+        source: 'mock',
+        accountInfo: {
+          name: fallbackAccountName,
+          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${fallbackAccountName}`,
+          ghid: '',
+          wxid: '',
+          totalArticles: mockArticles.length,
+          masssendCount: mockArticles.length,
+          publishCount: 0,
+        },
+        total: mockArticles.length,
+        page: 1,
+        totalPage: 1,
+      },
+      200,
+      requestId
     );
   }
 }

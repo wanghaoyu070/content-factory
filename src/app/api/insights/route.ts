@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import {
   getArticlesBySearchId,
@@ -12,6 +11,16 @@ import {
 } from '@/lib/db';
 import { batchExtractSummaries, generateTopicInsights, ArticleSummary, TopicInsight } from '@/lib/ai';
 import { getAIConfig } from '@/lib/config';
+import {
+  badRequestResponse,
+  createRequestId,
+  notFoundResponse,
+  serverErrorResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
+import { safeJsonArray } from '@/lib/utils';
 
 interface InsightRequest {
   searchId: number;
@@ -21,80 +30,73 @@ interface InsightRequest {
 
 // POST /api/insights - 生成选题洞察
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const body: InsightRequest = await request.json();
     const { searchId, keyword, forceRegenerate = false } = body;
+    const parsedSearchId = positiveIdSchema.safeParse(searchId);
+    if (!parsedSearchId.success || !keyword) {
+      return badRequestResponse('缺少必要参数', requestId);
+    }
+    const numericSearchId = parsedSearchId.data;
 
-    if (!searchId || !keyword) {
-      return NextResponse.json(
-        { success: false, error: '缺少必要参数' },
-        { status: 400 }
-      );
+    // 强制校验 searchId 归属，防止跨用户读取/覆盖洞察数据
+    const ownerSearch = getSearchById(numericSearchId, session.user.id);
+    if (!ownerSearch) {
+      return notFoundResponse('搜索记录不存在或无权访问', requestId);
     }
 
     // 检查是否已有洞察（非强制重新生成时）
     if (!forceRegenerate) {
-      const existingInsights = getTopicInsightsBySearchId(searchId);
+      const existingInsights = getTopicInsightsBySearchId(numericSearchId, session.user.id);
       if (existingInsights.length > 0) {
-        const existingSummaries = getArticleSummariesBySearchId(searchId);
-        return NextResponse.json({
-          success: true,
-          data: {
-            summaries: existingSummaries.map((s) => ({
-              articleId: s.article_id.toString(),
-              title: s.title,
-              summary: s.summary,
-              keyPoints: JSON.parse(s.key_points || '[]'),
-              keywords: JSON.parse(s.keywords || '[]'),
-              highlights: JSON.parse(s.highlights || '[]'),
-              contentType: s.content_type,
-            })),
-            insights: existingInsights.map((i) => ({
-              id: i.id.toString(),
-              title: i.title,
-              description: i.description,
-              evidence: i.evidence,
-              suggestedTopics: JSON.parse(i.suggested_topics || '[]'),
-              relatedArticles: JSON.parse(i.related_articles || '[]'),
-            })),
-            cached: true,
-          },
-        });
+        const existingSummaries = getArticleSummariesBySearchId(numericSearchId, session.user.id);
+        return successResponse({
+          summaries: existingSummaries.map((s) => ({
+            articleId: s.article_id.toString(),
+            title: s.title,
+            summary: s.summary,
+            keyPoints: safeJsonArray<string>(s.key_points),
+            keywords: safeJsonArray<string>(s.keywords),
+            highlights: safeJsonArray<string>(s.highlights),
+            contentType: s.content_type,
+          })),
+          insights: existingInsights.map((i) => ({
+            id: i.id.toString(),
+            title: i.title,
+            description: i.description,
+            evidence: i.evidence,
+            suggestedTopics: safeJsonArray<string>(i.suggested_topics),
+            relatedArticles: safeJsonArray<string>(i.related_articles),
+          })),
+          cached: true,
+        }, 200, requestId);
       }
     } else {
       // 强制重新生成时，删除旧数据
-      deleteInsightsBySearchId(searchId);
-      deleteSummariesBySearchId(searchId);
+      deleteInsightsBySearchId(numericSearchId, session.user.id);
+      deleteSummariesBySearchId(numericSearchId, session.user.id);
     }
 
     // 获取 AI 配置（优先环境变量）
     const aiConfig = getAIConfig(session.user.id);
     if (!aiConfig) {
-      return NextResponse.json(
-        { success: false, error: '请先配置 AI 接口（环境变量或设置页面）' },
-        { status: 400 }
-      );
+      return badRequestResponse('请先配置 AI 接口（环境变量或设置页面）', requestId);
     }
 
     if (!aiConfig.baseUrl || !aiConfig.apiKey || !aiConfig.model) {
-      return NextResponse.json(
-        { success: false, error: 'AI 配置不完整，请检查 Base URL、API Key 和 Model' },
-        { status: 400 }
-      );
+      return badRequestResponse('AI 配置不完整，请检查 Base URL、API Key 和 Model', requestId);
     }
 
     // 获取文章
-    const articles = getArticlesBySearchId(searchId);
+    const articles = getArticlesBySearchId(numericSearchId, session.user.id);
     if (articles.length === 0) {
-      return NextResponse.json(
-        { success: false, error: '未找到相关文章' },
-        { status: 404 }
-      );
+      return notFoundResponse('未找到相关文章', requestId);
     }
 
     // 阶段1: 批量提取文章摘要
@@ -112,7 +114,7 @@ export async function POST(request: Request) {
 
     // 保存摘要到数据库
     for (const summary of summaries) {
-      saveArticleSummary(searchId, parseInt(summary.articleId), {
+      saveArticleSummary(numericSearchId, parseInt(summary.articleId), {
         title: summary.title,
         summary: summary.summary,
         keyPoints: summary.keyPoints,
@@ -132,7 +134,7 @@ export async function POST(request: Request) {
     // 保存洞察到数据库
     if (insights.length > 0) {
       saveTopicInsights(
-        searchId,
+        numericSearchId,
         insights.map((i) => ({
           title: i.title,
           description: i.description,
@@ -143,82 +145,71 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        summaries,
-        insights,
-        cached: false,
-      },
-    });
+    return successResponse({
+      summaries,
+      insights,
+      cached: false,
+    }, 200, requestId);
   } catch (error) {
-    console.error('生成洞察失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '生成洞察失败',
-      },
-      { status: 500 }
+    console.error(`[API ${requestId}] 生成洞察失败:`, error);
+    return serverErrorResponse(
+      error instanceof Error ? error.message : '生成洞察失败',
+      requestId
     );
   }
 }
 
 // GET /api/insights?searchId=xxx - 获取已有洞察
 export async function GET(request: Request) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { searchParams } = new URL(request.url);
     const searchId = searchParams.get('searchId');
 
     if (!searchId) {
-      return NextResponse.json(
-        { success: false, error: '缺少 searchId 参数' },
-        { status: 400 }
-      );
+      return badRequestResponse('缺少 searchId 参数', requestId);
     }
 
-    const ownerSearch = getSearchById(parseInt(searchId), session.user.id);
+    const parsedSearchId = positiveIdSchema.safeParse(searchId);
+    if (!parsedSearchId.success) {
+      return badRequestResponse('无效的 searchId 参数', requestId);
+    }
+    const numericSearchId = parsedSearchId.data;
+
+    const ownerSearch = getSearchById(numericSearchId, session.user.id);
     if (!ownerSearch) {
-      return NextResponse.json(
-        { success: false, error: '搜索记录不存在或无权访问' },
-        { status: 404 }
-      );
+      return notFoundResponse('搜索记录不存在或无权访问', requestId);
     }
 
-    const insights = getTopicInsightsBySearchId(parseInt(searchId));
-    const summaries = getArticleSummariesBySearchId(parseInt(searchId));
+    const insights = getTopicInsightsBySearchId(numericSearchId, session.user.id);
+    const summaries = getArticleSummariesBySearchId(numericSearchId, session.user.id);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        summaries: summaries.map((s) => ({
-          articleId: s.article_id.toString(),
-          title: s.title,
-          summary: s.summary,
-          keyPoints: JSON.parse(s.key_points || '[]'),
-          keywords: JSON.parse(s.keywords || '[]'),
-          highlights: JSON.parse(s.highlights || '[]'),
-          contentType: s.content_type,
-        })),
-        insights: insights.map((i) => ({
-          id: i.id.toString(),
-          title: i.title,
-          description: i.description,
-          evidence: i.evidence,
-          suggestedTopics: JSON.parse(i.suggested_topics || '[]'),
-          relatedArticles: JSON.parse(i.related_articles || '[]'),
-        })),
-      },
-    });
+    return successResponse({
+      summaries: summaries.map((s) => ({
+        articleId: s.article_id.toString(),
+        title: s.title,
+        summary: s.summary,
+        keyPoints: safeJsonArray<string>(s.key_points),
+        keywords: safeJsonArray<string>(s.keywords),
+        highlights: safeJsonArray<string>(s.highlights),
+        contentType: s.content_type,
+      })),
+      insights: insights.map((i) => ({
+        id: i.id.toString(),
+        title: i.title,
+        description: i.description,
+        evidence: i.evidence,
+        suggestedTopics: safeJsonArray<string>(i.suggested_topics),
+        relatedArticles: safeJsonArray<string>(i.related_articles),
+      })),
+    }, 200, requestId);
   } catch (error) {
-    console.error('获取洞察失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取洞察失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 获取洞察失败:`, error);
+    return serverErrorResponse('获取洞察失败', requestId);
   }
 }

@@ -1,7 +1,16 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getArticleById, updateArticle } from '@/lib/db';
 import { getWechatPublishConfig } from '@/lib/config';
+import { fetchWithTimeout, HttpTimeoutError } from '@/lib/http-client';
+import {
+  badRequestResponse,
+  createRequestId,
+  errorResponse,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
 
 interface RemoteWechatAccount {
   name: string;
@@ -40,9 +49,15 @@ interface PublishArticleRequest {
 }
 
 type RequestBody = GetAccountsRequest | PublishArticleRequest;
+type JsonRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): JsonRecord {
+  return typeof value === 'object' && value !== null ? (value as JsonRecord) : {};
+}
 
 // POST /api/publish/wechat - 公众号发布相关操作
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     const body: RequestBody = await request.json();
@@ -53,23 +68,20 @@ export async function POST(request: Request) {
     // 获取账号列表 - 需要登录
     if (body.action === 'get_accounts') {
       if (!session?.user?.id) {
-        return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+        return unauthorizedResponse('请先登录', requestId);
       }
 
       if (!config || !config.endpoint || !config.apiKey) {
-        return NextResponse.json(
-          { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
-          { status: 400 }
-        );
+        return badRequestResponse('请先配置公众号发布API（环境变量或设置页面）', requestId);
       }
 
-      const response = await fetch(`${config.endpoint}/api/openapi/wechat-accounts`, {
+      const response = await fetchWithTimeout(`${config.endpoint}/api/openapi/wechat-accounts`, {
         method: 'POST',
         headers: {
           'X-API-Key': config.apiKey,
           'Content-Type': 'application/json',
         },
-      });
+      }, 8000);
 
       const raw = await response.text();
 
@@ -81,37 +93,33 @@ export async function POST(request: Request) {
       }
 
       if (!response.ok || !data) {
-        return NextResponse.json(
-          { success: false, error: '获取公众号列表失败' },
-          { status: 502 }
-        );
+        return errorResponse('获取公众号列表失败', 502, 'UPSTREAM_ERROR', requestId);
       }
 
       // 根据实际API返回格式判断成功（API返回 { success: true, data: { accounts: [...] } }）
       if (!data.success) {
-        return NextResponse.json(
-          { success: false, error: data.error || data.message || '获取公众号列表失败' },
-          { status: 500 }
+        return errorResponse(
+          data.error || data.message || '获取公众号列表失败',
+          502,
+          'UPSTREAM_ERROR',
+          requestId
         );
       }
 
       // 正确提取accounts数组
-      return NextResponse.json({ success: true, data: data.data?.accounts || [] });
+      return successResponse(data.data?.accounts || [], 200, requestId);
     }
 
     // 发布文章 - 需要登录和配置
     if (body.action === 'publish') {
       // 发布操作必须登录
       if (!session?.user?.id) {
-        return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+        return unauthorizedResponse('请先登录', requestId);
       }
 
       // 发布操作必须有配置
       if (!config || !config.endpoint || !config.apiKey) {
-        return NextResponse.json(
-          { success: false, error: '请先配置公众号发布API（环境变量或设置页面）' },
-          { status: 400 }
-        );
+        return badRequestResponse('请先配置公众号发布API（环境变量或设置页面）', requestId);
       }
 
       const {
@@ -123,22 +131,16 @@ export async function POST(request: Request) {
         summary,
       } = body;
 
-      const numericArticleId = Number(articleId);
-
-      if (!numericArticleId || Number.isNaN(numericArticleId) || !wechatAppid) {
-        return NextResponse.json(
-          { success: false, error: '缺少必要参数: articleId, wechatAppid' },
-          { status: 400 }
-        );
+      const parsedArticleId = positiveIdSchema.safeParse(articleId);
+      if (!parsedArticleId.success || !wechatAppid) {
+        return badRequestResponse('缺少必要参数: articleId, wechatAppid', requestId);
       }
+      const numericArticleId = parsedArticleId.data;
 
       // 获取文章内容
       const article = getArticleById(numericArticleId, session.user.id);
       if (!article) {
-        return NextResponse.json(
-          { success: false, error: '文章不存在' },
-          { status: 404 }
-        );
+        return notFoundResponse('文章不存在', requestId);
       }
 
       const stripHtml = (content: string) => content.replace(/<[^>]*>/g, '');
@@ -159,58 +161,53 @@ export async function POST(request: Request) {
       };
 
       // 调用公众号发布API
-      const publishResponse = await fetch(`${config.endpoint}/api/openapi/wechat-publish`, {
+      const publishResponse = await fetchWithTimeout(`${config.endpoint}/api/openapi/wechat-publish`, {
         method: 'POST',
         headers: {
           'X-API-Key': config.apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-      });
+      }, 12000);
 
-      let publishData: Record<string, any> = {};
-      try {
-        publishData = await publishResponse.json();
-      } catch {
-        // JSON 解析失败
-      }
+      const publishData = asRecord(await publishResponse.json().catch(() => ({})));
+      const publishMeta = asRecord(publishData.data);
 
-      if (publishResponse.ok && publishData.success) {
+      if (publishResponse.ok && publishData.success === true) {
         // 更新文章状态为已发布
         updateArticle(numericArticleId, { status: 'published' }, session.user.id);
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            publicationId: publishData.data?.publicationId,
-            materialId: publishData.data?.materialId,
-            mediaId: publishData.data?.mediaId,
-            message: publishData.data?.message || '文章已成功发布到公众号草稿箱',
-          },
-        });
+        return successResponse({
+          publicationId: publishMeta.publicationId,
+          materialId: publishMeta.materialId,
+          mediaId: publishMeta.mediaId,
+          message: typeof publishMeta.message === 'string' ? publishMeta.message : '文章已成功发布到公众号草稿箱',
+        }, 200, requestId);
       }
 
-      return NextResponse.json({
-        success: false,
-        error: publishData.error || publishData.message || '发布失败',
-        code: publishData.code,
-      }, { status: publishResponse.status || 500 });
+      return errorResponse(
+        (typeof publishData.error === 'string' ? publishData.error : undefined) ||
+          (typeof publishData.message === 'string' ? publishData.message : undefined) ||
+          '发布失败',
+        publishResponse.status || 502,
+        typeof publishData.code === 'string' ? publishData.code : 'UPSTREAM_ERROR',
+        requestId
+      );
     }
 
-    return NextResponse.json(
-      { success: false, error: '未知操作' },
-      { status: 400 }
-    );
+    return badRequestResponse('未知操作', requestId);
   } catch (error) {
+    if (error instanceof HttpTimeoutError) {
+      return errorResponse(error.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+    }
     if (process.env.NODE_ENV === 'development') {
       console.error('公众号发布失败:', error);
     }
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '发布失败',
-      },
-      { status: 500 }
+    return errorResponse(
+      error instanceof Error ? error.message : '发布失败',
+      500,
+      'INTERNAL_ERROR',
+      requestId
     );
   }
 }

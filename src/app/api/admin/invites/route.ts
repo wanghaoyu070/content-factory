@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { randomBytes } from 'crypto';
 import { auth } from '@/auth';
 import {
@@ -7,13 +7,20 @@ import {
   deleteInviteCode,
   getInviteCode,
 } from '@/lib/db';
+import {
+  badRequestResponse,
+  createRequestId,
+  forbiddenResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
 
-function requireAdmin(session: Awaited<ReturnType<typeof auth>>) {
+function requireAdmin(session: Awaited<ReturnType<typeof auth>>, requestId: string) {
   if (!session?.user) {
-    return { ok: false, response: NextResponse.json({ success: false, error: '请先登录' }, { status: 401 }) };
+    return { ok: false, response: unauthorizedResponse('请先登录', requestId) };
   }
   if (session.user.role !== 'admin') {
-    return { ok: false, response: NextResponse.json({ success: false, error: '仅管理员可访问' }, { status: 403 }) };
+    return { ok: false, response: forbiddenResponse('仅管理员可访问', requestId) };
   }
   return { ok: true };
 }
@@ -40,17 +47,19 @@ async function generateUniqueCodes(count: number) {
 }
 
 export async function GET() {
+  const requestId = createRequestId();
   const session = await auth();
-  const authResult = requireAdmin(session);
+  const authResult = requireAdmin(session, requestId);
   if (!authResult.ok) return authResult.response;
 
   const invites = getInviteCodes();
-  return NextResponse.json({ success: true, data: invites });
+  return successResponse(invites, 200, requestId);
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = createRequestId();
   const session = await auth();
-  const authResult = requireAdmin(session);
+  const authResult = requireAdmin(session, requestId);
   if (!authResult.ok) return authResult.response;
 
   const body = await request.json().catch(() => ({}));
@@ -63,25 +72,26 @@ export async function POST(request: NextRequest) {
   });
 
   const invites = getInviteCodes();
-  return NextResponse.json({ success: true, data: { created, invites } });
+  return successResponse({ created, invites }, 200, requestId);
 }
 
 export async function DELETE(request: NextRequest) {
+  const requestId = createRequestId();
   const session = await auth();
-  const authResult = requireAdmin(session);
+  const authResult = requireAdmin(session, requestId);
   if (!authResult.ok) return authResult.response;
 
   const body = await request.json().catch(() => ({}));
   const id = Number(body?.id);
   if (!id) {
-    return NextResponse.json({ success: false, error: '缺少邀请码 ID' }, { status: 400 });
+    return badRequestResponse('缺少邀请码 ID', requestId);
   }
 
   const success = deleteInviteCode(id);
   if (!success) {
-    return NextResponse.json({ success: false, error: '邀请码不存在或已被使用' }, { status: 400 });
+    return badRequestResponse('邀请码不存在或已被使用', requestId);
   }
 
   const invites = getInviteCodes();
-  return NextResponse.json({ success: true, data: invites });
+  return successResponse(invites, 200, requestId);
 }

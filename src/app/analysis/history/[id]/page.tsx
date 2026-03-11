@@ -18,6 +18,8 @@ import {
   Hash,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchApiSuccessOrThrow } from '@/lib/api-fetch';
+import { consumeSseStream } from '@/lib/sse';
 
 interface SearchRecord {
   id: number;
@@ -55,6 +57,15 @@ interface WordCloudItem {
   weight: number;
 }
 
+interface GenerateSseEvent {
+  step: 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'saving' | 'completed' | 'error';
+  message: string;
+  progress: number;
+  data?: {
+    articleId?: number;
+  };
+}
+
 export default function AnalysisHistoryDetailPage() {
   const params = useParams();
   const [search, setSearch] = useState<SearchRecord | null>(null);
@@ -65,34 +76,33 @@ export default function AnalysisHistoryDetailPage() {
   const [generatingId, setGeneratingId] = useState<number | null>(null);
 
   useEffect(() => {
+    const fetchDetail = async () => {
+      try {
+        // 获取搜索记录和文章
+        const result = await fetchApiSuccessOrThrow<{
+          search: SearchRecord;
+          articles: SourceArticle[];
+        }>(`/api/search/${params.id}`, undefined, '获取详情失败');
+
+        setSearch(result.data.search);
+        setArticles(result.data.articles);
+
+        // 获取洞察数据
+        const insightsData = await fetchApiSuccessOrThrow<Insight[]>(
+          `/api/insights?searchId=${params.id}`,
+          undefined,
+          '获取洞察失败'
+        );
+        setInsights(insightsData.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '获取详情失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchDetail();
   }, [params.id]);
-
-  const fetchDetail = async () => {
-    try {
-      // 获取搜索记录和文章
-      const response = await fetch(`/api/search/${params.id}`);
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || '获取详情失败');
-      }
-
-      setSearch(result.data.search);
-      setArticles(result.data.articles);
-
-      // 获取洞察数据
-      const insightsRes = await fetch(`/api/insights?searchId=${params.id}`);
-      const insightsData = await insightsRes.json();
-      if (insightsData.success && insightsData.data) {
-        setInsights(insightsData.data);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '获取详情失败');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatCount = (count: number) => {
     if (count >= 100000) return (count / 10000).toFixed(1) + 'w';
@@ -202,19 +212,25 @@ export default function AnalysisHistoryDetailPage() {
         }),
       });
 
-      const result = await response.json();
+      let generatedArticleId: number | null = null;
 
-      if (result.success && result.data?.articleId) {
-        window.location.href = `/articles/${result.data.articleId}`;
-      } else {
-        toast.error('文章生成失败', {
-          description: result.error || '请稍后重试',
-        });
+      await consumeSseStream<GenerateSseEvent>(response, {
+        getEventError: (event) => (event.step === 'error' ? event.message || '文章生成失败' : null),
+        onEvent: async (eventData) => {
+          if (eventData.step === 'completed' && eventData.data?.articleId) {
+            generatedArticleId = Number(eventData.data.articleId);
+          }
+        },
+      });
+
+      if (!generatedArticleId) {
+        throw new Error('未收到生成结果');
       }
+      window.location.href = `/articles/${generatedArticleId}`;
     } catch (err) {
       console.error('Generate article failed:', err);
       toast.error('文章生成失败', {
-        description: '请检查 AI 配置是否正确',
+        description: err instanceof Error ? err.message : '请检查 AI 配置是否正确',
         action: {
           label: '去设置',
           onClick: () => {

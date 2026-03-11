@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
-import { useArticles } from '@/hooks/useArticles';
+import { useArticles, type Article as ManagedArticle } from '@/hooks/useArticles';
 import { usePublish } from '@/hooks/usePublish';
 import {
   Plus,
@@ -29,8 +29,8 @@ import {
   XiaohongshuPublishModal,
   BatchActionsBar,
 } from '@/components/articles';
-import { ArticlePreviewModal } from '@/components/articles/ArticlePreviewModal';
-import { type ArticleStatus, STATUS_CONFIG, formatDate, debounce } from '@/lib/utils';
+
+import { type ArticleStatus, formatDate, debounce } from '@/lib/utils';
 
 type ViewMode = 'table' | 'card';
 type SortField = 'createdAt' | 'title' | 'status';
@@ -64,8 +64,7 @@ export default function ArticlesPage() {
 
   const [searchInput, setSearchInput] = useState('');
 
-  // 预览状态
-  const [previewArticle, setPreviewArticle] = useState<any>(null);
+
 
   // 使用自定义 Hooks
   const {
@@ -73,7 +72,6 @@ export default function ArticlesPage() {
     statusCounts,
     loading,
     statusFilter,
-    searchQuery,
     setStatusFilter,
     setSearchQuery,
     selectedIds,
@@ -378,7 +376,7 @@ export default function ArticlesPage() {
 
             <Link
               href="/articles/new"
-              className="px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all flex items-center gap-2 shadow-lg shadow-black/8 btn-primary"
+              className="px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all flex items-center gap-2 shadow-lg shadow-black/8 btn-primary"
             >
               <Plus className="w-4 h-4" />
               新建文章
@@ -429,7 +427,6 @@ export default function ArticlesPage() {
             selectedIds={selectedIds}
             publishingId={publishingId}
             onToggleSelect={toggleSelect}
-            onStatusChange={handleStatusChange}
             onDelete={handleDelete}
             onCopy={handleCopy}
             onArchive={handleArchive}
@@ -447,7 +444,6 @@ export default function ArticlesPage() {
                 selectedIds={selectedIds}
                 publishingId={publishingId}
                 onToggleSelect={toggleSelect}
-                onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
                 onCopy={handleCopy}
                 onArchive={handleArchive}
@@ -459,10 +455,10 @@ export default function ArticlesPage() {
             {/* 桌面端表格视图 */}
             <div className="hidden lg:block glass-card rounded-2xl overflow-visible animate-fade-in">
               <table className="w-full">
-                <thead className="bg-white/5 border-b border-white/5">
+                <thead className="border-b border-[rgba(0,0,0,0.04)]">
                   <tr>
                     <th className="w-12 px-4 py-3">
-                      <button onClick={toggleSelectAll} className="text-[#999] hover:text-[#333] transition-colors">
+                      <button onClick={toggleSelectAll} className="text-[#ccc] hover:text-[#333] transition-colors">
                         {selectedIds.length === filteredArticles.length && filteredArticles.length > 0 ? (
                           <CheckSquare className="w-5 h-5 text-[#333]" />
                         ) : (
@@ -473,7 +469,7 @@ export default function ArticlesPage() {
                     <th className="text-left px-4 py-3">
                       <button
                         onClick={() => toggleSort('title')}
-                        className="flex items-center gap-1.5 text-sm font-medium text-[#666] hover:text-[#1A1A1A] transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-normal text-[#bbb] hover:text-[#666] transition-colors"
                       >
                         标题
                         {getSortIcon('title')}
@@ -482,7 +478,7 @@ export default function ArticlesPage() {
                     <th className="text-left px-4 py-3 w-28">
                       <button
                         onClick={() => toggleSort('status')}
-                        className="flex items-center gap-1.5 text-sm font-medium text-[#666] hover:text-[#1A1A1A] transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-normal text-[#bbb] hover:text-[#666] transition-colors"
                       >
                         状态
                         {getSortIcon('status')}
@@ -491,17 +487,17 @@ export default function ArticlesPage() {
                     <th className="text-left px-4 py-3 w-32">
                       <button
                         onClick={() => toggleSort('createdAt')}
-                        className="flex items-center gap-1.5 text-sm font-medium text-[#666] hover:text-[#1A1A1A] transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-normal text-[#bbb] hover:text-[#666] transition-colors"
                       >
                         创建时间
                         {getSortIcon('createdAt')}
                       </button>
                     </th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-[#666] w-40">操作</th>
+                    <th className="text-left px-4 py-3 text-xs font-normal text-[#bbb] w-40">操作</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredArticles.map((article, index) => (
+                  {filteredArticles.map((article) => (
                     <ArticleRow
                       key={article.id}
                       article={article}
@@ -513,9 +509,8 @@ export default function ArticlesPage() {
                       onStatusChange={handleStatusChange}
                       onDelete={handleDelete}
                       onCopy={handleCopy}
-                      onArchive={handleArchive}
                       onExport={handleExport}
-                      onPreview={(article) => setPreviewArticle(article)}
+
                       onPublishToWechat={openWechatPublishModal}
                       onPublishToXiaohongshu={openXhsPublishModal}
                       formatDate={formatDate}
@@ -572,12 +567,7 @@ export default function ArticlesPage() {
         cancelText="取消"
       />
 
-      {/* 文章预览模态框 */}
-      <ArticlePreviewModal
-        article={previewArticle}
-        isOpen={!!previewArticle}
-        onClose={() => setPreviewArticle(null)}
-      />
+
     </div>
   );
 }

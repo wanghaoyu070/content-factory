@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Image as ImageIcon, Plus } from 'lucide-react';
 
 interface ImageGalleryProps {
@@ -34,9 +35,12 @@ export default function ImageGallery({ images, usedCount, onInsertImage }: Image
             className="relative group flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-[rgba(0,0,0,0.15)] transition-colors"
             title="点击插入到文章"
           >
-            <img
+            <Image
               src={imageUrl}
               alt={`配图 ${index + 1}`}
+              width={80}
+              height={80}
+              unoptimized
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">

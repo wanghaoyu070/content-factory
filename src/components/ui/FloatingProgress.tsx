@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { CheckCircle, Loader2, Sparkles, X, Maximize2, AlertCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCircle, Loader2, X, Maximize2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -30,14 +30,16 @@ export function FloatingProgress({
     onExpand,
     onClose,
 }: FloatingProgressProps) {
-    const [visible, setVisible] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [startTime] = useState(Date.now());
+    const startTimeRef = useRef<number | null>(null);
 
-    // 显示控制
     useEffect(() => {
         if (progress) {
-            setVisible(true);
+            if (startTimeRef.current === null) {
+                startTimeRef.current = Date.now();
+            }
+        } else {
+            startTimeRef.current = null;
         }
     }, [progress]);
 
@@ -46,11 +48,12 @@ export function FloatingProgress({
         if (!progress || progress.step === 'completed' || progress.step === 'error') return;
 
         const timer = setInterval(() => {
+            const startTime = startTimeRef.current ?? Date.now();
             setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [progress, startTime]);
+    }, [progress]);
 
     // 格式化时间
     const formatTime = (seconds: number) => {
@@ -61,11 +64,10 @@ export function FloatingProgress({
 
     // 关闭浮窗
     const handleClose = () => {
-        setVisible(false);
         onClose?.();
     };
 
-    if (!progress || !visible) return null;
+    if (!progress) return null;
 
     const isCompleted = progress.step === 'completed';
     const isError = progress.step === 'error';

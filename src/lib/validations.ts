@@ -2,7 +2,14 @@ import { z } from 'zod';
 
 // ===== 文章相关 Schema =====
 
-export const ArticleStatus = z.enum(['draft', 'pending_review', 'published', 'archived']);
+export const ArticleStatus = z.enum([
+  'draft',
+  'pending_review',
+  'approved',
+  'published',
+  'failed',
+  'archived',
+]);
 export type ArticleStatus = z.infer<typeof ArticleStatus>;
 
 export const createArticleSchema = z.object({
@@ -79,6 +86,26 @@ export const startAnalysisSchema = z.object({
   searchType: z.enum(['keyword', 'account']).default('keyword'),
 });
 
+export const wechatArticleSearchSchema = z.object({
+  keyword: z.string().trim().min(1, '关键词不能为空'),
+  page: z.coerce.number().int().min(1, '分页参数错误').default(1),
+  period: z.coerce.number().int().min(1, '分页参数错误').default(7),
+});
+
+export const wechatAccountSearchSchema = z.object({
+  accountName: z.string().trim().min(1, '公众号名称不能为空'),
+  page: z.coerce.number().int().min(1, '分页参数错误').default(1),
+});
+
+export const viralArticleSearchSchema = z.object({
+  keyword: z.string().trim().optional().default(''),
+  category: z.string().optional().default('0'),
+  pub_type: z.string().optional().default('0'),
+  page: z.coerce.number().int().min(1).default(1),
+  start_time: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须为 YYYY-MM-DD'),
+  end_time: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式必须为 YYYY-MM-DD'),
+});
+
 // ===== 设置相关 Schema =====
 
 export const aiConfigSchema = z.object({
@@ -88,9 +115,10 @@ export const aiConfigSchema = z.object({
 });
 
 export const imageGenConfigSchema = z.object({
-  apiUrl: z.string().url('API 地址必须是有效的URL'),
+  baseUrl: z.string().url('API 地址必须是有效的URL'),
   apiKey: z.string().min(1, 'API Key 不能为空'),
   model: z.string().min(1, '模型名称不能为空'),
+  provider: z.enum(['siliconflow', 'seedream']).default('siliconflow'),
 });
 
 export const wechatConfigSchema = z.object({
@@ -101,8 +129,15 @@ export const wechatConfigSchema = z.object({
 export const settingsSchema = z.object({
   ai: aiConfigSchema.optional(),
   imageGen: imageGenConfigSchema.optional(),
+  wechatArticle: wechatConfigSchema.optional(),
   wechatPublish: wechatConfigSchema.optional(),
-  xiaohongshuPublish: wechatConfigSchema.optional(),
+  xiaohongshu: wechatConfigSchema.optional(),
+  preferences: z.object({
+    imageCount: z.number().int().min(1).max(10),
+    style: z.string().min(1),
+    minWords: z.number().int().min(300),
+    maxWords: z.number().int().max(5000),
+  }).optional(),
 });
 
 // ===== 邀请码相关 Schema =====
@@ -113,6 +148,17 @@ export const createInviteSchema = z.object({
 
 export const completeInviteSchema = z.object({
   code: z.string().min(1, '邀请码不能为空').max(50, '邀请码格式错误'),
+});
+
+export const positiveIdSchema = z.coerce.number().int().positive('ID 必须为正整数');
+
+export const onboardingUpdateSchema = z.object({
+  completed: z.boolean(),
+});
+
+export const testAiConnectionSchema = z.object({
+  baseUrl: z.string().url('baseUrl 必须是有效的 URL'),
+  apiKey: z.string().min(1, 'apiKey 不能为空'),
 });
 
 // ===== 通用分页 Schema =====

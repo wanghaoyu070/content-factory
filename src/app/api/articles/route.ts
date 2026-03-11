@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import {
   getActiveArticles,
@@ -9,13 +9,24 @@ import {
   copyArticle,
   archiveArticle,
 } from '@/lib/db';
+import {
+  badRequestResponse,
+  createRequestId,
+  notFoundResponse,
+  serverErrorResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
+import { safeJsonArray } from '@/lib/utils';
 
 // GET /api/articles - 获取文章列表
 export async function GET(request: NextRequest) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { searchParams } = new URL(request.url);
@@ -35,7 +46,7 @@ export async function GET(request: NextRequest) {
       title: article.title,
       content: article.content,
       coverImage: article.cover_image,
-      images: JSON.parse(article.images || '[]'),
+      images: safeJsonArray<string>(article.images),
       status: article.status,
       source: article.source,
       sourceInsightId: article.source_insight_id,
@@ -44,47 +55,42 @@ export async function GET(request: NextRequest) {
       updatedAt: article.updated_at,
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: formattedArticles,
-    });
+    return successResponse(formattedArticles, 200, requestId);
   } catch (error) {
-    console.error('获取文章列表失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取文章列表失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 获取文章列表失败:`, error);
+    return serverErrorResponse('获取文章列表失败', requestId);
   }
 }
 
 // PUT /api/articles - 更新文章
 export async function PUT(request: NextRequest) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const body = await request.json();
     const { id, ...updates } = body;
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: '缺少文章 ID' },
-        { status: 400 }
-      );
+    if (id === undefined || id === null || id === '') {
+      return badRequestResponse('缺少文章 ID', requestId);
     }
 
-    const article = getArticleById(parseInt(id), session.user.id);
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
+
+    const article = getArticleById(numericId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
     updateArticle(
-      parseInt(id),
+      numericId,
       {
         title: updates.title,
         content: updates.content,
@@ -95,115 +101,92 @@ export async function PUT(request: NextRequest) {
       session.user.id
     );
 
-    return NextResponse.json({
-      success: true,
-      message: '更新成功',
-    });
+    return successResponse({ message: '更新成功' }, 200, requestId);
   } catch (error) {
-    console.error('更新文章失败:', error);
-    return NextResponse.json(
-      { success: false, error: '更新文章失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 更新文章失败:`, error);
+    return serverErrorResponse('更新文章失败', requestId);
   }
 }
 
 // DELETE /api/articles - 删除文章
 export async function DELETE(request: NextRequest) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: '缺少文章 ID' },
-        { status: 400 }
-      );
+      return badRequestResponse('缺少文章 ID', requestId);
     }
 
-    const article = getArticleById(parseInt(id), session.user.id);
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
+
+    const article = getArticleById(numericId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
-    deleteArticle(parseInt(id), session.user.id);
+    deleteArticle(numericId, session.user.id);
 
-    return NextResponse.json({
-      success: true,
-      message: '删除成功',
-    });
+    return successResponse({ message: '删除成功' }, 200, requestId);
   } catch (error) {
-    console.error('删除文章失败:', error);
-    return NextResponse.json(
-      { success: false, error: '删除文章失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 删除文章失败:`, error);
+    return serverErrorResponse('删除文章失败', requestId);
   }
 }
 
 // POST /api/articles - 文章操作（复制、归档）
 export async function POST(request: NextRequest) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const body = await request.json();
     const { action, id } = body;
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: '缺少文章 ID' },
-        { status: 400 }
-      );
+    if (id === undefined || id === null || id === '') {
+      return badRequestResponse('缺少文章 ID', requestId);
     }
 
-    const article = getArticleById(parseInt(id), session.user.id);
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
+
+    const article = getArticleById(numericId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
     switch (action) {
       case 'copy': {
-        const newId = copyArticle(parseInt(id), session.user.id);
-        return NextResponse.json({
-          success: true,
-          data: { newId },
-          message: '复制成功',
-        });
+        const newId = copyArticle(numericId, session.user.id);
+        return successResponse({ newId, message: '复制成功' }, 200, requestId);
       }
 
       case 'archive': {
-        archiveArticle(parseInt(id), session.user.id);
-        return NextResponse.json({
-          success: true,
-          message: '归档成功',
-        });
+        archiveArticle(numericId, session.user.id);
+        return successResponse({ message: '归档成功' }, 200, requestId);
       }
 
       default:
-        return NextResponse.json(
-          { success: false, error: '未知操作' },
-          { status: 400 }
-        );
+        return badRequestResponse('未知操作', requestId);
     }
   } catch (error) {
-    console.error('文章操作失败:', error);
-    return NextResponse.json(
-      { success: false, error: '操作失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 文章操作失败:`, error);
+    return serverErrorResponse('操作失败', requestId);
   }
 }

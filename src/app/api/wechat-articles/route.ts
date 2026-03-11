@@ -1,6 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { getWechatArticleConfig } from '@/lib/config';
+import {
+  badRequestResponse,
+  createRequestId,
+  errorResponse,
+  successResponseWithMeta,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { fetchWithTimeout, HttpTimeoutError } from '@/lib/http-client';
+import { canUseMockFallback, isPlaceholderEndpoint } from '@/lib/mock-policy';
+import { validateBody, wechatArticleSearchSchema } from '@/lib/validations';
 
 export interface WechatArticle {
   avatar: string;
@@ -37,36 +47,39 @@ export interface WechatApiResponse {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = createRequestId();
   let keyword = '';
+  const mockFallbackEnabled = canUseMockFallback();
 
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
-    const body = await request.json();
-    keyword = body.keyword;
-    const { page = 1, period = 7 } = body;
-
-    if (!keyword) {
-      return NextResponse.json(
-        { error: '关键词不能为空' },
-        { status: 400 }
-      );
+    const parsedBody = await validateBody(request, wechatArticleSearchSchema);
+    if (!parsedBody.success) {
+      return badRequestResponse(parsedBody.error, requestId);
     }
+    const { keyword: parsedKeyword, page, period } = parsedBody.data;
+    keyword = parsedKeyword;
 
-    // 获取API配置
+    // 获取 API 配置
     const config = getWechatArticleConfig(session.user.id);
+
+    if (!config || isPlaceholderEndpoint(config.endpoint) || !config.apiKey) {
+      if (!mockFallbackEnabled) {
+        return errorResponse('未配置可用的微信文章检索接口', 503, 'SERVICE_UNAVAILABLE', requestId);
+      }
+    }
 
     let fetchSuccess = false;
     let data: WechatApiResponse | null = null;
-    let fallbackToMock = false;
-
+    let upstreamError: unknown = null;
     // 尝试调用真实 API
-    if (config && config.endpoint && config.apiKey && !config.endpoint.includes('example.com')) {
+    if (config && config.endpoint && config.apiKey && !isPlaceholderEndpoint(config.endpoint)) {
       try {
-        const response = await fetch(config.endpoint, {
+        const response = await fetchWithTimeout(config.endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
             page: page,
             key: config.apiKey,
           }),
-        });
+        }, 10000);
 
         if (response.ok) {
           data = await response.json();
@@ -88,11 +101,9 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (err) {
+        upstreamError = err;
         console.warn('Real API call failed, falling back to mock data:', err);
-        fallbackToMock = true;
       }
-    } else {
-      fallbackToMock = true;
     }
 
     // 如果成功获取真实数据
@@ -112,13 +123,24 @@ export async function POST(request: NextRequest) {
         isOriginal: article.is_original === 1,
       }));
 
-      return NextResponse.json({
-        success: true,
-        data: articles,
-        total: data.total,
-        page: data.page,
-        totalPage: data.total_page,
-      });
+      return successResponseWithMeta(
+        articles,
+        {
+          source: 'api',
+          total: data.total,
+          page: data.page,
+          totalPage: data.total_page,
+        },
+        200,
+        requestId
+      );
+    }
+
+    if (!mockFallbackEnabled) {
+      if (upstreamError instanceof HttpTimeoutError) {
+        return errorResponse(upstreamError.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+      }
+      return errorResponse('获取微信文章失败，请稍后重试', 502, 'UPSTREAM_ERROR', requestId);
     }
 
     // 最后的保底：生成 Mock 数据 (Universal Fallback)
@@ -138,16 +160,27 @@ export async function POST(request: NextRequest) {
       isOriginal: Math.random() > 0.3,
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: mockArticles,
-      total: 8,
-      page: 1,
-      totalPage: 1,
-    });
+    return successResponseWithMeta(
+      mockArticles,
+      {
+        source: 'mock',
+        total: 8,
+        page: 1,
+        totalPage: 1,
+      },
+      200,
+      requestId
+    );
 
   } catch (error) {
-    console.error('Error fetching wechat articles:', error);
+    console.error(`[API ${requestId}] Error fetching wechat articles:`, error);
+    if (!mockFallbackEnabled) {
+      if (error instanceof HttpTimeoutError) {
+        return errorResponse(error.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+      }
+      return errorResponse('获取微信文章失败，请稍后重试', 500, 'INTERNAL_ERROR', requestId);
+    }
+
     // 即使发生严重错误，也返回 Mock 数据以保证用户体验
     const mockArticles = Array.from({ length: 8 }).map((_, i) => ({
       id: `mock_err_${Date.now()}_${i}`,
@@ -164,12 +197,16 @@ export async function POST(request: NextRequest) {
       isOriginal: true,
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: mockArticles,
-      total: 8,
-      page: 1,
-      totalPage: 1,
-    });
+    return successResponseWithMeta(
+      mockArticles,
+      {
+        source: 'mock',
+        total: 8,
+        page: 1,
+        totalPage: 1,
+      },
+      200,
+      requestId
+    );
   }
 }

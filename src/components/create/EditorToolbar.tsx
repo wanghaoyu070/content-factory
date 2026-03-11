@@ -13,7 +13,7 @@ import {
   ListOrdered,
   Quote,
   Link,
-  Image,
+  Image as ImageIcon,
   Undo,
   Redo,
   RemoveFormatting,
@@ -174,7 +174,7 @@ export default function EditorToolbar({ editor, onInsertImage }: EditorToolbarPr
         onClick={() => onInsertImage?.()}
         title="插入图片"
       >
-        <Image className="w-4 h-4" />
+        <ImageIcon className="w-4 h-4" />
       </ToolbarButton>
 
       <ToolbarDivider />

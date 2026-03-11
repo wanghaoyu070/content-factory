@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { X, Upload, Link as LinkIcon, Sparkles, Image as ImageIcon, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import Image from 'next/image';
+import { X, Upload, Link as LinkIcon, Sparkles, Image as ImageIcon, Loader2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -26,8 +27,19 @@ export function ImageUploadModal({
     const [urlInput, setUrlInput] = useState('');
     const [aiPrompt, setAiPrompt] = useState('');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [showUrlPreview, setShowUrlPreview] = useState(true);
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // 关闭并重置
+    const handleClose = useCallback(() => {
+        setPreviewUrl(null);
+        setShowUrlPreview(true);
+        setUrlInput('');
+        setAiPrompt('');
+        setActiveTab('upload');
+        onClose();
+    }, [onClose]);
 
     // 处理文件上传
     const handleFileUpload = useCallback(async (file: File) => {
@@ -61,12 +73,12 @@ export function ImageUploadModal({
                 handleClose();
             };
             reader.readAsDataURL(file);
-        } catch (error) {
+        } catch {
             toast.error('上传失败，请重试');
         } finally {
             setUploading(false);
         }
-    }, [onImageSelect]);
+    }, [onImageSelect, handleClose]);
 
     // 拖拽处理
     const handleDrop = useCallback((e: React.DragEvent) => {
@@ -104,7 +116,7 @@ export function ImageUploadModal({
             } else {
                 toast.error(result.error || '生成失败，请重试');
             }
-        } catch (error) {
+        } catch {
             toast.error('生成失败，请检查 AI 配置');
         } finally {
             setGenerating(false);
@@ -128,7 +140,7 @@ export function ImageUploadModal({
 
         // 尝试加载图片验证
         try {
-            const img = new Image();
+            const img = new window.Image();
             img.onload = () => {
                 onImageSelect(url);
                 toast.success('图片添加成功');
@@ -141,15 +153,6 @@ export function ImageUploadModal({
         } catch {
             toast.error('无法加载该图片');
         }
-    };
-
-    // 关闭并重置
-    const handleClose = () => {
-        setPreviewUrl(null);
-        setUrlInput('');
-        setAiPrompt('');
-        setActiveTab('upload');
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -238,9 +241,12 @@ export function ImageUploadModal({
                                 </div>
                             ) : previewUrl ? (
                                 <div className="py-2">
-                                    <img
+                                    <Image
                                         src={previewUrl}
                                         alt="预览"
+                                        width={512}
+                                        height={256}
+                                        unoptimized
                                         className="max-h-32 mx-auto rounded-lg mb-3"
                                     />
                                     <CheckCircle className="w-6 h-6 mx-auto text-emerald-400" />
@@ -316,22 +322,26 @@ export function ImageUploadModal({
                                 <input
                                     type="url"
                                     value={urlInput}
-                                    onChange={(e) => setUrlInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setUrlInput(e.target.value);
+                                        setShowUrlPreview(true);
+                                    }}
                                     placeholder="https://example.com/image.jpg"
                                     className="w-full px-4 py-3 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-xl text-[#1A1A1A] placeholder-[#999] focus:outline-none focus:border-[rgba(0,0,0,0.15)]"
                                 />
                             </div>
 
-                            {urlInput && (
+                            {urlInput && showUrlPreview && (
                                 <div className="bg-[#F7F6F0] rounded-xl p-4">
                                     <p className="text-xs text-[#999] mb-2">图片预览</p>
-                                    <img
+                                    <Image
                                         src={urlInput}
                                         alt="预览"
+                                        width={512}
+                                        height={256}
+                                        unoptimized
                                         className="max-h-32 rounded-lg"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).style.display = 'none';
-                                        }}
+                                        onError={() => setShowUrlPreview(false)}
                                     />
                                 </div>
                             )}

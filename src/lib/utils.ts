@@ -72,10 +72,49 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Remove Markdown syntax to get plain text (for card previews)
+ */
+export function stripMarkdown(md: string): string {
+  return md
+    .replace(/!\[.*?\]\(.*?\)/g, '')       // images ![alt](url)
+    .replace(/\[([^\]]*)\]\(.*?\)/g, '$1') // links [text](url) → text
+    .replace(/^#{1,6}\s+/gm, '')           // headings ## ...
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')    // bold **text** → text
+    .replace(/(\*|_)(.*?)\1/g, '$2')       // italic *text* → text
+    .replace(/~~(.*?)~~/g, '$1')           // strikethrough
+    .replace(/`{1,3}[^`]*`{1,3}/g, '')    // inline code / code blocks
+    .replace(/^[-*+]\s+/gm, '')            // unordered lists
+    .replace(/^\d+\.\s+/gm, '')            // ordered lists
+    .replace(/^>\s+/gm, '')                // blockquotes
+    .replace(/---+/g, '')                  // horizontal rules
+    .replace(/\n{2,}/g, ' ')              // collapse multiple newlines
+    .replace(/\n/g, ' ')                   // remaining newlines → space
+    .trim();
+}
+
+/**
  * 计算文章字数（去除 HTML 标签后）
  */
 export function countWords(content: string): number {
   return stripHtml(content).length;
+}
+
+/**
+ * 安全解析 JSON 数组。解析失败或结果非数组时返回空数组。
+ */
+export function safeJsonArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  if (typeof value !== 'string' || value.trim() === '') {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 // ===== 状态配置 =====
@@ -91,44 +130,44 @@ export const STATUS_CONFIG: Record<ArticleStatus, {
 }> = {
   draft: {
     label: '草稿',
-    color: '#64748b',
-    bgColor: 'bg-slate-500/10',
-    textColor: 'text-[#666]',
+    color: '#999',
+    bgColor: 'bg-[rgba(0,0,0,0.04)]',
+    textColor: 'text-[#999]',
     badgeColor: 'default'
   },
   pending_review: {
     label: '待审核',
-    color: '#f59e0b',
-    bgColor: 'bg-amber-500/10',
-    textColor: 'text-amber-400',
+    color: '#666',
+    bgColor: 'bg-[rgba(0,0,0,0.04)]',
+    textColor: 'text-[#666]',
     badgeColor: 'warning'
   },
   approved: {
     label: '已审核',
-    color: '#10b981',
-    bgColor: 'bg-emerald-500/10',
-    textColor: 'text-emerald-400',
+    color: '#333',
+    bgColor: 'bg-[rgba(0,0,0,0.06)]',
+    textColor: 'text-[#333]',
     badgeColor: 'success'
   },
   published: {
     label: '已发布',
-    color: '#6366f1',
-    bgColor: 'bg-[rgba(0,0,0,0.04)]',
+    color: '#333',
+    bgColor: 'bg-[rgba(0,0,0,0.06)]',
     textColor: 'text-[#333]',
     badgeColor: 'success'
   },
   failed: {
     label: '发布失败',
-    color: '#ef4444',
-    bgColor: 'bg-red-500/10',
-    textColor: 'text-red-400',
+    color: '#cc4444',
+    bgColor: 'bg-[#fff0f0]',
+    textColor: 'text-[#cc4444]',
     badgeColor: 'danger'
   },
   archived: {
     label: '已归档',
-    color: '#8b5cf6',
-    bgColor: 'bg-purple-500/10',
-    textColor: 'text-purple-400',
+    color: '#999',
+    bgColor: 'bg-[rgba(0,0,0,0.04)]',
+    textColor: 'text-[#999]',
     badgeColor: 'info'
   },
 };
@@ -185,4 +224,3 @@ export function debounce<T extends (...args: any[]) => any>(
     timeoutId = setTimeout(() => fn(...args), delay);
   };
 }
-

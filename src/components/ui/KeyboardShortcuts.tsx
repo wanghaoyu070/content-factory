@@ -1,18 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Command,
     X,
-    Search,
-    PenTool,
-    FileText,
-    Settings,
-    LayoutDashboard,
     Keyboard
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface Shortcut {
     keys: string[];
@@ -27,7 +21,7 @@ export function KeyboardShortcuts() {
     const [showHelp, setShowHelp] = useState(false);
 
     // 快捷键定义
-    const shortcuts: Shortcut[] = [
+    const shortcuts: Shortcut[] = useMemo(() => [
         // 导航快捷键
         {
             keys: ['g', 'd'],
@@ -72,11 +66,11 @@ export function KeyboardShortcuts() {
             action: () => setShowHelp(true),
             category: 'action',
         },
-    ];
+    ], [router]);
 
     // 处理键盘事件
     const [keySequence, setKeySequence] = useState<string[]>([]);
-    const sequenceTimeoutRef = { current: null as NodeJS.Timeout | null };
+    const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         // 忽略输入框中的按键
@@ -135,7 +129,7 @@ export function KeyboardShortcuts() {
                 setKeySequence([]);
             }, 1000);
         }
-    }, [keySequence, shortcuts, showHelp, router]);
+    }, [keySequence, shortcuts, showHelp]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);

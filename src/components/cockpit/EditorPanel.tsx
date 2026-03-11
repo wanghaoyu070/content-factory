@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { handleSmartPaste } from '@/lib/cockpit/htmlToMarkdown';
 import { addImage } from '@/lib/cockpit/imageStore';
 
@@ -290,10 +291,15 @@ export default function EditorPanel({ markdownInput, onInputChange, editorScroll
     };
 
     return (
-        <div className="flex flex-col relative z-30 bg-transparent flex-1 min-h-0">
+        <motion.div
+            initial={{ x: -40, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col relative z-30 bg-transparent flex-1 min-h-0"
+        >
             <textarea
                 ref={editorScrollRef}
-                className="w-full flex-1 p-6 md:p-8 resize-none bg-transparent outline-none font-mono text-[15px] md:text-[16px] leading-[1.8] no-scrollbar text-slate-800 placeholder-slate-400 transition-shadow duration-200"
+                className="w-full flex-1 p-6 md:p-8 resize-none bg-transparent outline-none font-mono text-[15px] md:text-[16px] leading-[1.8] no-scrollbar text-slate-800 dark:text-[#f5f5f7] placeholder-slate-400 dark:placeholder-[#6e6e73] transition-shadow duration-200"
                 value={markdownInput}
                 onChange={(e) => onInputChange(e.target.value)}
                 onPaste={onPaste}
@@ -307,20 +313,20 @@ export default function EditorPanel({ markdownInput, onInputChange, editorScroll
             />
 
             {/* Bottom Info Bar */}
-            <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 sm:px-6 py-2.5 border-t border-slate-200 bg-slate-50/80">
-                <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono font-medium">⌘B</kbd> 加粗</span>
-                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono font-medium">⌘I</kbd> 斜体</span>
-                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono font-medium">⌘K</kbd> 链接</span>
-                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono font-medium">⌘Z</kbd> 撤销</span>
+            <div className="flex-shrink-0 flex items-center justify-between gap-2 px-4 sm:px-6 py-2.5 border-t border-slate-200 dark:border-[#ffffff10] bg-slate-50/80 dark:bg-[#1c1c1e]/50 backdrop-blur-md">
+                <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400 dark:text-[#a1a1a6]">
+                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.1] text-[10px] font-mono font-medium">⌘B</kbd> 加粗</span>
+                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.1] text-[10px] font-mono font-medium">⌘I</kbd> 斜体</span>
+                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.1] text-[10px] font-mono font-medium">⌘K</kbd> 链接</span>
+                    <span className="flex items-center gap-1"><kbd className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-slate-100 dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.1] text-[10px] font-mono font-medium">⌘Z</kbd> 撤销</span>
                 </div>
-                <div className="sm:hidden text-[11.5px] text-slate-400">
+                <div className="sm:hidden text-[11.5px] text-slate-400 dark:text-[#a1a1a6]">
                     支持粘贴富文本 · 拖放图片
                 </div>
-                <div className="text-[11.5px] font-mono text-slate-400">
+                <div className="text-[11.5px] font-mono text-slate-400 dark:text-[#a1a1a6]">
                     {markdownInput.length} 字
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 }

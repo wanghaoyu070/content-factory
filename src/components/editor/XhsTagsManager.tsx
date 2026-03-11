@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { X, Plus, Hash, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { X, Hash, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface XhsTagsManagerProps {

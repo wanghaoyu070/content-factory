@@ -1,6 +1,13 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getImageGenConfig } from '@/lib/config';
+import {
+    badRequestResponse,
+    createRequestId,
+    errorResponse,
+    successResponse,
+    unauthorizedResponse,
+} from '@/lib/api-response';
+import { fetchWithTimeout, HttpTimeoutError } from '@/lib/http-client';
 
 interface GenerateImageRequest {
     prompt: string;
@@ -8,29 +15,24 @@ interface GenerateImageRequest {
 }
 
 export async function POST(request: Request) {
+    const requestId = createRequestId();
     try {
         const session = await auth();
         if (!session?.user) {
-            return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+            return unauthorizedResponse('请先登录', requestId);
         }
 
         const body: GenerateImageRequest = await request.json();
         const { prompt, style } = body;
 
         if (!prompt) {
-            return NextResponse.json(
-                { success: false, error: '请提供图片描述' },
-                { status: 400 }
-            );
+            return badRequestResponse('请提供图片描述', requestId);
         }
 
         // 获取图片生成配置
         const config = getImageGenConfig(session.user.id);
         if (!config || !config.baseUrl || !config.apiKey) {
-            return NextResponse.json(
-                { success: false, error: '请先配置图片生成 API（设置页面）' },
-                { status: 400 }
-            );
+            return badRequestResponse('请先配置图片生成 API（设置页面）', requestId);
         }
 
         // 优化 prompt
@@ -38,33 +40,45 @@ export async function POST(request: Request) {
             ? `${prompt}, ${style} style, high quality, professional`
             : `${prompt}, high quality, professional photography`;
 
-        // 调用图片生成 API（硅基流动）
-        const response = await fetch(config.baseUrl, {
+        // Build provider-specific request body
+        const isSeedream = config.provider === 'seedream';
+        const requestBody = isSeedream
+            ? {
+                model: config.model,
+                prompt: enhancedPrompt,
+                size: '2K',
+                output_format: 'png',
+                response_format: 'url',
+                watermark: false,
+            }
+            : {
+                model: config.model || 'Kwai-Kolors/Kolors',
+                prompt: enhancedPrompt,
+                image_size: '1024x1024',
+                batch_size: 1,
+            };
+
+        // Seedream generation can take longer (~15s)
+        const timeout = isSeedream ? 30000 : 20000;
+
+        const response = await fetchWithTimeout(config.baseUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${config.apiKey}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                model: config.model || 'Kwai-Kolors/Kolors',
-                prompt: enhancedPrompt,
-                image_size: '1024x1024',
-                batch_size: 1,
-            }),
-        });
+            body: JSON.stringify(requestBody),
+        }, timeout);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('图片生成 API 错误:', errorText);
-            return NextResponse.json(
-                { success: false, error: '图片生成失败，请检查 API 配置' },
-                { status: 500 }
-            );
+            console.error(`[API ${requestId}] 图片生成 API 错误:`, errorText);
+            return errorResponse('图片生成失败，请检查 API 配置', 502, 'UPSTREAM_ERROR', requestId);
         }
 
         const result = await response.json();
 
-        // 解析结果（适配硅基流动 API 格式）
+        // Parse result (supports both SiliconFlow and Seedream formats)
         let imageUrl = '';
         if (result.images && result.images.length > 0) {
             imageUrl = result.images[0].url;
@@ -73,24 +87,18 @@ export async function POST(request: Request) {
         }
 
         if (!imageUrl) {
-            return NextResponse.json(
-                { success: false, error: '未能获取生成的图片' },
-                { status: 500 }
-            );
+            return errorResponse('未能获取生成的图片', 502, 'UPSTREAM_INVALID_RESPONSE', requestId);
         }
 
-        return NextResponse.json({
-            success: true,
-            data: {
-                url: imageUrl,
-                prompt: enhancedPrompt,
-            },
-        });
+        return successResponse({
+            url: imageUrl,
+            prompt: enhancedPrompt,
+        }, 200, requestId);
     } catch (error) {
-        console.error('图片生成失败:', error);
-        return NextResponse.json(
-            { success: false, error: error instanceof Error ? error.message : '生成失败' },
-            { status: 500 }
-        );
+        if (error instanceof HttpTimeoutError) {
+            return errorResponse(error.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+        }
+        console.error(`[API ${requestId}] 图片生成失败:`, error);
+        return errorResponse(error instanceof Error ? error.message : '生成失败', 500, 'INTERNAL_ERROR', requestId);
     }
 }

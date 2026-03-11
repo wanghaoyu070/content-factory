@@ -10,9 +10,16 @@ import {
   wechatPublishSchema,
   xiaohongshuPublishSchema,
   startAnalysisSchema,
+  wechatArticleSearchSchema,
+  wechatAccountSearchSchema,
   aiConfigSchema,
+  imageGenConfigSchema,
+  settingsSchema,
   paginationSchema,
   completeInviteSchema,
+  onboardingUpdateSchema,
+  positiveIdSchema,
+  testAiConnectionSchema,
   validateQuery,
 } from './validations';
 
@@ -20,7 +27,9 @@ describe('ArticleStatus', () => {
   it('should accept valid status values', () => {
     expect(ArticleStatus.parse('draft')).toBe('draft');
     expect(ArticleStatus.parse('pending_review')).toBe('pending_review');
+    expect(ArticleStatus.parse('approved')).toBe('approved');
     expect(ArticleStatus.parse('published')).toBe('published');
+    expect(ArticleStatus.parse('failed')).toBe('failed');
     expect(ArticleStatus.parse('archived')).toBe('archived');
   });
 
@@ -407,6 +416,39 @@ describe('startAnalysisSchema', () => {
   });
 });
 
+describe('wechatArticleSearchSchema', () => {
+  it('should validate and apply defaults', () => {
+    const result = wechatArticleSearchSchema.safeParse({ keyword: ' AI ' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.keyword).toBe('AI');
+      expect(result.data.page).toBe(1);
+      expect(result.data.period).toBe(7);
+    }
+  });
+
+  it('should reject invalid page', () => {
+    const result = wechatArticleSearchSchema.safeParse({ keyword: 'AI', page: 0 });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('wechatAccountSearchSchema', () => {
+  it('should validate and apply defaults', () => {
+    const result = wechatAccountSearchSchema.safeParse({ accountName: ' 公众号A ' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.accountName).toBe('公众号A');
+      expect(result.data.page).toBe(1);
+    }
+  });
+
+  it('should reject empty accountName', () => {
+    const result = wechatAccountSearchSchema.safeParse({ accountName: '   ' });
+    expect(result.success).toBe(false);
+  });
+});
+
 describe('aiConfigSchema', () => {
   it('should validate valid AI config', () => {
     const data = {
@@ -439,6 +481,66 @@ describe('aiConfigSchema', () => {
 
     const result = aiConfigSchema.safeParse(data);
     expect(result.success).toBe(false);
+  });
+});
+
+describe('imageGenConfigSchema', () => {
+  it('should validate valid image generation config', () => {
+    const result = imageGenConfigSchema.safeParse({
+      baseUrl: 'https://api.example.com/images',
+      apiKey: 'img-key',
+      model: 'seedream-v1',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.provider).toBe('siliconflow');
+    }
+  });
+
+  it('should reject invalid baseUrl', () => {
+    const result = imageGenConfigSchema.safeParse({
+      baseUrl: 'not-a-url',
+      apiKey: 'img-key',
+      model: 'seedream-v1',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('settingsSchema', () => {
+  it('should accept the current settings payload shape', () => {
+    const result = settingsSchema.safeParse({
+      ai: {
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'sk-test',
+        model: 'gpt-4o',
+      },
+      imageGen: {
+        baseUrl: 'https://api.example.com/images',
+        apiKey: 'img-key',
+        model: 'kolors',
+        provider: 'seedream',
+      },
+      wechatArticle: {
+        endpoint: 'https://wechat-article.example.com',
+        apiKey: 'wechat-article-key',
+      },
+      wechatPublish: {
+        endpoint: 'https://wechat-publish.example.com',
+        apiKey: 'wechat-publish-key',
+      },
+      xiaohongshu: {
+        endpoint: 'https://xhs.example.com',
+        apiKey: 'xhs-key',
+      },
+      preferences: {
+        imageCount: 3,
+        style: 'professional',
+        minWords: 1200,
+        maxWords: 2200,
+      },
+    });
+    expect(result.success).toBe(true);
   });
 });
 
@@ -525,6 +627,50 @@ describe('validateQuery', () => {
 
     const result = validateQuery(searchParams, paginationSchema);
     // Note: coerce will convert 'invalid' to NaN, which fails min(1)
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('positiveIdSchema', () => {
+  it('should parse valid positive integer', () => {
+    expect(positiveIdSchema.parse('123')).toBe(123);
+  });
+
+  it('should reject non-integer value', () => {
+    expect(() => positiveIdSchema.parse('12.3')).toThrow();
+  });
+
+  it('should reject non-positive value', () => {
+    expect(() => positiveIdSchema.parse('0')).toThrow();
+  });
+});
+
+describe('onboardingUpdateSchema', () => {
+  it('should accept boolean completed', () => {
+    const result = onboardingUpdateSchema.safeParse({ completed: true });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject string completed', () => {
+    const result = onboardingUpdateSchema.safeParse({ completed: 'true' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('testAiConnectionSchema', () => {
+  it('should accept valid payload', () => {
+    const result = testAiConnectionSchema.safeParse({
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject invalid url', () => {
+    const result = testAiConnectionSchema.safeParse({
+      baseUrl: 'not-a-url',
+      apiKey: 'sk-test',
+    });
     expect(result.success).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { ThumbsUp, MessageCircle, Share2, Star } from 'lucide-react';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -40,8 +41,15 @@ export default function WechatPreview({ title, content, coverImage }: WechatPrev
       <div className="h-[680px] overflow-y-auto bg-white">
         {/* 封面图 */}
         {coverImage && (
-          <div className="w-full h-48 overflow-hidden">
-            <img src={coverImage} alt="封面" className="w-full h-full object-cover" />
+          <div className="w-full h-48 overflow-hidden relative">
+            <Image
+              src={coverImage}
+              alt="封面"
+              fill
+              sizes="(max-width: 768px) 100vw, 480px"
+              unoptimized
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
 

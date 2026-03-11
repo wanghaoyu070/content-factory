@@ -1,43 +1,32 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
+import { fetchApiSuccessOrThrow } from '@/lib/api-fetch';
+import { consumeSseStream } from '@/lib/sse';
+import type { HotTopicItem } from '@/types/api';
 import {
   Search,
   Loader2,
   ThumbsUp,
-  MessageCircle,
   TrendingUp,
   Sparkles,
   FileText,
   ChevronRight,
   Flame,
   BarChart3,
-  CheckCircle2,
-  Circle,
   AlertCircle,
   User,
   Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Skeleton, StatCardSkeleton, InsightCardSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
 
 type SearchMode = 'keyword' | 'account';
 
 // ... (Keep interfaces, or simplify if needed) ...
-interface AccountInfo {
-  name: string;
-  avatar: string;
-  ghid: string;
-  wxid: string;
-  totalArticles: number;
-  masssendCount: number;
-  publishCount: number;
-}
-
 interface Article {
   id?: number | string;
   title: string;
@@ -53,6 +42,12 @@ interface Article {
   wowCount?: number;
   coverImage?: string;
   sourceUrl?: string;
+  wxName?: string;
+  wx_name?: string;
+  read_count?: number;
+  like_count?: number;
+  wow_count?: number;
+  publish_time?: string;
 }
 
 interface Insight {
@@ -71,17 +66,16 @@ interface SearchRecord {
   created_at: string;
 }
 
-interface WordCloudItem {
-  word: string;
-  count: number;
-}
-
 // idle -> processing (polling) -> done -> error
 type AnalysisStep = 'idle' | 'processing' | 'done' | 'error';
 
-interface HotTopic {
-  keyword: string;
-  heat: number;
+interface GenerateSseEvent {
+  step: 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'saving' | 'completed' | 'error';
+  message: string;
+  progress: number;
+  data?: {
+    articleId?: number;
+  };
 }
 
 function AnalysisPageContent() {
@@ -96,26 +90,26 @@ function AnalysisPageContent() {
   // Data State
   const [articles, setArticles] = useState<Article[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [wordCloud, setWordCloud] = useState<WordCloudItem[]>([]);
   const [recentSearches, setRecentSearches] = useState<SearchRecord[]>([]);
-  const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null);
 
   const [generatingId, setGeneratingId] = useState<number | null>(null);
   const [searchId, setSearchId] = useState<number | null>(null);
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
-  const [hotTopics, setHotTopics] = useState<HotTopic[]>([]);
+  const [hotTopics, setHotTopics] = useState<HotTopicItem[]>([]);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollErrorCountRef = useRef(0);
 
   // 获取热门话题
   const fetchHotTopics = async () => {
     try {
-      const res = await fetch('/api/hot-topics');
-      const data = await res.json();
-      if (data.success && data.data) {
-        setHotTopics(data.data);
-      }
+      const data = await fetchApiSuccessOrThrow<HotTopicItem[]>(
+        '/api/hot-topics',
+        undefined,
+        '获取热门话题失败'
+      );
+      setHotTopics(data.data);
     } catch {
       // 获取失败时使用默认值
       setHotTopics([
@@ -138,6 +132,124 @@ function AnalysisPageContent() {
     }
     Promise.all([fetchRecentSearches(), fetchHotTopics()]).finally(() => setInitialLoading(false));
   }, [isAuthenticated, status]);
+
+  // 3. Polling Logic: Whenever searchId set & step is processing
+  useEffect(() => {
+    if (step === 'processing' && searchId) {
+      // Start polling
+      const poll = async () => {
+        try {
+          const data = await fetchApiSuccessOrThrow<{
+            status: 'pending' | 'processing' | 'completed' | 'failed';
+            articles?: Article[];
+            insights?: Insight[];
+          }>(`/api/analysis/status?id=${searchId}`, undefined, '查询任务状态失败');
+          pollErrorCountRef.current = 0;
+
+          const record = data.data;
+
+          if (record.status === 'completed') {
+            // Task Done!
+            setArticles(record.articles || []);
+            setInsights(record.insights || []);
+            setStep('done');
+            fetchRecentSearches(); // Update sidebar
+          } else if (record.status === 'failed') {
+            setStep('error');
+            setErrorMessage('分析任务执行失败，请重试');
+          } else {
+            // Still processing, continue waiting...
+            // If partial data available (e.g. articles found), show them? 
+            if (record.articles && record.articles.length > 0) {
+              setArticles(record.articles);
+            }
+          }
+        } catch (e) {
+          console.error('Poll error', e);
+          pollErrorCountRef.current += 1;
+          // 连续失败阈值：避免无穷轮询但无提示
+          if (pollErrorCountRef.current >= 3) {
+            setStep('error');
+            setErrorMessage(
+              e instanceof Error ? e.message : '查询任务状态失败，请稍后重试'
+            );
+          }
+        }
+      };
+
+      // Poll immediately then every 2s
+      poll();
+      pollingRef.current = setInterval(poll, 2000);
+    } else {
+      // Stop polling
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      pollErrorCountRef.current = 0;
+    }
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [step, searchId]);
+
+
+  const fetchRecentSearches = async () => {
+    try {
+      const result = await fetchApiSuccessOrThrow<SearchRecord[]>(
+        '/api/search?limit=5',
+        undefined,
+        '获取最近搜索失败'
+      );
+      setRecentSearches(result.data);
+    } catch (err) {
+      console.error('Failed to fetch recent searches:', err);
+    }
+  };
+
+  const handleSearch = useCallback(async (kwInput?: string) => {
+    if (!ensureLogin()) return;
+    const kw = kwInput || keyword;
+    if (!kw.trim()) return;
+
+    // Reset UI
+    setStep('processing');
+    setErrorMessage('');
+    setArticles([]);
+    setInsights([]);
+    setSearchId(null); // Clear ID first
+
+    try {
+      // Call Async Start API
+      const result = await fetchApiSuccessOrThrow<{ searchId: number }>(
+        '/api/analysis/start',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keyword: kw,
+            searchType: searchMode,
+          }),
+        },
+        '启动任务失败'
+      );
+
+      if (result.data?.searchId) {
+        // Task Started! Set ID to trigger polling
+        setSearchId(result.data.searchId);
+        // Optionally update URL so reload works
+        router.push(`/analysis?id=${result.data.searchId}`, { scroll: false });
+      } else {
+        throw new Error('启动任务失败：缺少任务ID');
+      }
+
+    } catch (err: unknown) {
+      console.error('Start analysis failed:', err);
+      setStep('error');
+      setErrorMessage(err instanceof Error ? err.message : '分析请求失败');
+    }
+  }, [ensureLogin, keyword, router, searchMode]);
 
   // 2. Init: Check URL for 'id' to resume task, OR 'keyword' to auto-start
   useEffect(() => {
@@ -164,119 +276,7 @@ function AnalysisPageContent() {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, [searchParams, isAuthenticated, initialLoading]);
-
-  // 3. Polling Logic: Whenever searchId set & step is processing
-  useEffect(() => {
-    if (step === 'processing' && searchId) {
-      // Start polling
-      const poll = async () => {
-        try {
-          const res = await fetch(`/api/analysis/status?id=${searchId}`);
-          const data = await res.json();
-
-          if (!data.success) {
-            // Task not found or error
-            setStep('error');
-            setErrorMessage(data.error || '查询任务状态失败');
-            return;
-          }
-
-          const record = data.data;
-
-          if (record.status === 'completed') {
-            // Task Done!
-            setArticles(record.articles || []);
-            setInsights(record.insights || []);
-            setWordCloud(record.wordCloud || []);
-            setStep('done');
-            fetchRecentSearches(); // Update sidebar
-          } else if (record.status === 'failed') {
-            setStep('error');
-            setErrorMessage('分析任务执行失败，请重试');
-          } else {
-            // Still processing, continue waiting...
-            // If partial data available (e.g. articles found), show them? 
-            if (record.articles && record.articles.length > 0) {
-              setArticles(record.articles);
-            }
-          }
-        } catch (e) {
-          console.error('Poll error', e);
-          // Don't stop polling on network error, just wait next tick
-        }
-      };
-
-      // Poll immediately then every 2s
-      poll();
-      pollingRef.current = setInterval(poll, 2000);
-    } else {
-      // Stop polling
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    }
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [step, searchId]);
-
-
-  const fetchRecentSearches = async () => {
-    try {
-      const response = await fetch('/api/search?limit=5');
-      const result = await response.json();
-      if (result.success) {
-        setRecentSearches(result.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch recent searches:', err);
-    }
-  };
-
-  const handleSearch = async (kwInput?: string) => {
-    if (!ensureLogin()) return;
-    const kw = kwInput || keyword;
-    if (!kw.trim()) return;
-
-    // Reset UI
-    setStep('processing');
-    setErrorMessage('');
-    setArticles([]);
-    setInsights([]);
-    setWordCloud([]);
-    setAccountInfo(null);
-    setSearchId(null); // Clear ID first
-
-    try {
-      // Call Async Start API
-      const response = await fetch('/api/analysis/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          keyword: kw,
-          searchType: searchMode
-        }),
-      });
-      const result = await response.json();
-
-      if (result.success && result.data?.searchId) {
-        // Task Started! Set ID to trigger polling
-        setSearchId(result.data.searchId);
-        // Optionally update URL so reload works
-        router.push(`/analysis?id=${result.data.searchId}`, { scroll: false });
-      } else {
-        throw new Error(result.error || '启动任务失败');
-      }
-
-    } catch (err: any) {
-      console.error('Start analysis failed:', err);
-      setStep('error');
-      setErrorMessage(err.message || '分析请求失败');
-    }
-  };
+  }, [searchParams, isAuthenticated, initialLoading, handleSearch]);
 
 
   const handleGenerateArticle = async (insight: Insight) => {
@@ -304,16 +304,26 @@ function AnalysisPageContent() {
         }),
       });
 
-      const result = await response.json();
+      let generatedArticleId: number | null = null;
 
-      if (result.success && result.data?.articleId) {
-        router.push(`/articles/${result.data.articleId}`);
-      } else {
-        toast.error('文章生成失败', { description: result.error });
+      await consumeSseStream<GenerateSseEvent>(response, {
+        getEventError: (event) => (event.step === 'error' ? event.message || '文章生成失败' : null),
+        onEvent: async (eventData) => {
+          if (eventData.step === 'completed' && eventData.data?.articleId) {
+            generatedArticleId = Number(eventData.data.articleId);
+          }
+        },
+      });
+
+      if (!generatedArticleId) {
+        throw new Error('未收到生成结果');
       }
+      router.push(`/articles/${generatedArticleId}`);
     } catch (err) {
       console.error('Generate article failed:', err);
-      toast.error('网络错误', { description: '无法请求文章生成' });
+      toast.error('文章生成失败', {
+        description: err instanceof Error ? err.message : '无法请求文章生成',
+      });
     } finally {
       setGeneratingId(null);
     }
@@ -345,7 +355,7 @@ function AnalysisPageContent() {
 
       <div className="p-6 max-w-7xl mx-auto">
         {/* Search Box Area */}
-        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6 shadow-xl relative z-10">
+        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6 relative z-10">
           {/* Mode Tabs */}
           <div className="flex items-center gap-4 mb-4">
             <button
@@ -384,7 +394,7 @@ function AnalysisPageContent() {
             <button
               onClick={() => handleSearch()}
               disabled={isSearching || !keyword.trim()}
-              className="px-8 py-3 bg-[#333] hover:bg-[#444] text-white rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-8 py-3 bg-[#333] hover:bg-[#444] hover:scale-[1.03] active:scale-[0.97] text-white rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
               {isSearching ? '分析中...' : '开始分析'}
@@ -497,7 +507,7 @@ function AnalysisPageContent() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {insights.map((insight, idx) => (
-                  <div key={idx} className="bg-white border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] transition-all rounded-2xl p-6 group flex flex-col h-full">
+                  <div key={idx} className="bg-white border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.15)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 rounded-2xl p-6 group flex flex-col h-full" style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="w-8 h-8 rounded-lg bg-[rgba(0,0,0,0.04)] text-[#333] flex items-center justify-center font-bold text-sm">
                         {idx + 1}
@@ -543,7 +553,7 @@ function AnalysisPageContent() {
                       <button
                         onClick={() => handleGenerateArticle(insight)}
                         disabled={generatingId === insight.id}
-                        className="w-full py-2.5 bg-[#333] hover:bg-[#444] text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+                        className="w-full py-2.5 bg-[#333] hover:bg-[#444] hover:scale-[1.03] active:scale-[0.97] text-white rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                       >
                         {generatingId === insight.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                         {generatingId === insight.id ? '生成中...' : '使用此洞察写文章'}
@@ -586,31 +596,31 @@ function AnalysisPageContent() {
                         {/* 作者 */}
                         <span className="flex items-center gap-1 text-[#666]">
                           <User className="w-3 h-3" />
-                          {article.author || (article as any).wxName || (article as any).wx_name || '匿名作者'}
+                          {article.author || article.wxName || article.wx_name || '匿名作者'}
                         </span>
 
                         {/* 阅读量 */}
-                        {(article.readCount || article.reads || (article as any).read_count) && (
+                        {(article.readCount || article.reads || article.read_count) && (
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3 text-[#333]" />
-                            <span className="text-[#333]">{((article.readCount || article.reads || (article as any).read_count) as number).toLocaleString()}</span>
+                            <span className="text-[#333]">{Number(article.readCount || article.reads || article.read_count).toLocaleString()}</span>
                             <span>阅读</span>
                           </span>
                         )}
 
                         {/* 点赞 */}
-                        {(article.likeCount || article.likes || (article as any).like_count) && (
+                        {(article.likeCount || article.likes || article.like_count) && (
                           <span className="flex items-center gap-1">
                             <ThumbsUp className="w-3 h-3 text-[#333]" />
-                            <span className="text-[#333]">{((article.likeCount || article.likes || (article as any).like_count) as number).toLocaleString()}</span>
+                            <span className="text-[#333]">{Number(article.likeCount || article.likes || article.like_count).toLocaleString()}</span>
                           </span>
                         )}
 
                         {/* 在看 */}
-                        {((article as any).wowCount || (article as any).wow_count) && (
+                        {(article.wowCount || article.wow_count) && (
                           <span className="flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-[#333]" />
-                            <span className="text-[#333]">{(((article as any).wowCount || (article as any).wow_count) as number).toLocaleString()}</span>
+                            <span className="text-[#333]">{Number(article.wowCount || article.wow_count).toLocaleString()}</span>
                             <span>在看</span>
                           </span>
                         )}
@@ -618,7 +628,7 @@ function AnalysisPageContent() {
                         {/* 发布时间 */}
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {(article.publishTime || (article as any).publish_time)?.split(' ')[0]}
+                          {(article.publishTime || article.publish_time)?.split(' ')[0]}
                         </span>
                       </div>
                     </div>
@@ -642,7 +652,7 @@ function AnalysisPageContent() {
                   <button
                     key={idx}
                     onClick={() => { setKeyword(topic.keyword); }}
-                    className="p-4 rounded-xl bg-[#FDFCF6]/50 hover:bg-[#FDFCF6] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] transition-all text-left group"
+                    className="p-4 rounded-xl bg-[#FDFCF6]/50 hover:bg-[#FDFCF6] border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 text-left group" style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-[#333] group-hover:text-[#1A1A1A] transition-colors">{topic.keyword}</span>

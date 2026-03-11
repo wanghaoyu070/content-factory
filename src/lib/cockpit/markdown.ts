@@ -12,7 +12,7 @@ export const md = new MarkdownIt({
         if (lang && hljs.getLanguage(lang)) {
             try {
                 codeContent = hljs.highlight(str, { language: lang }).value;
-            } catch (__) {
+            } catch {
                 codeContent = md.utils.escapeHtml(str);
             }
         } else {
@@ -32,7 +32,7 @@ export function preprocessMarkdown(content: string) {
     content = content.replace(/^[ ]{0,3}(_[ ]*_[ ]*_[_ ]*)[ \t]*$/gm, '___');
     content = content.replace(/\*\*\s+\*\*/g, ' ');
     content = content.replace(/\*{4,}/g, '');
-    content = content.replace(/\*\*([）」』》〉】〕〗］｝"'。，、；？！])/g, '**\u200B$1');
+    content = content.replace(/\*\*([）」』》〉】〕〗］｝"'、；？！])/g, '**\u200B$1');
     content = content.replace(/([（「『《〈【〔〖［｛"'])\*\*/g, '$1\u200B**');
     return content;
 }

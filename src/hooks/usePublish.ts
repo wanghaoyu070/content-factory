@@ -2,17 +2,16 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/api-error';
+import type {
+    WechatPublishAccount,
+    WechatPublishAccountsResponse,
+    WechatPublishResponse,
+    XiaohongshuPublishResponse,
+} from '@/types/api';
 
 // ===== 类型定义 =====
-export interface WechatAccount {
-    name: string;
-    wechatAppid: string;
-    username: string;
-    avatar: string;
-    type: string;
-    verified: boolean;
-    status: string;
-}
+export type WechatAccount = WechatPublishAccount;
 
 export interface WechatPublishConfig {
     wechatAppid: string;
@@ -42,7 +41,7 @@ const DEFAULT_CONFIG: WechatPublishConfig = {
 // ===== Hook 实现 =====
 export function usePublish() {
     // 微信发布状态
-    const [wechatAccounts, setWechatAccounts] = useState<WechatAccount[]>([]);
+    const [wechatAccounts, setWechatAccounts] = useState<WechatPublishAccount[]>([]);
     const [loadingAccounts, setLoadingAccounts] = useState(false);
     const [showWechatModal, setShowWechatModal] = useState(false);
     const [selectedArticleForWechat, setSelectedArticleForWechat] = useState<string | null>(null);
@@ -76,7 +75,8 @@ export function usePublish() {
     const saveConfig = useCallback((config: Partial<WechatPublishConfig>) => {
         setWechatConfig((prev) => {
             const newConfig = { ...prev, ...config };
-            const { summary: _summary, ...persistable } = newConfig;
+            const { summary, ...persistable } = newConfig;
+            void summary;
             localStorage.setItem(PUBLISH_CONFIG_STORAGE_KEY, JSON.stringify(persistable));
             return newConfig;
         });
@@ -91,12 +91,12 @@ export function usePublish() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'get_accounts' }),
             });
-            const result = await response.json();
+            const result: WechatPublishAccountsResponse = await response.json();
 
             if (result.success) {
                 setWechatAccounts(result.data || []);
             } else {
-                toast.error(result.error || '获取公众号列表失败');
+                toast.error(getApiErrorMessage(result, '获取公众号列表失败'));
             }
         } catch (error) {
             console.error('获取公众号列表失败:', error);
@@ -144,7 +144,7 @@ export function usePublish() {
                 }),
             });
 
-            const result = await response.json();
+            const result: WechatPublishResponse = await response.json();
 
             if (result.success) {
                 // 不再显示 toast，让 Modal 展示成功状态
@@ -152,7 +152,7 @@ export function usePublish() {
                 return true;
             } else {
                 // 不再显示 toast，让 Modal 展示错误状态
-                throw new Error(result.error || '发布失败');
+                throw new Error(getApiErrorMessage(result, '发布失败'));
             }
         } catch (error) {
             console.error('发布到微信失败:', error);
@@ -162,7 +162,7 @@ export function usePublish() {
             setPublishingToWechat(false);
             setPublishingId(null);
         }
-    }, [selectedArticleForWechat, wechatConfig, closeWechatPublishModal]);
+    }, [selectedArticleForWechat, wechatConfig]);
 
     // ===== 小红书相关 =====
     const closeXhsPublishModal = useCallback(() => {
@@ -183,20 +183,21 @@ export function usePublish() {
                 body: JSON.stringify({ articleId }),
             });
 
-            const result = await response.json();
+            const result: XiaohongshuPublishResponse = await response.json();
 
             if (result.success) {
                 setXhsResult({
-                    publishUrl: result.data.publishUrl,
+                    publishUrl: typeof result.data.publishUrl === 'string' ? result.data.publishUrl : '',
                     title: result.data.title,
                     imageCount: result.data.imageCount,
-                    qrImageUrl: result.data.qrImageUrl,
+                    qrImageUrl: typeof result.data.qrImageUrl === 'string' ? result.data.qrImageUrl : undefined,
                 });
                 setXhsError(null);
                 return true;
             } else {
-                toast.error('生成发布链接失败', { description: result.error });
-                setXhsError(result.error || '生成发布链接失败');
+                const friendlyError = getApiErrorMessage(result, '生成发布链接失败');
+                toast.error('生成发布链接失败', { description: friendlyError });
+                setXhsError(friendlyError);
                 return false;
             }
         } catch (error) {

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getArticleById } from '@/lib/db';
 import { escapeHtml, sanitizeHtml } from '@/lib/sanitize';
+import {
+  badRequestResponse,
+  createRequestId,
+  notFoundResponse,
+  serverErrorResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
 
 // 将HTML转换为Markdown的简单实现
 function htmlToMarkdown(html: string): string {
@@ -72,10 +80,11 @@ function htmlToMarkdown(html: string): string {
 
 // GET /api/articles/export?id=xxx&format=markdown|html
 export async function GET(request: NextRequest) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { searchParams } = new URL(request.url);
@@ -83,18 +92,18 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'markdown';
 
     if (!id) {
-      return NextResponse.json(
-        { success: false, error: '缺少文章 ID' },
-        { status: 400 }
-      );
+      return badRequestResponse('缺少文章 ID', requestId);
     }
 
-    const article = getArticleById(parseInt(id), session.user.id);
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
+
+    const article = getArticleById(numericId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
     const title = article.title;
@@ -109,6 +118,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'text/markdown; charset=utf-8',
           'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          'X-Request-Id': requestId,
         },
       });
     } else if (format === 'html') {
@@ -167,19 +177,14 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+          'X-Request-Id': requestId,
         },
       });
     } else {
-      return NextResponse.json(
-        { success: false, error: '不支持的导出格式' },
-        { status: 400 }
-      );
+      return badRequestResponse('不支持的导出格式', requestId);
     }
   } catch (error) {
-    console.error('导出文章失败:', error);
-    return NextResponse.json(
-      { success: false, error: '导出失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 导出文章失败:`, error);
+    return serverErrorResponse('导出失败', requestId);
   }
 }

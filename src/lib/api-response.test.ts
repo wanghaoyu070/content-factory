@@ -6,6 +6,10 @@ import {
   ForbiddenError,
   NotFoundError,
   BadRequestError,
+  createRequestId,
+  successResponse,
+  successResponseWithMeta,
+  errorResponse,
 } from './api-response';
 
 describe('validateRequired', () => {
@@ -94,5 +98,44 @@ describe('BadRequestError', () => {
     expect(error.message).toBe('请求参数错误');
     expect(error.statusCode).toBe(400);
     expect(error.code).toBe('BAD_REQUEST');
+  });
+});
+
+describe('response helpers', () => {
+  it('should generate unique request id', () => {
+    const id1 = createRequestId();
+    const id2 = createRequestId();
+    expect(id1).not.toBe(id2);
+    expect(id1.length).toBeGreaterThan(10);
+  });
+
+  it('should include requestId in success response body', async () => {
+    const response = successResponse({ ok: true }, 200, 'req-123');
+    const json = await response.json();
+    expect(json.requestId).toBe('req-123');
+    expect(json.success).toBe(true);
+  });
+
+  it('should include requestId and code in error response body', async () => {
+    const response = errorResponse('bad', 400, 'BAD_REQUEST', 'req-456');
+    const json = await response.json();
+    expect(json.requestId).toBe('req-456');
+    expect(json.code).toBe('BAD_REQUEST');
+    expect(json.success).toBe(false);
+  });
+
+  it('should include meta fields in success response body', async () => {
+    const response = successResponseWithMeta(
+      [{ id: 1 }],
+      { source: 'mock', total: 1 },
+      200,
+      'req-meta'
+    );
+    const json = await response.json();
+    expect(json.success).toBe(true);
+    expect(json.data).toEqual([{ id: 1 }]);
+    expect(json.source).toBe('mock');
+    expect(json.total).toBe(1);
+    expect(json.requestId).toBe('req-meta');
   });
 });

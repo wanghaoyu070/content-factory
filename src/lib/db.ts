@@ -35,6 +35,8 @@ const ALLOWED_TABLES = [
   'users',
   'invite_codes',
   'search_records',
+  'analysis_jobs',
+  'generation_jobs',
   'source_articles',
   'settings',
   'article_summaries',
@@ -182,6 +184,51 @@ function initializeDatabase(db: InstanceType<typeof Database>) {
     CREATE INDEX IF NOT EXISTS idx_search_keyword ON search_records(keyword);
     CREATE INDEX IF NOT EXISTS idx_articles_search_id ON source_articles(search_id);
 
+    CREATE TABLE IF NOT EXISTS analysis_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      search_id INTEGER NOT NULL UNIQUE,
+      user_id INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      attempts INTEGER NOT NULL DEFAULT 0,
+      execution_mode TEXT NOT NULL DEFAULT 'background',
+      error_message TEXT,
+      started_at DATETIME,
+      heartbeat_at DATETIME,
+      completed_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_analysis_jobs_status ON analysis_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_analysis_jobs_user ON analysis_jobs(user_id);
+
+    CREATE TABLE IF NOT EXISTS generation_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      search_id INTEGER NOT NULL,
+      insight_id INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      step TEXT,
+      progress INTEGER NOT NULL DEFAULT 0,
+      message TEXT,
+      style TEXT,
+      fetch_images INTEGER NOT NULL DEFAULT 0,
+      article_id INTEGER,
+      error_message TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      started_at DATETIME,
+      completed_at DATETIME,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (search_id) REFERENCES search_records(id) ON DELETE CASCADE,
+      FOREIGN KEY (insight_id) REFERENCES topic_insights(id) ON DELETE SET NULL,
+      FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_generation_jobs_user ON generation_jobs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_generation_jobs_search ON generation_jobs(search_id);
+    CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status);
+
     CREATE TABLE IF NOT EXISTS settings (
       user_id INTEGER NOT NULL,
       key TEXT NOT NULL,
@@ -286,6 +333,44 @@ export interface SearchRecord {
   account_avatar: string | null;
   status?: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
+}
+
+export type AnalysisJobStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface AnalysisJobRecord {
+  id: number;
+  search_id: number;
+  user_id: number;
+  status: AnalysisJobStatus;
+  attempts: number;
+  execution_mode: 'background' | 'inline';
+  error_message: string | null;
+  started_at: string | null;
+  heartbeat_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type GenerationJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface GenerationJobRecord {
+  id: number;
+  user_id: number;
+  search_id: number;
+  insight_id: number;
+  status: GenerationJobStatus;
+  step: string | null;
+  progress: number;
+  message: string | null;
+  style: string | null;
+  fetch_images: number;
+  article_id: number | null;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
 }
 
 export interface SourceArticle {
@@ -410,6 +495,170 @@ export function createSearchRecord(
   return result.lastInsertRowid as number;
 }
 
+export function createAnalysisJob(
+  searchId: number,
+  userId: number,
+  executionMode: 'background' | 'inline' = 'background'
+): number {
+  const stmt = db.prepare(`
+    INSERT INTO analysis_jobs (search_id, user_id, execution_mode, status)
+    VALUES (?, ?, ?, 'pending')
+    ON CONFLICT(search_id) DO UPDATE SET
+      user_id = excluded.user_id,
+      execution_mode = excluded.execution_mode,
+      status = 'pending',
+      error_message = NULL,
+      completed_at = NULL,
+      started_at = NULL,
+      heartbeat_at = NULL,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+  const result = stmt.run(searchId, userId, executionMode);
+  return result.lastInsertRowid as number;
+}
+
+export function createGenerationJob(input: {
+  userId: number;
+  searchId: number;
+  insightId: number;
+  style?: string;
+  fetchImages?: boolean;
+}): number {
+  const stmt = db.prepare(`
+    INSERT INTO generation_jobs (user_id, search_id, insight_id, style, fetch_images, status, progress)
+    VALUES (?, ?, ?, ?, ?, 'pending', 0)
+  `);
+  const result = stmt.run(
+    input.userId,
+    input.searchId,
+    input.insightId,
+    input.style || null,
+    input.fetchImages ? 1 : 0
+  );
+  return result.lastInsertRowid as number;
+}
+
+export function getGenerationJobById(jobId: number, userId?: number): GenerationJobRecord | undefined {
+  const stmt = userId
+    ? db.prepare('SELECT * FROM generation_jobs WHERE id = ? AND user_id = ?')
+    : db.prepare('SELECT * FROM generation_jobs WHERE id = ?');
+  return userId
+    ? (stmt.get(jobId, userId) as GenerationJobRecord | undefined)
+    : (stmt.get(jobId) as GenerationJobRecord | undefined);
+}
+
+export function updateGenerationJobProgress(
+  jobId: number,
+  userId: number,
+  input: {
+    status: GenerationJobStatus;
+    step?: string;
+    progress?: number;
+    message?: string;
+    articleId?: number | null;
+    errorMessage?: string | null;
+  }
+): void {
+  const stmt = db.prepare(`
+    UPDATE generation_jobs
+    SET
+      status = ?,
+      step = ?,
+      progress = ?,
+      message = ?,
+      article_id = COALESCE(?, article_id),
+      error_message = ?,
+      started_at = CASE WHEN started_at IS NULL AND ? = 'processing' THEN CURRENT_TIMESTAMP ELSE started_at END,
+      completed_at = CASE WHEN ? IN ('completed', 'failed') THEN CURRENT_TIMESTAMP ELSE completed_at END,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND user_id = ?
+  `);
+  stmt.run(
+    input.status,
+    input.step || null,
+    input.progress ?? 0,
+    input.message || null,
+    input.articleId ?? null,
+    input.errorMessage ?? null,
+    input.status,
+    input.status,
+    jobId,
+    userId
+  );
+}
+
+export function getAnalysisJobBySearchId(searchId: number, userId?: number): AnalysisJobRecord | undefined {
+  const stmt = userId
+    ? db.prepare('SELECT * FROM analysis_jobs WHERE search_id = ? AND user_id = ?')
+    : db.prepare('SELECT * FROM analysis_jobs WHERE search_id = ?');
+  return userId
+    ? (stmt.get(searchId, userId) as AnalysisJobRecord | undefined)
+    : (stmt.get(searchId) as AnalysisJobRecord | undefined);
+}
+
+export function claimAnalysisJob(
+  searchId: number,
+  userId: number,
+  staleAfterMinutes: number = 5
+): boolean {
+  const stmt = db.prepare(`
+    UPDATE analysis_jobs
+    SET
+      status = 'running',
+      attempts = attempts + 1,
+      started_at = COALESCE(started_at, CURRENT_TIMESTAMP),
+      heartbeat_at = CURRENT_TIMESTAMP,
+      error_message = NULL,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE search_id = ?
+      AND user_id = ?
+      AND (
+        status = 'pending'
+        OR status = 'failed'
+        OR (status = 'running' AND heartbeat_at IS NOT NULL AND heartbeat_at < DATETIME('now', '-' || ? || ' minutes'))
+      )
+  `);
+  const result = stmt.run(searchId, userId, staleAfterMinutes);
+  return result.changes > 0;
+}
+
+export function touchAnalysisJob(searchId: number, userId: number): void {
+  const stmt = db.prepare(`
+    UPDATE analysis_jobs
+    SET heartbeat_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+    WHERE search_id = ? AND user_id = ?
+  `);
+  stmt.run(searchId, userId);
+}
+
+export function completeAnalysisJob(searchId: number, userId: number): void {
+  const stmt = db.prepare(`
+    UPDATE analysis_jobs
+    SET
+      status = 'completed',
+      heartbeat_at = CURRENT_TIMESTAMP,
+      completed_at = CURRENT_TIMESTAMP,
+      error_message = NULL,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE search_id = ? AND user_id = ?
+  `);
+  stmt.run(searchId, userId);
+}
+
+export function failAnalysisJob(searchId: number, userId: number, errorMessage?: string): void {
+  const stmt = db.prepare(`
+    UPDATE analysis_jobs
+    SET
+      status = 'failed',
+      heartbeat_at = CURRENT_TIMESTAMP,
+      completed_at = CURRENT_TIMESTAMP,
+      error_message = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE search_id = ? AND user_id = ?
+  `);
+  stmt.run(errorMessage || null, searchId, userId);
+}
+
 export function saveArticles(searchId: number, articles: Omit<SourceArticle, 'id' | 'search_id'>[]) {
   const stmt = db.prepare(`
     INSERT INTO source_articles (
@@ -502,6 +751,43 @@ export function markInviteCodeUsed(code: string, userId: number) {
   stmt.run(userId, code);
 }
 
+export function consumeInviteCodeForPendingUser(
+  code: string,
+  userId: number
+): { success: boolean; reason?: 'INVALID_OR_USED' | 'NOT_PENDING' } {
+  const transaction = db.transaction((trimmedCode: string, targetUserId: number) => {
+    const userStmt = db.prepare('SELECT role FROM users WHERE id = ?');
+    const user = userStmt.get(targetUserId) as { role: string } | undefined;
+    if (!user || user.role !== 'pending') {
+      return { success: false as const, reason: 'NOT_PENDING' as const };
+    }
+
+    const consumeStmt = db.prepare(`
+      UPDATE invite_codes
+      SET used_by = ?, used_at = CURRENT_TIMESTAMP
+      WHERE code = ? AND used_by IS NULL
+    `);
+    const consumeResult = consumeStmt.run(targetUserId, trimmedCode);
+    if (consumeResult.changes === 0) {
+      return { success: false as const, reason: 'INVALID_OR_USED' as const };
+    }
+
+    const updateRoleStmt = db.prepare(`
+      UPDATE users
+      SET role = 'user', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND role = 'pending'
+    `);
+    const roleResult = updateRoleStmt.run(targetUserId);
+    if (roleResult.changes === 0) {
+      throw new Error('failed_to_promote_user');
+    }
+
+    return { success: true as const };
+  });
+
+  return transaction(code.trim(), userId);
+}
+
 export function updateUserRole(userId: number, role: 'admin' | 'user' | 'pending') {
   const stmt = db.prepare('UPDATE users SET role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
   stmt.run(role, userId);
@@ -570,9 +856,18 @@ export function getSearchById(id: number, userId?: number): SearchRecord | undef
   return userId ? (stmt.get(id, userId) as SearchRecord | undefined) : (stmt.get(id) as SearchRecord | undefined);
 }
 
-export function getArticlesBySearchId(searchId: number): SourceArticle[] {
-  const stmt = db.prepare('SELECT * FROM source_articles WHERE search_id = ?');
-  return stmt.all(searchId) as SourceArticle[];
+export function getArticlesBySearchId(searchId: number, userId?: number): SourceArticle[] {
+  const stmt = userId
+    ? db.prepare(`
+      SELECT sa.*
+      FROM source_articles sa
+      JOIN search_records sr ON sa.search_id = sr.id
+      WHERE sa.search_id = ? AND sr.user_id = ?
+    `)
+    : db.prepare('SELECT * FROM source_articles WHERE search_id = ?');
+  return userId
+    ? (stmt.all(searchId, userId) as SourceArticle[])
+    : (stmt.all(searchId) as SourceArticle[]);
 }
 
 export function deleteSearch(id: number, userId?: number) {
@@ -600,7 +895,8 @@ export function deleteSearch(id: number, userId?: number) {
 export function updateSearchStatus(
   id: number,
   status: 'pending' | 'processing' | 'completed' | 'failed',
-  articleCount?: number
+  articleCount?: number,
+  userId?: number
 ) {
   const fields = ['status = ?'];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -612,10 +908,15 @@ export function updateSearchStatus(
   }
 
   params.push(id);
+  if (userId) {
+    params.push(userId);
+  }
 
   // Use try-catch to prevent crashing if something is wrong with the DB update
   try {
-    const stmt = db.prepare(`UPDATE search_records SET ${fields.join(', ')} WHERE id = ?`);
+    const stmt = db.prepare(
+      `UPDATE search_records SET ${fields.join(', ')} WHERE id = ?${userId ? ' AND user_id = ?' : ''}`
+    );
     stmt.run(...params);
   } catch (err) {
     console.error(`Failed to update search status for id ${id}:`, err);
@@ -677,9 +978,18 @@ export function saveArticleSummary(
   return result.lastInsertRowid as number;
 }
 
-export function getArticleSummariesBySearchId(searchId: number): ArticleSummaryRecord[] {
-  const stmt = db.prepare('SELECT * FROM article_summaries WHERE search_id = ?');
-  return stmt.all(searchId) as ArticleSummaryRecord[];
+export function getArticleSummariesBySearchId(searchId: number, userId?: number): ArticleSummaryRecord[] {
+  const stmt = userId
+    ? db.prepare(`
+      SELECT s.*
+      FROM article_summaries s
+      JOIN search_records sr ON s.search_id = sr.id
+      WHERE s.search_id = ? AND sr.user_id = ?
+    `)
+    : db.prepare('SELECT * FROM article_summaries WHERE search_id = ?');
+  return userId
+    ? (stmt.all(searchId, userId) as ArticleSummaryRecord[])
+    : (stmt.all(searchId) as ArticleSummaryRecord[]);
 }
 
 // Topic insights operations
@@ -716,18 +1026,53 @@ export function saveTopicInsights(
   insertMany(insights);
 }
 
-export function getTopicInsightsBySearchId(searchId: number): TopicInsightRecord[] {
-  const stmt = db.prepare('SELECT * FROM topic_insights WHERE search_id = ?');
-  return stmt.all(searchId) as TopicInsightRecord[];
+export function getTopicInsightsBySearchId(searchId: number, userId?: number): TopicInsightRecord[] {
+  const stmt = userId
+    ? db.prepare(`
+      SELECT ti.*
+      FROM topic_insights ti
+      JOIN search_records sr ON ti.search_id = sr.id
+      WHERE ti.search_id = ? AND sr.user_id = ?
+    `)
+    : db.prepare('SELECT * FROM topic_insights WHERE search_id = ?');
+  return userId
+    ? (stmt.all(searchId, userId) as TopicInsightRecord[])
+    : (stmt.all(searchId) as TopicInsightRecord[]);
 }
 
-export function deleteInsightsBySearchId(searchId: number): void {
-  const stmt = db.prepare('DELETE FROM topic_insights WHERE search_id = ?');
+export function deleteInsightsBySearchId(searchId: number, userId?: number): void {
+  const stmt = userId
+    ? db.prepare(`
+      DELETE FROM topic_insights
+      WHERE search_id = ?
+      AND EXISTS (
+        SELECT 1 FROM search_records
+        WHERE id = ? AND user_id = ?
+      )
+    `)
+    : db.prepare('DELETE FROM topic_insights WHERE search_id = ?');
+  if (userId) {
+    stmt.run(searchId, searchId, userId);
+    return;
+  }
   stmt.run(searchId);
 }
 
-export function deleteSummariesBySearchId(searchId: number): void {
-  const stmt = db.prepare('DELETE FROM article_summaries WHERE search_id = ?');
+export function deleteSummariesBySearchId(searchId: number, userId?: number): void {
+  const stmt = userId
+    ? db.prepare(`
+      DELETE FROM article_summaries
+      WHERE search_id = ?
+      AND EXISTS (
+        SELECT 1 FROM search_records
+        WHERE id = ? AND user_id = ?
+      )
+    `)
+    : db.prepare('DELETE FROM article_summaries WHERE search_id = ?');
+  if (userId) {
+    stmt.run(searchId, searchId, userId);
+    return;
+  }
   stmt.run(searchId);
 }
 
@@ -736,10 +1081,13 @@ export function addInsightFavorite(userId: number, insightId: number, note?: str
   try {
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO insight_favorites (user_id, insight_id, note)
-      VALUES (?, ?, ?)
+      SELECT ?, ti.id, ?
+      FROM topic_insights ti
+      JOIN search_records sr ON ti.search_id = sr.id
+      WHERE ti.id = ? AND sr.user_id = ?
     `);
-    stmt.run(userId, insightId, note || null);
-    return true;
+    const result = stmt.run(userId, note || null, insightId, userId);
+    return result.changes > 0;
   } catch (error) {
     console.error('收藏洞察失败:', error);
     return false;
@@ -749,8 +1097,8 @@ export function addInsightFavorite(userId: number, insightId: number, note?: str
 export function removeInsightFavorite(userId: number, insightId: number): boolean {
   try {
     const stmt = db.prepare('DELETE FROM insight_favorites WHERE user_id = ? AND insight_id = ?');
-    stmt.run(userId, insightId);
-    return true;
+    const result = stmt.run(userId, insightId);
+    return result.changes > 0;
   } catch (error) {
     console.error('取消收藏失败:', error);
     return false;
@@ -770,23 +1118,30 @@ export function getUserFavoriteInsights(userId: number): (TopicInsightRecord & {
       f.created_at as favorited_at
     FROM insight_favorites f
     JOIN topic_insights ti ON f.insight_id = ti.id
-    WHERE f.user_id = ?
+    JOIN search_records sr ON ti.search_id = sr.id
+    WHERE f.user_id = ? AND sr.user_id = ?
     ORDER BY f.created_at DESC
   `);
-  return stmt.all(userId) as (TopicInsightRecord & { note: string | null; favorited_at: string })[];
+  return stmt.all(userId, userId) as (TopicInsightRecord & { note: string | null; favorited_at: string })[];
 }
 
 export function getUserFavoriteInsightIds(userId: number): number[] {
-  const stmt = db.prepare('SELECT insight_id FROM insight_favorites WHERE user_id = ?');
-  const rows = stmt.all(userId) as { insight_id: number }[];
+  const stmt = db.prepare(`
+    SELECT f.insight_id
+    FROM insight_favorites f
+    JOIN topic_insights ti ON f.insight_id = ti.id
+    JOIN search_records sr ON ti.search_id = sr.id
+    WHERE f.user_id = ? AND sr.user_id = ?
+  `);
+  const rows = stmt.all(userId, userId) as { insight_id: number }[];
   return rows.map(r => r.insight_id);
 }
 
 export function updateInsightFavoriteNote(userId: number, insightId: number, note: string): boolean {
   try {
     const stmt = db.prepare('UPDATE insight_favorites SET note = ? WHERE user_id = ? AND insight_id = ?');
-    stmt.run(note, userId, insightId);
-    return true;
+    const result = stmt.run(note, userId, insightId);
+    return result.changes > 0;
   } catch (error) {
     console.error('更新备注失败:', error);
     return false;
@@ -797,6 +1152,7 @@ export function updateInsightFavoriteNote(userId: number, insightId: number, not
 export function createArticle(article: {
   title: string;
   content: string;
+  markdown_content?: string;
   coverImage?: string;
   images?: string[];
   source?: string;
@@ -809,12 +1165,13 @@ export function createArticle(article: {
     throw new Error('createArticle: userId is required');
   }
   const stmt = db.prepare(`
-    INSERT INTO articles (title, content, cover_image, images, source, source_insight_id, source_search_id, user_id, xhs_tags)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO articles (title, content, markdown_content, cover_image, images, source, source_insight_id, source_search_id, user_id, xhs_tags)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     article.title,
     article.content,
+    article.markdown_content || null,
     article.coverImage || '',
     JSON.stringify(article.images || []),
     article.source || '',
@@ -914,7 +1271,11 @@ export function deleteArticle(id: number, userId?: number): void {
   const stmt = userId
     ? db.prepare('DELETE FROM articles WHERE id = ? AND user_id = ?')
     : db.prepare('DELETE FROM articles WHERE id = ?');
-  userId ? stmt.run(id, userId) : stmt.run(id);
+  if (userId !== undefined) {
+    stmt.run(id, userId);
+  } else {
+    stmt.run(id);
+  }
 }
 
 // 复制文章
@@ -948,7 +1309,11 @@ export function archiveArticle(id: number, userId?: number): void {
       "UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
     )
     : db.prepare("UPDATE articles SET status = 'archived', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
-  userId ? stmt.run(id, userId) : stmt.run(id);
+  if (userId !== undefined) {
+    stmt.run(id, userId);
+  } else {
+    stmt.run(id);
+  }
 }
 
 // 批量删除文章
@@ -1033,9 +1398,19 @@ export function getAllSearchesWithInsightCounts(
 }
 
 // Get insights ordered by created_at DESC
-export function getTopicInsightsBySearchIdOrdered(searchId: number): TopicInsightRecord[] {
-  const stmt = db.prepare('SELECT * FROM topic_insights WHERE search_id = ? ORDER BY created_at DESC');
-  return stmt.all(searchId) as TopicInsightRecord[];
+export function getTopicInsightsBySearchIdOrdered(searchId: number, userId?: number): TopicInsightRecord[] {
+  const stmt = userId
+    ? db.prepare(`
+      SELECT ti.*
+      FROM topic_insights ti
+      JOIN search_records sr ON ti.search_id = sr.id
+      WHERE ti.search_id = ? AND sr.user_id = ?
+      ORDER BY ti.created_at DESC
+    `)
+    : db.prepare('SELECT * FROM topic_insights WHERE search_id = ? ORDER BY created_at DESC');
+  return userId
+    ? (stmt.all(searchId, userId) as TopicInsightRecord[])
+    : (stmt.all(searchId) as TopicInsightRecord[]);
 }
 
 // ============ 仪表盘统计函数 ============

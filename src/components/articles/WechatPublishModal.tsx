@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 import { Loader2, CheckCircle2, XCircle, Send, RefreshCw } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 
@@ -46,13 +47,11 @@ export function WechatPublishModal({
     const [step, setStep] = useState<PublishStep>('config');
     const [errorMessage, setErrorMessage] = useState('');
 
-    // 重置状态当模态框关闭/打开
-    useEffect(() => {
-        if (isOpen) {
-            setStep('config');
-            setErrorMessage('');
-        }
-    }, [isOpen]);
+    const resetAndClose = () => {
+        setStep('config');
+        setErrorMessage('');
+        onClose();
+    };
 
     // 处理发布
     const handlePublish = async () => {
@@ -65,7 +64,7 @@ export function WechatPublishModal({
                 setStep('success');
                 // 2秒后自动关闭
                 setTimeout(() => {
-                    onClose();
+                    resetAndClose();
                 }, 2000);
             } else {
                 setStep('error');
@@ -229,7 +228,7 @@ export function WechatPublishModal({
                                 重新发布
                             </button>
                             <button
-                                onClick={onClose}
+                                onClick={resetAndClose}
                                 className="px-5 py-2.5 text-sm text-[#333] bg-slate-700 rounded-lg hover:bg-slate-600 transition-colors"
                             >
                                 关闭
@@ -272,9 +271,12 @@ export function WechatPublishModal({
                                                 }`}
                                         >
                                             {account.avatar ? (
-                                                <img
+                                                <Image
                                                     src={account.avatar}
                                                     alt=""
+                                                    width={40}
+                                                    height={40}
+                                                    unoptimized
                                                     className="w-10 h-10 rounded-full"
                                                 />
                                             ) : (
@@ -476,7 +478,7 @@ export function WechatPublishModal({
         return (
             <>
                 <button
-                    onClick={onClose}
+                    onClick={resetAndClose}
                     className="px-4 py-2 text-sm text-[#666] hover:text-[#1A1A1A] transition-colors"
                 >
                     取消
@@ -496,7 +498,7 @@ export function WechatPublishModal({
     return (
         <Modal
             isOpen={isOpen}
-            onClose={step === 'publishing' ? undefined : onClose}
+            onClose={step === 'publishing' ? undefined : resetAndClose}
             title={step === 'config' ? '发布到微信公众号' : undefined}
             size="lg"
             footer={renderFooter()}

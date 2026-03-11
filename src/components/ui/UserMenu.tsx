@@ -1,9 +1,10 @@
 'use client';
 
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { ChevronDown, LogOut, Shield, Settings as SettingsIcon, User } from 'lucide-react';
+import { ChevronDown, LogOut, Shield, Settings as SettingsIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function UserMenu() {
   const { data: session, status } = useSession();
@@ -52,9 +53,12 @@ export default function UserMenu() {
       >
         {/* 头像：优先使用 GitHub 头像 */}
         {avatarUrl ? (
-          <img
+          <Image
             src={avatarUrl}
             alt={user.name || 'avatar'}
+            width={36}
+            height={36}
+            unoptimized
             className="w-9 h-9 rounded-full object-cover"
           />
         ) : (
@@ -76,9 +80,12 @@ export default function UserMenu() {
           {/* User info header */}
           <div className="px-4 py-3 border-b border-[rgba(0,0,0,0.06)] flex items-center gap-3">
             {avatarUrl ? (
-              <img
+              <Image
                 src={avatarUrl}
                 alt={user.name || 'avatar'}
+                width={40}
+                height={40}
+                unoptimized
                 className="w-10 h-10 rounded-full object-cover"
               />
             ) : (
@@ -135,4 +142,3 @@ export default function UserMenu() {
     </div>
   );
 }
-

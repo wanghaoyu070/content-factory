@@ -5,7 +5,7 @@ import { signIn, useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 
 // Dev mode bypass: skip all client-side auth checks for fast UI iteration
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+const DEV_BYPASS = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
 
 export function useLoginGuard(message = '请先登录后再执行该操作') {
   const router = useRouter();

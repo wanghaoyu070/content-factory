@@ -191,16 +191,6 @@ export interface DashboardData {
   recentActivities: RecentActivity[];
 }
 
-// ===== API 响应相关 =====
-
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  code?: string;
-  message?: string;
-}
-
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -280,3 +270,5 @@ export interface ProgressEvent {
   progress: number;
   data?: unknown;
 }
+
+export * from './api';

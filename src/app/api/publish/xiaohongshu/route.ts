@@ -1,12 +1,28 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getArticleById, updateArticle } from '@/lib/db';
 import { getXiaohongshuPublishConfig } from '@/lib/config';
+import { fetchWithTimeout, HttpTimeoutError } from '@/lib/http-client';
+import { safeJsonArray } from '@/lib/utils';
+import {
+  badRequestResponse,
+  createRequestId,
+  errorResponse,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
 
 // 请求参数
 interface PublishRequest {
   articleId: number | string;
   tags?: string[];
+}
+
+type JsonRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): JsonRecord {
+  return typeof value === 'object' && value !== null ? (value as JsonRecord) : {};
 }
 
 // 从HTML内容中提取图片和纯文本
@@ -43,54 +59,42 @@ function extractContentAndImages(htmlContent: string): { text: string; images: s
 
 // POST /api/publish/xiaohongshu - 发布到小红书
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const body: PublishRequest = await request.json();
     const { articleId, tags = [] } = body;
-    const numericArticleId = Number(articleId);
+    const parsedArticleId = positiveIdSchema.safeParse(articleId);
 
     // 验证参数
-    if (!numericArticleId || Number.isNaN(numericArticleId)) {
-      return NextResponse.json(
-        { success: false, error: '缺少必要参数: articleId' },
-        { status: 400 }
-      );
+    if (!parsedArticleId.success) {
+      return badRequestResponse('缺少必要参数: articleId', requestId);
     }
+    const numericArticleId = parsedArticleId.data;
 
     // 获取配置
     const config = getXiaohongshuPublishConfig(session.user.id);
 
     if (!config || !config.endpoint || !config.apiKey) {
-      return NextResponse.json(
-        { success: false, error: '请先配置小红书发布API（环境变量或设置页面）' },
-        { status: 400 }
-      );
+      return badRequestResponse('请先配置小红书发布API（环境变量或设置页面）', requestId);
     }
 
     // 获取文章内容
     const article = getArticleById(numericArticleId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
     // 图文分离
     const { text, images: contentImages } = extractContentAndImages(article.content || '');
 
     // 合并数据库中存储的图片和内容中提取的图片
-    let storedImages: string[] = [];
-    try {
-      storedImages = JSON.parse(article.images || '[]');
-    } catch {
-      storedImages = [];
-    }
+    const storedImages = safeJsonArray<string>(article.images);
 
     // 去重合并图片
     const allImages = [...new Set([...contentImages, ...storedImages])];
@@ -103,22 +107,16 @@ export async function POST(request: Request) {
 
     // 验证封面图
     if (!coverImage) {
-      return NextResponse.json(
-        { success: false, error: '文章缺少封面图片，无法发布到小红书' },
-        { status: 400 }
-      );
+      return badRequestResponse('文章缺少封面图片，无法发布到小红书', requestId);
     }
 
     // 验证标题或内容
     if (!article.title && !text) {
-      return NextResponse.json(
-        { success: false, error: '文章标题和内容不能同时为空' },
-        { status: 400 }
-      );
+      return badRequestResponse('文章标题和内容不能同时为空', requestId);
     }
 
     // 调用小红书发布API
-    const publishResponse = await fetch(`${config.endpoint}/api/openapi/publish_note`, {
+    const publishResponse = await fetchWithTimeout(`${config.endpoint}/api/openapi/publish_note`, {
       method: 'POST',
       headers: {
         'X-API-Key': config.apiKey,
@@ -133,51 +131,47 @@ export async function POST(request: Request) {
       }),
     });
 
-    let publishData: Record<string, any> = {};
-    try {
-      publishData = await publishResponse.json();
-    } catch {
-      // JSON 解析失败
-    }
+    const publishData = asRecord(await publishResponse.json().catch(() => ({})));
+    const publishMeta = asRecord(publishData.data);
 
-    if (publishData.success) {
+    if (publishResponse.ok && publishData.success === true) {
       // 更新文章状态为已发布
       updateArticle(numericArticleId, { status: 'published' }, session.user.id);
 
       // 根据API文档，publish_url 是发布页面URL，用于生成二维码
-      const publishUrl = publishData.data?.publish_url;
-      const qrImageUrl = publishData.data?.xiaohongshu_qr_image_url;
+      const publishUrl = publishMeta.publish_url;
+      const qrImageUrl = publishMeta.xiaohongshu_qr_image_url;
 
-      return NextResponse.json({
-        success: true,
-        data: {
-          id: publishData.data?.id,
-          noteId: publishData.data?.note_id,
-          title: article.title,
-          publishUrl: publishUrl,
-          qrImageUrl,
-          coverImage: coverImage,
-          imageCount: allImages.length,
-          createdAt: publishData.data?.created_at,
-        },
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: publishData.error || '发布失败',
-        code: publishData.code,
-      }, { status: publishResponse.status || 500 });
+      return successResponse({
+        id: publishMeta.id,
+        noteId: publishMeta.note_id,
+        title: article.title,
+        publishUrl: publishUrl,
+        qrImageUrl,
+        coverImage: coverImage,
+        imageCount: allImages.length,
+        createdAt: publishMeta.created_at,
+      }, 200, requestId);
     }
+
+    return errorResponse(
+      typeof publishData.error === 'string' ? publishData.error : '发布失败',
+      publishResponse.status || 502,
+      typeof publishData.code === 'string' ? publishData.code : 'UPSTREAM_ERROR',
+      requestId
+    );
   } catch (error) {
+    if (error instanceof HttpTimeoutError) {
+      return errorResponse(error.message, 504, 'UPSTREAM_TIMEOUT', requestId);
+    }
     if (process.env.NODE_ENV === 'development') {
       console.error('小红书发布失败:', error);
     }
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '发布失败',
-      },
-      { status: 500 }
+    return errorResponse(
+      error instanceof Error ? error.message : '发布失败',
+      500,
+      'INTERNAL_ERROR',
+      requestId
     );
   }
 }

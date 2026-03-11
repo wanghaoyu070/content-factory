@@ -1,42 +1,45 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getUserById, updateUserOnboarding } from '@/lib/db';
+import {
+    badRequestResponse,
+    notFoundResponse,
+    successResponse,
+    unauthorizedResponse,
+    withApiHandler,
+} from '@/lib/api-response';
+import { onboardingUpdateSchema } from '@/lib/validations';
 
-export async function GET() {
+export const GET = withApiHandler(async ({ requestId }) => {
     const session = await auth();
     if (!session?.user?.id) {
-        return NextResponse.json({ error: '请先登录' }, { status: 401 });
+        return unauthorizedResponse('请先登录', requestId);
     }
 
     const user = getUserById(session.user.id);
     if (!user) {
-        return NextResponse.json({ error: '用户不存在' }, { status: 404 });
+        return notFoundResponse('用户不存在', requestId);
     }
 
-    return NextResponse.json({
-        success: true,
-        data: {
-            onboardingCompleted: user.onboarding_completed === 1,
-        },
-    });
-}
+    return successResponse({
+        onboardingCompleted: user.onboarding_completed === 1,
+    }, 200, requestId);
+});
 
-export async function POST(request: Request) {
+export const POST = withApiHandler(async ({ request, requestId }) => {
     const session = await auth();
     if (!session?.user?.id) {
-        return NextResponse.json({ error: '请先登录' }, { status: 401 });
+        return unauthorizedResponse('请先登录', requestId);
     }
 
-    try {
-        const { completed } = await request.json();
-        updateUserOnboarding(session.user.id, completed);
-
-        return NextResponse.json({
-            success: true,
-            message: '更新成功',
-        });
-    } catch (error) {
-        console.error('更新 onboarding 状态失败:', error);
-        return NextResponse.json({ error: '更新失败' }, { status: 500 });
+    const raw = await request.json().catch(() => ({}));
+    const parsed = onboardingUpdateSchema.safeParse(raw);
+    if (!parsed.success) {
+        return badRequestResponse('completed 必须为布尔值', requestId);
     }
-}
+
+    updateUserOnboarding(session.user.id, parsed.data.completed);
+
+    return successResponse({
+        message: '更新成功',
+    }, 200, requestId);
+});

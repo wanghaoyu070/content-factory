@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Search, TrendingUp, TrendingDown, Flame, Medal } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TopKeyword {

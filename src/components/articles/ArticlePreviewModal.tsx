@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { X, Smartphone, Monitor } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, safeJsonArray } from '@/lib/utils';
 import { sanitizeHtml } from '@/lib/sanitize';
 import PlatformPreview from '@/components/preview/PlatformPreview';
 
 interface Article {
-    id: number;
+    id: number | string;
     title: string;
     content: string;
     coverImage?: string;
@@ -25,27 +26,11 @@ export function ArticlePreviewModal({ article, isOpen, onClose }: ArticlePreview
 
     if (!isOpen || !article) return null;
 
-    // 清理 HTML 获取纯文本
-    const getPlainText = (html: string) => {
-        return html
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<\/p>/gi, '\n')
-            .replace(/<\/h[1-6]>/gi, '\n\n')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .trim();
-    };
-
     // 处理封面图
     let coverImage = article.coverImage;
     if (!coverImage && article.images && article.images.length > 0) {
         try {
-            const images = typeof article.images === 'string'
-                ? JSON.parse(article.images)
-                : article.images;
+            const images = safeJsonArray<string>(article.images);
             if (Array.isArray(images) && images.length > 0) {
                 coverImage = images[0];
             }
@@ -120,10 +105,13 @@ export function ArticlePreviewModal({ article, isOpen, onClose }: ArticlePreview
                         <div className="max-w-2xl mx-auto">
                             {/* 封面图 */}
                             {coverImage && (
-                                <div className="mb-6 rounded-xl overflow-hidden">
-                                    <img
+                                <div className="mb-6 rounded-xl overflow-hidden h-64 relative">
+                                    <Image
                                         src={coverImage}
                                         alt="封面"
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 768px"
+                                        unoptimized
                                         className="w-full h-64 object-cover"
                                     />
                                 </div>

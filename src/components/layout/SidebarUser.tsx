@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { HelpCircle, MessageSquare, Keyboard, ExternalLink } from 'lucide-react';
 
@@ -10,8 +9,6 @@ interface SidebarFooterProps {
 }
 
 export default function SidebarFooter({ collapsed }: SidebarFooterProps) {
-  const { data: session } = useSession();
-
   // 快捷入口配置
   const quickLinks = [
     {

@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { cn, formatDate, formatRelativeTime, truncateText, getStatusLabel, getStatusColor } from './utils';
+import {
+  cn,
+  formatDate,
+  formatRelativeTime,
+  truncateText,
+  getStatusLabel,
+  getStatusColor,
+  safeJsonArray,
+} from './utils';
 
 describe('cn (className merge)', () => {
   it('should merge class names', () => {
@@ -83,5 +91,23 @@ describe('getStatusColor', () => {
 
   it('should return correct color for failed', () => {
     expect(getStatusColor('failed')).toBe('danger');
+  });
+});
+
+describe('safeJsonArray', () => {
+  it('should parse valid array json', () => {
+    expect(safeJsonArray<string>('["a","b"]')).toEqual(['a', 'b']);
+  });
+
+  it('should return empty array for invalid json', () => {
+    expect(safeJsonArray('not-json')).toEqual([]);
+  });
+
+  it('should return empty array for non-array json', () => {
+    expect(safeJsonArray('{"a":1}')).toEqual([]);
+  });
+
+  it('should return original array when input is already an array', () => {
+    expect(safeJsonArray(['x', 'y'])).toEqual(['x', 'y']);
   });
 });

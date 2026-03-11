@@ -1,37 +1,101 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getAllSettings, setSetting } from '@/lib/db';
+import { getAllSettings, getSetting, setSetting } from '@/lib/db';
+import {
+  badRequestResponse,
+  createRequestId,
+  serverErrorResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
 
-// 安全性：API 密钥脱敏函数
-function maskApiKey(key: string): string {
-  if (!key || key.length === 0) return '';
-  if (key.length <= 8) return '****';
-  return `${key.slice(0, 4)}****${key.slice(-4)}`;
+type JsonRecord = Record<string, unknown>;
+
+const API_CONFIG_KEYS = ['ai', 'imageGen', 'wechatArticle', 'wechatPublish', 'xiaohongshu'] as const;
+type ApiConfigKey = typeof API_CONFIG_KEYS[number];
+const ALLOWED_SETTINGS_KEYS = new Set<string>([
+  ...API_CONFIG_KEYS,
+  'preferences',
+]);
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null;
 }
 
-// 安全性：对包含 apiKey 的对象进行脱敏
-function maskSensitiveData(data: Record<string, unknown>): Record<string, unknown> {
-  const masked: Record<string, unknown> = {};
+function getApiKeyValue(config: unknown): string {
+  if (!isRecord(config)) {
+    return '';
+  }
+  const value = config.apiKey;
+  return typeof value === 'string' ? value : '';
+}
 
-  for (const [key, value] of Object.entries(data)) {
-    if (typeof value === 'object' && value !== null) {
-      const obj = value as Record<string, string>;
-      const maskedObj: Record<string, string> = {};
+function withApiKeyCleared(config: unknown): unknown {
+  if (!isRecord(config)) {
+    return config;
+  }
+  const next: JsonRecord = { ...config };
+  if ('apiKey' in next) {
+    next.apiKey = '';
+  }
+  return next;
+}
 
-      for (const [subKey, subValue] of Object.entries(obj)) {
-        if (subKey.toLowerCase().includes('apikey') || subKey.toLowerCase().includes('api_key')) {
-          maskedObj[subKey] = maskApiKey(subValue);
-        } else {
-          maskedObj[subKey] = subValue;
-        }
-      }
-      masked[key] = maskedObj;
-    } else {
-      masked[key] = value;
-    }
+function mergeKeepingApiKey(existing: unknown, incoming: unknown): unknown {
+  if (!isRecord(incoming)) {
+    return incoming;
+  }
+  const merged: JsonRecord = { ...incoming };
+  const existingApiKey = getApiKeyValue(existing);
+  const incomingApiKey = getApiKeyValue(incoming).trim();
+
+  // Security: empty apiKey from client means "keep current value".
+  if ('apiKey' in merged && incomingApiKey === '') {
+    merged.apiKey = existingApiKey;
   }
 
-  return masked;
+  return merged;
+}
+
+function parseStoredSetting(settingKey: string, userId: number): unknown {
+  const raw = getSetting(settingKey, userId);
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function buildApiKeyMeta(parsed: Record<string, unknown>) {
+  const hasApiKey: Record<ApiConfigKey, boolean> = {
+    ai: false,
+    imageGen: false,
+    wechatArticle: false,
+    wechatPublish: false,
+    xiaohongshu: false,
+  };
+
+  for (const key of API_CONFIG_KEYS) {
+    hasApiKey[key] = getApiKeyValue(parsed[key]).trim().length > 0;
+    parsed[key] = withApiKeyCleared(parsed[key]);
+  }
+
+  return { hasApiKey };
+}
+
+function parseSettingsFromDb(settings: Record<string, string>): Record<string, unknown> {
+  const parsed: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(settings)) {
+    try {
+      parsed[key] = JSON.parse(value);
+    } catch {
+      parsed[key] = value;
+    }
+  }
+  return parsed;
 }
 
 // 从环境变量获取默认配置
@@ -64,24 +128,17 @@ function getEnvDefaults() {
 
 // GET /api/settings - 获取所有设置
 export async function GET() {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const settings = getAllSettings(session.user.id);
     const envDefaults = getEnvDefaults();
 
-    // 解析 JSON 格式的设置值
-    const parsed: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(settings)) {
-      try {
-        parsed[key] = JSON.parse(value);
-      } catch {
-        parsed[key] = value;
-      }
-    }
+    const parsed = parseSettingsFromDb(settings);
 
     // 合并环境变量默认值（数据库值优先，但如果数据库值为空则使用环境变量）
     for (const [key, envValue] of Object.entries(envDefaults)) {
@@ -102,39 +159,38 @@ export async function GET() {
       }
     }
 
-    // 安全性：对敏感数据进行脱敏后返回
-    const maskedData = maskSensitiveData(parsed);
-    return NextResponse.json({ success: true, data: maskedData });
+    const meta = buildApiKeyMeta(parsed);
+    return NextResponse.json({ success: true, data: parsed, meta, requestId }, { status: 200 });
   } catch (error) {
-    console.error('获取设置失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取设置失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 获取设置失败:`, error);
+    return serverErrorResponse('获取设置失败', requestId);
   }
 }
 
 // POST /api/settings - 保存设置
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
-    const body = await request.json();
+    const body = (await request.json()) as Record<string, unknown>;
 
     // 遍历所有设置项并保存
     for (const [key, value] of Object.entries(body)) {
-      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      if (!ALLOWED_SETTINGS_KEYS.has(key)) {
+        return badRequestResponse(`不支持的配置项: ${key}`, requestId);
+      }
+      const existing = parseStoredSetting(key, session.user.id);
+      const mergedValue = mergeKeepingApiKey(existing, value);
+      const valueStr = typeof mergedValue === 'string' ? mergedValue : JSON.stringify(mergedValue);
       setSetting(key, valueStr, session.user.id);
     }
 
-    return NextResponse.json({ success: true });
+    return successResponse({ saved: true }, 200, requestId);
   } catch (error) {
-    console.error('保存设置失败:', error);
-    return NextResponse.json(
-      { success: false, error: '保存设置失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 保存设置失败:`, error);
+    return serverErrorResponse('保存设置失败', requestId);
   }
 }

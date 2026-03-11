@@ -1,27 +1,60 @@
-// AI 图片生成模块 - 硅基流动 API 封装
+// AI 图片生成模块 - 多 Provider 支持 (SiliconFlow / Seedream)
+import type { ImageGenConfig } from './config';
 
-export interface ImageGenConfig {
-  baseUrl: string;      // API 地址
-  apiKey: string;       // API Key
-  model: string;        // 模型名称，如 Kwai-Kolors/Kolors
-}
+// Re-export the config type for convenience
+export type { ImageGenConfig };
 
 export interface GeneratedImage {
   url: string;
   seed?: number;
 }
 
-interface ImageGenResponse {
-  images: {
-    url: string;
-  }[];
-  timings?: {
-    inference: number;
-  };
+// SiliconFlow response format
+interface SiliconFlowResponse {
+  images: { url: string }[];
+  timings?: { inference: number };
   seed?: number;
 }
 
-// 生成单张图片
+// Seedream (Volcengine Ark) response format
+interface SeedreamResponse {
+  data: { url: string; size?: string }[];
+  usage?: { generated_images: number; output_tokens: number; total_tokens: number };
+}
+
+// Build request body based on provider
+function buildRequestBody(config: ImageGenConfig, prompt: string): Record<string, unknown> {
+  if (config.provider === 'seedream') {
+    return {
+      model: config.model,
+      prompt,
+      size: '2K',
+      output_format: 'png',
+      response_format: 'url',
+      watermark: false,
+    };
+  }
+  // Default: SiliconFlow
+  return {
+    model: config.model,
+    prompt,
+  };
+}
+
+// Parse image URL from response based on provider
+function parseImageUrl(data: SiliconFlowResponse | SeedreamResponse): string | null {
+  // SiliconFlow format: { images: [{ url }] }
+  if ('images' in data && data.images?.length > 0) {
+    return data.images[0].url;
+  }
+  // Seedream format: { data: [{ url }] }
+  if ('data' in data && data.data?.length > 0) {
+    return data.data[0].url;
+  }
+  return null;
+}
+
+// Generate a single image
 export async function generateImage(
   config: ImageGenConfig,
   prompt: string
@@ -33,10 +66,7 @@ export async function generateImage(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.apiKey}`,
       },
-      body: JSON.stringify({
-        model: config.model,
-        prompt,
-      }),
+      body: JSON.stringify(buildRequestBody(config, prompt)),
     });
 
     if (!response.ok) {
@@ -45,13 +75,11 @@ export async function generateImage(
       return null;
     }
 
-    const data: ImageGenResponse = await response.json();
+    const data = await response.json();
+    const url = parseImageUrl(data);
 
-    if (data.images && data.images.length > 0) {
-      return {
-        url: data.images[0].url,
-        seed: data.seed,
-      };
+    if (url) {
+      return { url, seed: 'seed' in data ? data.seed : undefined };
     }
 
     return null;
@@ -61,7 +89,7 @@ export async function generateImage(
   }
 }
 
-// 批量生成图片（串行执行，避免并发限制）
+// Batch generate images (serial to avoid rate limits)
 export async function generateImages(
   config: ImageGenConfig,
   prompts: string[],
@@ -84,15 +112,14 @@ export async function generateImages(
   return results;
 }
 
-// 并行生成图片（提高效率，适用于支持并发的 API）
+// Parallel image generation (for APIs supporting concurrency)
 export async function generateImagesParallel(
   config: ImageGenConfig,
   prompts: string[],
-  concurrency: number = 3 // 默认并发数为3
+  concurrency: number = 3
 ): Promise<(GeneratedImage | null)[]> {
   const results: (GeneratedImage | null)[] = new Array(prompts.length).fill(null);
 
-  // 分批并行处理
   for (let i = 0; i < prompts.length; i += concurrency) {
     const batch = prompts.slice(i, i + concurrency);
     const batchPromises = batch.map((prompt, index) =>

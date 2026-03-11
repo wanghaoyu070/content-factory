@@ -2,8 +2,6 @@
 
 import { useMemo } from 'react';
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -13,7 +11,7 @@ import {
     AreaChart,
     ReferenceLine,
 } from 'recharts';
-import { TrendingUp, Calendar } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrendDataPoint {
@@ -27,10 +25,16 @@ interface TrendChartProps {
 }
 
 // 自定义 Tooltip
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: Array<{ value: number }>;
+    label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (!active || !payload?.[0]) return null;
 
-    const date = new Date(label);
+    const date = new Date(label ?? '');
     const formattedDate = date.toLocaleDateString('zh-CN', {
         month: 'long',
         day: 'numeric',
@@ -48,8 +52,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 // 自定义数据点
-const CustomDot = (props: any) => {
-    const { cx, cy, payload, index, dataLength } = props;
+interface CustomDotProps {
+    cx?: number;
+    cy?: number;
+    index?: number;
+    dataLength?: number;
+}
+
+const CustomDot = ({ cx = 0, cy = 0, index = 0, dataLength = 0 }: CustomDotProps) => {
     const isLast = index === dataLength - 1;
 
     return (

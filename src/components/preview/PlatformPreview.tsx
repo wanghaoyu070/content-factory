@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 type Platform = 'wechat' | 'xiaohongshu';
@@ -112,9 +113,12 @@ function WechatPreview({
                 {/* 封面图 */}
                 {coverImage ? (
                     <div className="aspect-[2.35/1] overflow-hidden">
-                        <img
+                        <Image
                             src={coverImage}
                             alt="封面"
+                            width={800}
+                            height={340}
+                            unoptimized
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -156,9 +160,12 @@ function WechatPreview({
                 <div className="flex gap-2">
                     {coverImage && (
                         <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
-                            <img
+                            <Image
                                 src={coverImage}
                                 alt="封面"
+                                width={64}
+                                height={64}
+                                unoptimized
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -196,9 +203,12 @@ function XiaohongshuPreview({
                 {/* 封面图 - 3:4 比例 */}
                 {coverImage ? (
                     <div className="aspect-[3/4] overflow-hidden">
-                        <img
+                        <Image
                             src={coverImage}
                             alt="封面"
+                            width={600}
+                            height={800}
+                            unoptimized
                             className="w-full h-full object-cover"
                         />
                     </div>

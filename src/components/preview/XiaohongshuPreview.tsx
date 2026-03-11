@@ -1,6 +1,7 @@
 'use client';
 
-import { Heart, MessageCircle, Star, Share2 } from 'lucide-react';
+import Image from 'next/image';
+import { Heart, MessageCircle, Star } from 'lucide-react';
 import { sanitizeHtml } from '@/lib/sanitize';
 
 interface XiaohongshuPreviewProps {
@@ -11,11 +12,6 @@ interface XiaohongshuPreviewProps {
 }
 
 export default function XiaohongshuPreview({ title, content, coverImage, images = [] }: XiaohongshuPreviewProps) {
-  // 从内容中提取纯文本
-  const getPlainText = (html: string) => {
-    return html.replace(/<[^>]+>/g, '').trim();
-  };
-
   // 从内容中提取所有图片
   const extractImages = (html: string): string[] => {
     const imgRegex = /<img[^>]+src="([^">]+)"/g;
@@ -67,10 +63,13 @@ export default function XiaohongshuPreview({ title, content, coverImage, images 
         {/* 图片轮播区域 */}
         {displayImages.length > 0 && (
           <div className="relative">
-            <div className="w-full aspect-[4/5] overflow-hidden bg-gray-100">
-              <img
+            <div className="w-full aspect-[4/5] overflow-hidden bg-gray-100 relative">
+              <Image
                 src={displayImages[0]}
                 alt="笔记图片"
+                fill
+                sizes="(max-width: 768px) 100vw, 480px"
+                unoptimized
                 className="w-full h-full object-cover"
               />
             </div>

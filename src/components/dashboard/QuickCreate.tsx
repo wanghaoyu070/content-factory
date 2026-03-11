@@ -68,7 +68,7 @@ export default function QuickCreate({ className, compact = false }: QuickCreateP
                     <button
                         onClick={() => handleQuickCreate()}
                         disabled={loading || !keyword.trim()}
-                        className="px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-lg hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
+                        className="px-4 py-2 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-lg hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 flex-shrink-0"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -123,7 +123,7 @@ export default function QuickCreate({ className, compact = false }: QuickCreateP
                     <button
                         onClick={() => handleQuickCreate()}
                         disabled={loading || !keyword.trim()}
-                        className="px-8 py-4 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-black/8 font-medium text-lg btn-primary"
+                        className="px-8 py-4 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-black/8 font-medium text-lg btn-primary"
                     >
                         {loading ? (
                             <>
@@ -152,7 +152,7 @@ export default function QuickCreate({ className, compact = false }: QuickCreateP
                             key={item.keyword}
                             onClick={() => handleQuickCreate(item.keyword)}
                             disabled={loading}
-                            className="px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-sm text-[#333] hover:bg-[#1e1e38] hover:border-[rgba(0,0,0,0.12)] transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                            className="px-3 py-2 bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] rounded-lg text-sm text-[#333] hover:border-[rgba(0,0,0,0.12)] hover:text-[#1A1A1A] transition-colors flex items-center gap-1.5 disabled:opacity-50"
                         >
                             <span>{item.icon}</span>
                             {item.keyword}

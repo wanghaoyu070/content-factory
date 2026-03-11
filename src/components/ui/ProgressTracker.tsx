@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     CheckCircle,
     Loader2,
@@ -47,18 +47,28 @@ export default function ProgressTracker({
     minimizable = true,
 }: ProgressTrackerProps) {
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [startTime] = useState(Date.now());
+    const startTimeRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (progress && progress.step !== 'completed' && progress.step !== 'error' && startTimeRef.current === null) {
+            startTimeRef.current = Date.now();
+        }
+        if (!progress || progress.step === 'completed' || progress.step === 'error') {
+            startTimeRef.current = null;
+        }
+    }, [progress]);
 
     // 计时器
     useEffect(() => {
         if (!progress || progress.step === 'completed' || progress.step === 'error') return;
 
         const timer = setInterval(() => {
+            const startTime = startTimeRef.current ?? Date.now();
             setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [progress, startTime]);
+    }, [progress]);
 
     // 格式化时间
     const formatTime = (seconds: number) => {
@@ -90,7 +100,6 @@ export default function ProgressTracker({
     const renderStep = (step: ProgressStep, index: number) => {
         const currentIndex = getCurrentStepIndex();
         const config = stepConfig[step];
-        const Icon = config.icon;
 
         let status: 'pending' | 'active' | 'done' | 'error' = 'pending';
         if (progress?.step === 'error' && index === currentIndex) {

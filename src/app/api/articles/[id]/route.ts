@@ -1,54 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { getArticleById, updateArticle } from '@/lib/db';
+import {
+  badRequestResponse,
+  createRequestId,
+  notFoundResponse,
+  serverErrorResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
+import { safeJsonArray } from '@/lib/utils';
 
 // GET /api/articles/[id] - 获取单篇文章
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { id } = await params;
-    const article = getArticleById(parseInt(id), session.user.id);
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
+
+    const article = getArticleById(numericId, session.user.id);
 
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: article.id.toString(),
-        title: article.title,
-        content: article.content,
-        markdown_content: article.markdown_content,
-        coverImage: article.cover_image,
-        images: JSON.parse(article.images || '[]'),
-        status: article.status,
-        source: article.source,
-        sourceInsightId: article.source_insight_id,
-        sourceSearchId: article.source_search_id,
-        xhsTags: article.xhs_tags,
-        xhsContent: article.xhs_content,
-        xhsTitle: article.xhs_title,
-        createdAt: article.created_at,
-        updatedAt: article.updated_at,
-      },
-    });
+    return successResponse({
+      id: article.id.toString(),
+      title: article.title,
+      content: article.content,
+      markdown_content: article.markdown_content,
+      coverImage: article.cover_image,
+      images: safeJsonArray<string>(article.images),
+      status: article.status,
+      source: article.source,
+      sourceInsightId: article.source_insight_id,
+      sourceSearchId: article.source_search_id,
+      xhsTags: article.xhs_tags,
+      xhsContent: article.xhs_content,
+      xhsTitle: article.xhs_title,
+      createdAt: article.created_at,
+      updatedAt: article.updated_at,
+    }, 200, requestId);
   } catch (error) {
-    console.error('获取文章失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取文章失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 获取文章失败:`, error);
+    return serverErrorResponse('获取文章失败', requestId);
   }
 }
 
@@ -57,25 +65,28 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = createRequestId();
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+      return unauthorizedResponse('请先登录', requestId);
     }
 
     const { id } = await params;
     const body = await request.json();
+    const parsedId = positiveIdSchema.safeParse(id);
+    if (!parsedId.success) {
+      return badRequestResponse('无效的文章 ID', requestId);
+    }
+    const numericId = parsedId.data;
 
-    const article = getArticleById(parseInt(id), session.user.id);
+    const article = getArticleById(numericId, session.user.id);
     if (!article) {
-      return NextResponse.json(
-        { success: false, error: '文章不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('文章不存在', requestId);
     }
 
     updateArticle(
-      parseInt(id),
+      numericId,
       {
         title: body.title,
         content: body.content,
@@ -90,15 +101,9 @@ export async function PUT(
       session.user.id
     );
 
-    return NextResponse.json({
-      success: true,
-      message: '更新成功',
-    });
+    return successResponse({ message: '更新成功' }, 200, requestId);
   } catch (error) {
-    console.error('更新文章失败:', error);
-    return NextResponse.json(
-      { success: false, error: '更新文章失败' },
-      { status: 500 }
-    );
+    console.error(`[API ${requestId}] 更新文章失败:`, error);
+    return serverErrorResponse('更新文章失败', requestId);
   }
 }

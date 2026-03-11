@@ -20,6 +20,30 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Operational Flags
+
+For production safety, these env flags control fallback and execution behavior:
+
+- `ALLOW_MOCK_DATA_FALLBACK` (default: `false` in production)
+  - `true`: allow API routes and analysis tasks to return/generate mock data when upstream APIs are unavailable.
+  - `false`: fail fast with non-2xx responses (or failed task status) instead of silently using mock data.
+
+- `ANALYSIS_EXECUTION_MODE`
+  - `inline`: run `/api/analysis/start` synchronously in request lifecycle.
+  - unset: production defaults to inline mode; development uses background fire-and-forget.
+
+- `NEXT_PUBLIC_DEV_BYPASS_AUTH`
+  - Only effective in development. Never enable in production.
+
+## Data Safety Scripts
+
+- `npm run audit:data`
+  - Checks core data integrity (missing `user_id`, orphan records, favorites scope mismatches).
+
+- `npm run migrate:user-data`
+  - Migrates legacy rows to the first user.
+  - Supports `--dry-run` and `--skip-backup`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

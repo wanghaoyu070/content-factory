@@ -1,17 +1,17 @@
 'use client';
 
 import { SessionProvider, useSession } from 'next-auth/react';
-import { useState, useEffect, type ReactNode } from 'react';
+import { type Session } from 'next-auth';
+import { type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 // Dev mode bypass: provide a mock admin session for fast UI iteration
-const DEV_BYPASS = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
-const MOCK_SESSION = DEV_BYPASS ? {
+const DEV_BYPASS = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+const MOCK_SESSION: Session | undefined = DEV_BYPASS ? {
   user: {
     id: 1,
     name: 'wanghaoyu',
-    email: 'wanghaoyu070@gmail.com',
     image: 'https://avatars.githubusercontent.com/u/203200849?v=4',
     role: 'admin',
     githubLogin: 'wanghaoyu070',
@@ -34,22 +34,13 @@ const KeyboardShortcuts = dynamic(
 
 function OnboardingManager({ children }: { children: ReactNode }) {
   const { data: session, status, update } = useSession();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    // 只有在已登录、非 pending 状态、且未完成 onboarding 时显示
-    if (
-      status === 'authenticated' &&
-      session?.user &&
-      !session.user.isPending &&
-      !session.user.onboardingCompleted
-    ) {
-      setShowOnboarding(true);
-    }
-  }, [session, status]);
+  const user = session?.user;
+  const showOnboarding =
+    status === 'authenticated' && user
+      ? !user.isPending && !user.onboardingCompleted
+      : false;
 
   const handleComplete = async () => {
-    setShowOnboarding(false);
     // 刷新 session 以更新 onboardingCompleted 状态
     await update();
   };
@@ -65,11 +56,10 @@ function OnboardingManager({ children }: { children: ReactNode }) {
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider session={MOCK_SESSION as any}>
+    <SessionProvider session={MOCK_SESSION}>
       <ErrorBoundary>
         <OnboardingManager>{children}</OnboardingManager>
       </ErrorBoundary>
     </SessionProvider>
   );
 }
-

@@ -1,30 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import { useSearchParams } from 'next/navigation';
+
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { Skeleton, InsightCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import FavoriteButton from '@/components/ui/FavoriteButton';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
+import { fetchApiSuccessOrThrow } from '@/lib/api-fetch';
+import { consumeSseStream } from '@/lib/sse';
 import { toast } from 'sonner';
 
-// 动态导入TipTap相关组件，避免SSR问题
-const ArticleEditor = dynamic(() => import('@/components/create/ArticleEditor'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-[#666]">加载编辑器...</div>
-});
 
-const ArticlePreview = dynamic(() => import('@/components/preview/ArticlePreview'), {
-  ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-[#666]">加载预览...</div>
-});
 
-const ProgressTracker = dynamic(() => import('@/components/ui/ProgressTracker'), {
-  ssr: false,
-});
+
+
 
 import { FloatingProgress } from '@/components/ui/FloatingProgress';
 import {
@@ -38,11 +31,6 @@ import {
   FileText,
   Zap,
   RefreshCw,
-  Save,
-  Send,
-  CheckCircle,
-  ArrowLeft,
-  AlertCircle,
 } from 'lucide-react';
 
 interface TopicInsight {
@@ -88,9 +76,8 @@ interface GeneratedArticle {
   coverImage: string;
 }
 
-type WritingStyle = 'professional' | 'casual' | 'storytelling';
-type PageMode = 'select' | 'edit';
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+type WritingStyle = 'professional' | 'casual' | 'storytelling' | 'cyberzen';
+type PageMode = 'select';
 type ProgressStep = 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'saving' | 'completed' | 'error';
 
 interface GenerateProgress {
@@ -99,52 +86,24 @@ interface GenerateProgress {
   progress: number;
 }
 
-function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () => void | Promise<void> }) {
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#F7F6F0] border border-[rgba(0,0,0,0.06)] min-w-[120px] justify-center">
-      {status === 'idle' && (
-        <>
-          <div className="w-2 h-2 rounded-full bg-slate-500" />
-          <span className="text-xs text-[#666]">已保存</span>
-        </>
-      )}
-      {status === 'saving' && (
-        <>
-          <Loader2 className="w-3 h-3 animate-spin text-[#333]" />
-          <span className="text-xs text-[#333]">保存中...</span>
-        </>
-      )}
-      {status === 'saved' && (
-        <>
-          <CheckCircle className="w-3 h-3 text-emerald-400" />
-          <span className="text-xs text-emerald-400">刚刚保存</span>
-        </>
-      )}
-      {status === 'error' && (
-        <>
-          <AlertCircle className="w-3 h-3 text-red-400" />
-          <span className="text-xs text-red-400">保存失败</span>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="text-xs text-red-400 underline decoration-dotted"
-          >
-            重试
-          </button>
-        </>
-      )}
-    </div>
-  );
+interface GenerateSseEvent {
+  step: ProgressStep;
+  message: string;
+  progress: number;
+  data?: GeneratedArticle;
 }
+
 
 const styleOptions: { value: WritingStyle; label: string; description: string }[] = [
   { value: 'professional', label: '专业严谨', description: '逻辑清晰、数据支撑、适合职场人士' },
   { value: 'casual', label: '轻松活泼', description: '口语化、多用网络流行语、适当使用表情' },
   { value: 'storytelling', label: '故事叙述', description: '有代入感、情感共鸣、引人入胜' },
+  { value: 'cyberzen', label: '赛博禅心', description: '科技评书风格：极短断句、金句收尾、数据驱动' },
 ];
 
 function CreatePageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后使用内容创作功能');
   // 页面模式
   const [mode, setMode] = useState<PageMode>('select');
@@ -161,7 +120,7 @@ function CreatePageContent() {
   const [customTitle, setCustomTitle] = useState('');
   const [useCustomTitle, setUseCustomTitle] = useState(false);
   const [generateProgress, setGenerateProgress] = useState<GenerateProgress | null>(null);
-  const [isMinimized, setIsMinimized] = useState(false);
+
 
   // 自由创作状态
   const [showFreeCreateModal, setShowFreeCreateModal] = useState(false);
@@ -171,22 +130,44 @@ function CreatePageContent() {
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'all' | 'favorites'>('all');
 
-  // 编辑模式状态
-  const [articleId, setArticleId] = useState<number | null>(null);
-  const [articleTitle, setArticleTitle] = useState('');
-  const [articleContent, setArticleContent] = useState('');
-  const [articleImages, setArticleImages] = useState<string[]>([]);
-  const [coverImage, setCoverImage] = useState('');
-  const [currentInsight, setCurrentInsight] = useState<FlatInsight | null>(null);
 
-  // 自动保存状态
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedRef = useRef<string>('');
 
   // URL 参数自动选中洞察的标记
   const autoSelectedRef = useRef(false);
+
+  const fetchData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      // 并行获取洞察数据和收藏列表
+      const [insightsData, favoritesData] = await Promise.all([
+        fetchApiSuccessOrThrow<SearchWithInsights[]>('/api/insights/all', undefined, '加载洞察失败'),
+        fetchApiSuccessOrThrow<number[]>(
+          '/api/insights/favorites?ids_only=true',
+          undefined,
+          '加载收藏失败'
+        ),
+      ]);
+
+      setSearchesWithInsights(insightsData.data);
+      const flat: FlatInsight[] = [];
+      insightsData.data.forEach((search: SearchWithInsights) => {
+        search.insights.forEach((insight) => {
+          flat.push({
+            ...insight,
+            searchId: search.searchId,
+            keyword: search.keyword,
+          });
+        });
+      });
+      flat.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setFlatInsights(flat);
+      setFavoriteIds(favoritesData.data);
+    } catch (err) {
+      console.error('加载数据失败:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   // 初始加载数据
   useEffect(() => {
@@ -195,13 +176,13 @@ function CreatePageContent() {
       return;
     }
     fetchData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchData]);
 
   // 切换筛选时自动刷新数据
   useEffect(() => {
     if (!isAuthenticated || searchFilter === 'all') return;
     fetchData();
-  }, [searchFilter, isAuthenticated]);
+  }, [searchFilter, isAuthenticated, fetchData]);
 
   // 处理 URL 参数自动选中洞察
   useEffect(() => {
@@ -226,116 +207,7 @@ function CreatePageContent() {
     }
   }, [searchParams, loading, flatInsights]);
 
-  // 自动保存逻辑
-  const autoSave = useCallback(async () => {
-    if (!isAuthenticated || !articleId || mode !== 'edit') return;
 
-    const currentState = JSON.stringify({ title: articleTitle, content: articleContent });
-    if (currentState === lastSavedRef.current) return;
-
-    setSaveStatus('saving');
-    try {
-      const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: articleTitle,
-          content: articleContent,
-          images: articleImages,
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        lastSavedRef.current = currentState;
-        setSaveStatus('saved');
-        setHasUnsavedChanges(false);
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } else {
-        setSaveStatus('error');
-      }
-    } catch {
-      setSaveStatus('error');
-    }
-  }, [articleId, articleTitle, articleContent, articleImages, mode, isAuthenticated]);
-
-  // 防抖自动保存
-  useEffect(() => {
-    if (!isAuthenticated || mode !== 'edit' || !articleId) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      autoSave();
-    }, 2000);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [articleTitle, articleContent, autoSave, mode, articleId]);
-
-  useEffect(() => {
-    if (!articleId || mode !== 'edit') {
-      setHasUnsavedChanges(false);
-      return;
-    }
-    const currentState = JSON.stringify({ title: articleTitle, content: articleContent });
-    setHasUnsavedChanges(currentState !== lastSavedRef.current);
-  }, [articleId, mode, articleTitle, articleContent]);
-
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  const fetchData = async () => {
-    if (!isAuthenticated) return;
-    try {
-      // 并行获取洞察数据和收藏列表
-      const [insightsRes, favoritesRes] = await Promise.all([
-        fetch('/api/insights/all'),
-        fetch('/api/insights/favorites?ids_only=true'),
-      ]);
-
-      const insightsData = await insightsRes.json();
-      const favoritesData = await favoritesRes.json();
-
-      if (insightsData.success) {
-        setSearchesWithInsights(insightsData.data);
-        const flat: FlatInsight[] = [];
-        insightsData.data.forEach((search: SearchWithInsights) => {
-          search.insights.forEach((insight) => {
-            flat.push({
-              ...insight,
-              searchId: search.searchId,
-              keyword: search.keyword,
-            });
-          });
-        });
-        flat.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setFlatInsights(flat);
-      }
-
-      if (favoritesData.success) {
-        setFavoriteIds(favoritesData.data);
-      }
-    } catch (err) {
-      console.error('加载数据失败:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 根据筛选条件和收藏状态过滤洞察
   const filteredInsights = (() => {
@@ -380,60 +252,27 @@ function CreatePageContent() {
         }),
       });
 
-      // 处理 SSE 流式响应
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      await consumeSseStream<GenerateSseEvent>(response, {
+        getEventError: (event) => (event.step === 'error' ? event.message || '请稍后重试' : null),
+        onEvent: async (eventData) => {
+          setGenerateProgress({
+            step: eventData.step,
+            message: eventData.message,
+            progress: eventData.progress,
+          });
 
-      if (!reader) {
-        throw new Error('无法读取响应流');
-      }
-
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              setGenerateProgress({
-                step: eventData.step,
-                message: eventData.message,
-                progress: eventData.progress,
-              });
-
-              if (eventData.step === 'completed' && eventData.data) {
-                const data: GeneratedArticle = eventData.data;
-                // 切换到编辑模式
-                setArticleId(data.articleId);
-                setArticleTitle(data.title);
-                setArticleContent(data.content);
-                setArticleImages(data.images.map((img: GeneratedImage) => img.url));
-                setCoverImage(data.coverImage);
-                setCurrentInsight(selectedInsight);
-                lastSavedRef.current = JSON.stringify({ title: data.title, content: data.content });
-                setMode('edit');
-              } else if (eventData.step === 'error') {
-                toast.error('文章生成失败', {
-                  description: eventData.message || '请稍后重试',
-                });
-              }
-            } catch {
-              console.error('解析SSE数据失败');
-            }
+          if (eventData.step === 'completed' && eventData.data) {
+            const data = eventData.data;
+            // Redirect to Cockpit editor page
+            toast.success('文章创作完成！正在跳转到编辑器...');
+            setTimeout(() => router.push(`/articles/${data.articleId}`), 1500);
           }
-        }
-      }
+        },
+      });
     } catch (err) {
       console.error('生成文章失败:', err);
       toast.error('文章生成失败', {
-        description: '请检查 AI 配置是否正确',
+        description: err instanceof Error ? err.message : '请检查 AI 配置是否正确',
         action: {
           label: '去设置',
           onClick: () => {
@@ -447,53 +286,7 @@ function CreatePageContent() {
     }
   };
 
-  const handleRegenerate = async () => {
-    if (!ensureLogin()) return;
-    if (!currentInsight) return;
-    setSelectedInsight(currentInsight);
-    setMode('select');
-    // 自动触发生成
-    setTimeout(() => {
-      handleGenerate();
-    }, 100);
-  };
 
-  const handleSubmitReview = async () => {
-    if (!ensureLogin()) return;
-    if (!articleId) return;
-
-    setSaveStatus('saving');
-    try {
-      const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: articleTitle,
-          content: articleContent,
-          images: articleImages,
-          status: 'pending_review',
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        toast.success('已提交审核', {
-          description: '文章已进入审核流程',
-        });
-        setSaveStatus('saved');
-      } else {
-        toast.error('提交失败', {
-          description: result.error || '请稍后重试',
-        });
-        setSaveStatus('error');
-      }
-    } catch {
-      toast.error('提交失败', {
-        description: '网络异常，请稍后重试',
-      });
-      setSaveStatus('error');
-    }
-  };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -550,101 +343,7 @@ function CreatePageContent() {
     );
   }
 
-  // 编辑模式
-  if (mode === 'edit') {
-    return (
-      <div className="min-h-screen bg-[#FDFCF6] flex flex-col">
-        <Header
-          title="内容创作"
-          action={
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* 移动端只显示状态指示器 */}
-              <div className="hidden sm:block">
-                <SaveIndicator status={saveStatus} onRetry={autoSave} />
-              </div>
-              {/* 移动端显示简化的状态点 */}
-              <div className="sm:hidden">
-                {saveStatus === 'saving' && <Loader2 className="w-4 h-4 animate-spin text-[#333]" />}
-                {saveStatus === 'saved' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
-                {saveStatus === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
-              </div>
-              {/* 保存按钮 - 移动端只显示图标 */}
-              <button
-                onClick={autoSave}
-                className="p-2 sm:px-4 sm:py-2 border border-[rgba(0,0,0,0.06)] text-[#333] rounded-lg hover:bg-[#F7F6F0] transition-colors flex items-center gap-2 active:scale-95"
-                title="保存草稿"
-              >
-                <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">保存草稿</span>
-              </button>
-              {/* 提交按钮 - 移动端只显示图标 */}
-              <button
-                onClick={handleSubmitReview}
-                className="p-2 sm:px-4 sm:py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors flex items-center gap-2 active:scale-95"
-                title="提交审核"
-              >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">提交审核</span>
-              </button>
-            </div>
-          }
-        />
 
-        {/* 当前选题信息栏 - 移动端优化 */}
-        <div className="px-4 sm:px-6 py-3 bg-white border-b border-[rgba(0,0,0,0.06)]">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <button
-                onClick={() => setMode('select')}
-                className="p-1 text-[#666] hover:text-[#1A1A1A] transition-colors flex-shrink-0"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <span className="hidden sm:inline text-[#999] flex-shrink-0">当前选题:</span>
-              <span className="px-2 py-0.5 text-xs bg-[#F7F6F0] text-[#666] rounded-full flex-shrink-0">
-                {currentInsight?.keyword}
-              </span>
-              <span className="text-[#1A1A1A] font-medium truncate text-sm sm:text-base">
-                {currentInsight?.title}
-              </span>
-            </div>
-            <button
-              onClick={handleRegenerate}
-              className="p-2 sm:px-3 sm:py-1.5 text-sm text-[#666] hover:text-[#333] hover:bg-[rgba(0,0,0,0.04)] rounded-lg flex items-center gap-1 flex-shrink-0 active:scale-95"
-              title="重新生成"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">重新生成</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 编辑器和预览区域 */}
-        <div className="flex-1 p-4 lg:p-6 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 h-full">
-            {/* 左侧：编辑器 */}
-            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden flex flex-col">
-              <ArticleEditor
-                title={articleTitle}
-                content={articleContent}
-                images={articleImages}
-                onTitleChange={setArticleTitle}
-                onContentChange={setArticleContent}
-              />
-            </div>
-
-            {/* 右侧：预览 */}
-            <ArticlePreview
-              title={articleTitle}
-              content={articleContent}
-              coverImage={coverImage}
-              images={articleImages}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // 选题模式
   return (
@@ -1010,8 +709,8 @@ function CreatePageContent() {
             <div className="hidden sm:block bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-[rgba(0,0,0,0.06)]">
               <h3 className="text-sm font-medium text-[#666] mb-3">快速入口</h3>
               <div className="space-y-2">
-                <a
-                  href="/"
+                <Link
+                  href="/analysis"
                   className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors"
                 >
                   <Search className="w-5 h-5 text-[#333]" />
@@ -1019,8 +718,8 @@ function CreatePageContent() {
                     <div className="text-sm text-[#1A1A1A]">选题分析</div>
                     <div className="text-xs text-[#999]">搜索关键词，发现新选题</div>
                   </div>
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/articles"
                   className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors"
                 >
@@ -1029,33 +728,18 @@ function CreatePageContent() {
                     <div className="text-sm text-[#1A1A1A]">发布管理</div>
                     <div className="text-xs text-[#999]">管理已生成的文章</div>
                   </div>
-                </a>
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 生成进度模态框（全屏） */}
-      {generating && generateProgress && !isMinimized && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <ProgressTracker
-            progress={generateProgress}
-            minimizable={true}
-            onMinimize={() => setIsMinimized(true)}
-          />
-        </div>
-      )}
-
-      {/* 浮动进度条（最小化时显示） */}
-      {generating && generateProgress && isMinimized && (
+      {/* 生成进度浮动卡片（非阻断） */}
+      {generating && generateProgress && (
         <FloatingProgress
           progress={generateProgress}
-          articleId={articleId || undefined}
-          onExpand={() => setIsMinimized(false)}
           onClose={() => {
-            setIsMinimized(false);
-            // 如果已完成，清理状态
             if (generateProgress?.step === 'completed' || generateProgress?.step === 'error') {
               setGenerating(false);
               setGenerateProgress(null);
@@ -1064,14 +748,7 @@ function CreatePageContent() {
         />
       )}
 
-      {/* 已完成的浮动提示（当不在创作页面时显示） */}
-      {!generating && generateProgress?.step === 'completed' && articleId && (
-        <FloatingProgress
-          progress={generateProgress}
-          articleId={articleId}
-          onClose={() => setGenerateProgress(null)}
-        />
-      )}
+
 
       {/* 自由创作模态框 */}
       {showFreeCreateModal && (

@@ -1,20 +1,33 @@
 import { NextResponse } from 'next/server';
+import type { ApiResponse } from '@/types/api';
 
 // ===== 统一 API 响应格式 =====
-
-export interface ApiResponse<T = unknown> {
-    success: boolean;
-    data?: T;
-    error?: string;
-    code?: string;
-}
 
 /**
  * 成功响应
  */
-export function successResponse<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
+export function createRequestId(): string {
+    return crypto.randomUUID();
+}
+
+export function successResponse<T>(data: T, status = 200, requestId?: string): NextResponse<ApiResponse<T>> {
     return NextResponse.json(
-        { success: true, data },
+        { success: true, data, requestId },
+        { status }
+    );
+}
+
+export function successResponseWithMeta<
+    T,
+    TMeta extends Record<string, unknown>
+>(
+    data: T,
+    meta: TMeta,
+    status = 200,
+    requestId?: string
+): NextResponse<ApiResponse<T> & TMeta> {
+    return NextResponse.json(
+        { success: true, data, ...meta, requestId },
         { status }
     );
 }
@@ -25,10 +38,11 @@ export function successResponse<T>(data: T, status = 200): NextResponse<ApiRespo
 export function errorResponse(
     error: string,
     status = 400,
-    code?: string
+    code?: string,
+    requestId?: string
 ): NextResponse<ApiResponse> {
     return NextResponse.json(
-        { success: false, error, code },
+        { success: false, error, code, requestId },
         { status }
     );
 }
@@ -37,45 +51,57 @@ export function errorResponse(
  * 未登录响应
  */
 export function unauthorizedResponse(
-    message = '请先登录'
+    message = '请先登录',
+    requestId?: string
 ): NextResponse<ApiResponse> {
-    return errorResponse(message, 401, 'UNAUTHORIZED');
+    return errorResponse(message, 401, 'UNAUTHORIZED', requestId);
 }
 
 /**
  * 无权限响应
  */
 export function forbiddenResponse(
-    message = '无权限访问'
+    message = '无权限访问',
+    requestId?: string
 ): NextResponse<ApiResponse> {
-    return errorResponse(message, 403, 'FORBIDDEN');
+    return errorResponse(message, 403, 'FORBIDDEN', requestId);
 }
 
 /**
  * 未找到响应
  */
 export function notFoundResponse(
-    message = '资源不存在'
+    message = '资源不存在',
+    requestId?: string
 ): NextResponse<ApiResponse> {
-    return errorResponse(message, 404, 'NOT_FOUND');
+    return errorResponse(message, 404, 'NOT_FOUND', requestId);
 }
 
 /**
  * 参数错误响应
  */
 export function badRequestResponse(
-    message = '请求参数错误'
+    message = '请求参数错误',
+    requestId?: string
 ): NextResponse<ApiResponse> {
-    return errorResponse(message, 400, 'BAD_REQUEST');
+    return errorResponse(message, 400, 'BAD_REQUEST', requestId);
+}
+
+export function unprocessableResponse(
+    message = '请求参数语义错误',
+    requestId?: string
+): NextResponse<ApiResponse> {
+    return errorResponse(message, 422, 'UNPROCESSABLE_ENTITY', requestId);
 }
 
 /**
  * 服务器错误响应
  */
 export function serverErrorResponse(
-    message = '服务器内部错误'
+    message = '服务器内部错误',
+    requestId?: string
 ): NextResponse<ApiResponse> {
-    return errorResponse(message, 500, 'INTERNAL_ERROR');
+    return errorResponse(message, 500, 'INTERNAL_ERROR', requestId);
 }
 
 // ===== 自定义错误类 =====
@@ -113,6 +139,44 @@ export class BadRequestError extends ApiError {
     constructor(message = '请求参数错误') {
         super(message, 400, 'BAD_REQUEST');
     }
+}
+
+export class UnprocessableEntityError extends ApiError {
+    constructor(message = '请求参数语义错误') {
+        super(message, 422, 'UNPROCESSABLE_ENTITY');
+    }
+}
+
+export interface ApiHandlerContext {
+    request: Request;
+    requestId: string;
+}
+
+type RouteHandler<T> = (
+    context: ApiHandlerContext
+) => Promise<NextResponse<ApiResponse<T>>>;
+
+export function withApiHandler<T>(
+    handler: RouteHandler<T>
+): (request: Request) => Promise<NextResponse<ApiResponse<T>>> {
+    return async (request: Request) => {
+        const requestId = createRequestId();
+        try {
+            return await handler({ request, requestId });
+        } catch (error) {
+            console.error(`[API ${requestId}]`, error);
+            if (error instanceof ApiError) {
+                return errorResponse(error.message, error.statusCode, error.code, requestId) as NextResponse<ApiResponse<T>>;
+            }
+            if (error instanceof Error) {
+                return serverErrorResponse(
+                    process.env.NODE_ENV === 'development' ? error.message : '服务器内部错误',
+                    requestId
+                ) as NextResponse<ApiResponse<T>>;
+            }
+            return serverErrorResponse('服务器内部错误', requestId) as NextResponse<ApiResponse<T>>;
+        }
+    };
 }
 
 // ===== 错误处理包装器 =====

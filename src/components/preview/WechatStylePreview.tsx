@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Smartphone, ChevronDown } from 'lucide-react';
-import { WECHAT_THEMES, type Theme } from '@/lib/theme';
+import { WECHAT_THEMES } from '@/lib/theme';
 import { htmlToThemedHtml } from '@/lib/wechatMarkdown';
 import { sanitizeHtml } from '@/lib/sanitize';
 
@@ -18,18 +18,14 @@ export default function WechatStylePreview({
     className = ''
 }: WechatStylePreviewProps) {
     const [themeName, setThemeName] = useState<string>('极客黑');
-    const [renderedHtml, setRenderedHtml] = useState<string>('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    // 当内容或主题变化时，重新渲染
-    useEffect(() => {
+    const renderedHtml = useMemo(() => {
         const theme = WECHAT_THEMES[themeName];
         if (theme && content) {
-            const html = htmlToThemedHtml(content, theme);
-            setRenderedHtml(html);
-        } else {
-            setRenderedHtml('');
+            return htmlToThemedHtml(content, theme);
         }
+        return '';
     }, [content, themeName]);
 
     const themeNames = Object.keys(WECHAT_THEMES);

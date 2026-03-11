@@ -88,7 +88,7 @@ export { handler as GET, handler as POST };
 
 export function auth() {
   // Dev mode bypass: return mock admin session for fast UI iteration
-  if (process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
+  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true') {
     return Promise.resolve({
       user: {
         id: 1,

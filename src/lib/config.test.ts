@@ -100,7 +100,7 @@ describe('config', () => {
       delete process.env.OPENAI_API_BASE_URL;
       delete process.env.OPENAI_API_KEY;
 
-      mockedGetSetting.mockReturnValue(null);
+      mockedGetSetting.mockReturnValue(undefined);
 
       const config = getAIConfig(1);
 
@@ -229,6 +229,7 @@ describe('config', () => {
         baseUrl: 'https://image-api.com',
         apiKey: 'image-key',
         model: 'dall-e-3',
+        provider: 'siliconflow',
       });
     });
 
@@ -270,6 +271,7 @@ describe('config', () => {
         baseUrl: 'https://db-image.com',
         apiKey: 'db-image-key',
         model: 'stable-diffusion',
+        provider: 'siliconflow',
       });
     });
   });

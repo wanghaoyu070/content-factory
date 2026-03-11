@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
-import { Eye, EyeOff, Save, CheckCircle, Loader2, AlertCircle, XCircle, SkipForward } from 'lucide-react';
+import { Eye, EyeOff, Save, CheckCircle, Loader2, AlertCircle, XCircle, SkipForward, Bot, Palette, Newspaper, BookOpen, BookMarked, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
@@ -32,6 +32,7 @@ const settingsSchema = z.object({
     baseUrl: optionalUrl,
     apiKey: z.string(),
     model: z.string(),
+    provider: z.enum(['siliconflow', 'seedream']).default('siliconflow'),
   }),
   xiaohongshu: z.object({
     endpoint: optionalUrl,
@@ -65,6 +66,7 @@ const defaultSettings: SettingsFormValues = {
     baseUrl: 'https://api.siliconflow.cn/v1/images/generations',
     apiKey: '',
     model: 'Kwai-Kolors/Kolors',
+    provider: 'siliconflow' as const,
   },
   xiaohongshu: {
     endpoint: '',
@@ -87,6 +89,8 @@ interface ValidationResult {
   status: 'success' | 'error' | 'skipped';
   message: string;
 }
+
+type ApiConfigKey = 'ai' | 'imageGen' | 'wechatArticle' | 'wechatPublish' | 'xiaohongshu';
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -137,7 +141,7 @@ function ValidationResultModal({
         </div>
         <button
           onClick={onClose}
-          className="w-full px-4 py-2 bg-indigo-600 text-[#1A1A1A] rounded-xl hover:bg-indigo-500 transition-colors"
+          className="w-full px-4 py-2 bg-[#333] text-white rounded-xl hover:bg-[#444] transition-colors"
         >
           知道了
         </button>
@@ -149,6 +153,13 @@ function ValidationResultModal({
 export default function SettingsPage() {
   const { ensureLogin, isAuthenticated, status } = useLoginGuard('请登录后配置接口');
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [storedApiKeyFlags, setStoredApiKeyFlags] = useState<Record<ApiConfigKey, boolean>>({
+    ai: false,
+    imageGen: false,
+    wechatArticle: false,
+    wechatPublish: false,
+    xiaohongshu: false,
+  });
   const [loading, setLoading] = useState(true);
   const [validationResults, setValidationResults] = useState<ValidationResult[] | null>(null);
   const {
@@ -156,12 +167,27 @@ export default function SettingsPage() {
     handleSubmit,
     reset,
     getValues,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema) as Resolver<SettingsFormValues>,
     mode: 'onBlur',
     defaultValues: defaultSettings,
   });
+
+  // Auto-fill image gen defaults when provider changes
+  const imageGenProvider = watch('imageGen.provider');
+  const handleProviderChange = (newProvider: 'siliconflow' | 'seedream') => {
+    setValue('imageGen.provider', newProvider);
+    if (newProvider === 'seedream') {
+      setValue('imageGen.baseUrl', 'https://ark.cn-beijing.volces.com/api/v3/images/generations');
+      setValue('imageGen.model', 'doubao-seedream-5-0-260128');
+    } else {
+      setValue('imageGen.baseUrl', 'https://api.siliconflow.cn/v1/images/generations');
+      setValue('imageGen.model', 'Kwai-Kolors/Kolors');
+    }
+  };
 
   // 加载设置
   useEffect(() => {
@@ -170,6 +196,15 @@ export default function SettingsPage() {
         const response = await fetch('/api/settings');
         const result = await response.json();
         if (result.success && result.data) {
+          const metaHasApiKey = (result.meta?.hasApiKey ?? {}) as Partial<Record<ApiConfigKey, boolean>>;
+          setStoredApiKeyFlags((prev) => ({
+            ...prev,
+            ai: Boolean(metaHasApiKey.ai),
+            imageGen: Boolean(metaHasApiKey.imageGen),
+            wechatArticle: Boolean(metaHasApiKey.wechatArticle),
+            wechatPublish: Boolean(metaHasApiKey.wechatPublish),
+            xiaohongshu: Boolean(metaHasApiKey.xiaohongshu),
+          }));
           reset({
             ai: { ...defaultSettings.ai, ...result.data.ai },
             wechatArticle: { ...defaultSettings.wechatArticle, ...result.data.wechatArticle },
@@ -304,6 +339,9 @@ export default function SettingsPage() {
     }
   };
 
+  const isConfigured = (key: ApiConfigKey, currentApiKey: string): boolean =>
+    Boolean(currentApiKey) || storedApiKeyFlags[key];
+
   if (status !== 'loading' && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FDFCF6]">
@@ -339,55 +377,55 @@ export default function SettingsPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="p-6 max-w-4xl space-y-6">
         {/* 配置状态概览 */}
-        <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16162a] rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
+        <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
           <h2 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
-            <span className="text-xl">⚙️</span>
+            <Settings className="w-5 h-5 text-[#666]" />
             配置状态
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
               {
                 name: 'AI 接口',
-                icon: '🤖',
-                configured: !!(getValues('ai.apiKey')),
+                icon: <Bot className="w-4 h-4" />,
+                configured: isConfigured('ai', getValues('ai.apiKey')),
                 required: true,
               },
               {
                 name: '图片生成',
-                icon: '🎨',
-                configured: !!(getValues('imageGen.apiKey')),
+                icon: <Palette className="w-4 h-4" />,
+                configured: isConfigured('imageGen', getValues('imageGen.apiKey')),
                 required: false,
               },
               {
                 name: '公众号文章',
-                icon: '📰',
-                configured: !!(getValues('wechatArticle.apiKey')),
+                icon: <Newspaper className="w-4 h-4" />,
+                configured: isConfigured('wechatArticle', getValues('wechatArticle.apiKey')),
                 required: false,
               },
               {
                 name: '微信发布',
-                icon: '📗',
-                configured: !!(getValues('wechatPublish.apiKey')),
+                icon: <BookOpen className="w-4 h-4" />,
+                configured: isConfigured('wechatPublish', getValues('wechatPublish.apiKey')),
                 required: false,
               },
               {
                 name: '小红书发布',
-                icon: '📕',
-                configured: !!(getValues('xiaohongshu.apiKey')),
+                icon: <BookMarked className="w-4 h-4" />,
+                configured: isConfigured('xiaohongshu', getValues('xiaohongshu.apiKey')),
                 required: false,
               },
             ].map((item) => (
               <div
                 key={item.name}
                 className={`relative px-3 py-3 rounded-xl border transition-colors ${item.configured
-                    ? 'bg-emerald-500/10 border-emerald-500/30'
-                    : item.required
-                      ? 'bg-amber-500/10 border-amber-500/30'
-                      : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)]'
+                  ? 'bg-emerald-500/10 border-emerald-500/30'
+                  : item.required
+                    ? 'bg-amber-500/10 border-amber-500/30'
+                    : 'bg-[#F7F6F0] border-[rgba(0,0,0,0.06)]'
                   }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-lg">{item.icon}</span>
+                  <div className="w-6 h-6 rounded-lg bg-[#F7F6F0] flex items-center justify-center text-[#666]">{item.icon}</div>
                   <span className="text-xs font-medium text-[#333]">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -417,7 +455,7 @@ export default function SettingsPage() {
           {/* AI API */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-purple-500/20 text-purple-400 rounded flex items-center justify-center text-xs">🤖</span>
+              <span className="w-6 h-6 bg-purple-500/20 text-purple-500 rounded-lg flex items-center justify-center"><Bot className="w-3.5 h-3.5" /></span>
               AI 接口 (OpenAI兼容)
               <span className="text-xs text-[#999] ml-2">核心功能，建议配置</span>
             </h3>
@@ -470,7 +508,7 @@ export default function SettingsPage() {
           {/* WeChat Article API */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📰</span>
+              <span className="w-6 h-6 bg-emerald-500/20 text-emerald-500 rounded-lg flex items-center justify-center"><Newspaper className="w-3.5 h-3.5" /></span>
               公众号文章 API
               <span className="text-xs text-[#999] ml-2">用于搜索文章素材</span>
             </h3>
@@ -509,18 +547,29 @@ export default function SettingsPage() {
           {/* AI Image Generation API */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-pink-500/20 text-pink-400 rounded flex items-center justify-center text-xs">🎨</span>
+              <span className="w-6 h-6 bg-pink-500/20 text-pink-500 rounded-lg flex items-center justify-center"><Palette className="w-3.5 h-3.5" /></span>
               AI 图片生成 API
               <span className="text-xs text-[#999] ml-2">用于生成文章配图</span>
             </h3>
             <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm text-[#999] mb-1">Provider</label>
+                <select
+                  value={imageGenProvider}
+                  onChange={(e) => handleProviderChange(e.target.value as 'siliconflow' | 'seedream')}
+                  className={cn(inputBaseClass, normalInputClass, 'cursor-pointer')}
+                >
+                  <option value="siliconflow">硅基流动 (SiliconFlow)</option>
+                  <option value="seedream">豆包 Seedream 5.0 (Volcengine)</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm text-[#999] mb-1">API URL</label>
                 <input
                   type="text"
                   {...register('imageGen.baseUrl')}
                   className={cn(inputBaseClass, errors.imageGen?.baseUrl ? errorInputClass : normalInputClass)}
-                  placeholder="https://api.siliconflow.cn/v1/images/generations"
+                  placeholder={imageGenProvider === 'seedream' ? 'https://ark.cn-beijing.volces.com/api/v3/images/generations' : 'https://api.siliconflow.cn/v1/images/generations'}
                 />
                 <FieldError message={errors.imageGen?.baseUrl?.message} />
               </div>
@@ -530,7 +579,7 @@ export default function SettingsPage() {
                   type="text"
                   {...register('imageGen.model')}
                   className={cn(inputBaseClass, errors.imageGen?.model ? errorInputClass : normalInputClass)}
-                  placeholder="Kwai-Kolors/Kolors"
+                  placeholder={imageGenProvider === 'seedream' ? 'doubao-seedream-5-0-260128' : 'Kwai-Kolors/Kolors'}
                 />
                 <FieldError message={errors.imageGen?.model?.message} />
               </div>
@@ -558,7 +607,7 @@ export default function SettingsPage() {
           {/* Xiaohongshu API */}
           <div className="mb-8">
             <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-red-500/20 text-red-400 rounded flex items-center justify-center text-xs">📕</span>
+              <span className="w-6 h-6 bg-red-500/20 text-red-500 rounded-lg flex items-center justify-center"><BookMarked className="w-3.5 h-3.5" /></span>
               小红书发布 API
               <span className="text-xs text-[#999] ml-2">可选，用于发布到小红书</span>
             </h3>
@@ -597,7 +646,7 @@ export default function SettingsPage() {
           {/* WeChat Publish API */}
           <div>
             <h3 className="text-sm font-medium text-[#333] mb-4 flex items-center gap-2">
-              <span className="w-6 h-6 bg-emerald-500/20 text-emerald-400 rounded flex items-center justify-center text-xs">📗</span>
+              <span className="w-6 h-6 bg-emerald-500/20 text-emerald-500 rounded-lg flex items-center justify-center"><BookOpen className="w-3.5 h-3.5" /></span>
               公众号发布 API
               <span className="text-xs text-[#999] ml-2">可选，用于发布到公众号</span>
             </h3>
@@ -696,7 +745,7 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/8"
+            className="px-6 py-2.5 bg-gradient-to-r from-[#333] to-[#555] text-white rounded-xl hover:from-[#444] hover:to-[#666] hover:scale-[1.03] active:scale-[0.97] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/8"
           >
             {isSubmitting ? (
               <>

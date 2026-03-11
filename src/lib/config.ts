@@ -20,11 +20,15 @@ export interface WechatPublishConfig {
   apiKey: string;
 }
 
+// Image generation provider type
+export type ImageGenProvider = 'siliconflow' | 'seedream';
+
 // AI 图片生成配置
 export interface ImageGenConfig {
   baseUrl: string;      // API 地址
   apiKey: string;       // API Key
   model: string;        // 模型名称
+  provider: ImageGenProvider; // API provider
 }
 
 // 获取 AI 配置（优先环境变量，其次数据库配置）
@@ -138,6 +142,7 @@ export function getImageGenConfig(userId?: number): ImageGenConfig | null {
       baseUrl: process.env.IMAGE_GEN_API_URL,
       apiKey: process.env.IMAGE_GEN_API_KEY,
       model: process.env.IMAGE_GEN_MODEL || 'Kwai-Kolors/Kolors',
+      provider: (process.env.IMAGE_GEN_PROVIDER as ImageGenProvider) || 'siliconflow',
     };
   }
 
@@ -146,7 +151,9 @@ export function getImageGenConfig(userId?: number): ImageGenConfig | null {
   const configStr = getSetting('imageGen', userId);
   if (configStr) {
     try {
-      return JSON.parse(configStr);
+      const parsed = JSON.parse(configStr);
+      // Ensure backward compat: existing configs without provider default to 'siliconflow'
+      return { ...parsed, provider: parsed.provider || 'siliconflow' };
     } catch {
       return null;
     }

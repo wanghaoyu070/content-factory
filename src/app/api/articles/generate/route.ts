@@ -1,10 +1,19 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getSetting, createArticle, getSearchById } from '@/lib/db';
+import { createTrackedGenerationJob, getGenerationJob, trackGenerationProgress } from '@/lib/generation-jobs';
 import { generateArticle, generateImagePrompts, ImageInsertPosition } from '@/lib/ai';
 import { generateImagesParallel, GeneratedImage } from '@/lib/image-gen';
+import { captureScreenshots, insertScreenshotsIntoMarkdown } from '@/lib/screenshot';
 import { getImageGenConfig, getAIConfig as getAIUserConfig } from '@/lib/config';
-import { escapeHtml } from '@/lib/sanitize';
+import {
+  badRequestResponse,
+  createRequestId,
+  notFoundResponse,
+  successResponse,
+  unauthorizedResponse,
+} from '@/lib/api-response';
+import { positiveIdSchema } from '@/lib/validations';
+import { z } from 'zod';
 
 interface GenerateRequest {
   insightId: number;
@@ -20,8 +29,22 @@ interface GenerateRequest {
   fetchImages?: boolean;
 }
 
+const generateRequestSchema = z.object({
+  insightId: positiveIdSchema,
+  searchId: positiveIdSchema,
+  insight: z.object({
+    title: z.string().min(1, '选题标题不能为空'),
+    description: z.string().default(''),
+    suggestedTopics: z.array(z.string()).default([]),
+    relatedArticles: z.array(z.string()).default([]),
+  }),
+  keyword: z.string().min(1, '关键词不能为空'),
+  style: z.string().optional(),
+  fetchImages: z.boolean().optional().default(false),
+});
+
 // 进度步骤定义
-type ProgressStep = 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'saving' | 'completed' | 'error';
+type ProgressStep = 'validating' | 'generating' | 'generating_prompts' | 'generating_images' | 'screenshots' | 'saving' | 'completed' | 'error';
 
 interface ProgressEvent {
   step: ProgressStep;
@@ -30,31 +53,24 @@ interface ProgressEvent {
   data?: unknown;
 }
 
-// 将图片插入到文章内容中
+// Insert Markdown images into content (split by double newline)
+// Heading-aware: never place an image directly after a heading line
 function insertImagesIntoContent(
   content: string,
   imagePositions: ImageInsertPosition[],
   generatedImages: (GeneratedImage | null)[]
 ): string {
-  // 找到所有段落
-  const paragraphRegex = /<p[^>]*>[\s\S]*?<\/p>/gi;
-  const paragraphs: { match: string; index: number; endIndex: number }[] = [];
-  let match;
+  // Split content into blocks by double newline
+  const blocks = content.split(/\n\n+/);
 
-  while ((match = paragraphRegex.exec(content)) !== null) {
-    paragraphs.push({
-      match: match[0],
-      index: match.index,
-      endIndex: match.index + match[0].length,
-    });
-  }
-
-  if (paragraphs.length === 0) {
+  if (blocks.length === 0) {
     return content;
   }
 
-  // 构建插入点映射（段落编号 -> 图片HTML）
-  const insertions: { position: number; html: string }[] = [];
+  const isHeading = (block: string) => /^#{1,6}\s/.test(block.trim());
+
+  // Build insertion map: block index → markdown image string
+  const insertions: Map<number, string[]> = new Map();
 
   for (let i = 0; i < imagePositions.length; i++) {
     const pos = imagePositions[i];
@@ -62,42 +78,72 @@ function insertImagesIntoContent(
 
     if (!image || !image.url) continue;
 
-    // 找到对应段落的结束位置
-    const paragraphIndex = Math.min(pos.insertAfterParagraph - 1, paragraphs.length - 1);
-    if (paragraphIndex < 0) continue;
+    // Target block index (0-based, from 1-based insertAfterParagraph)
+    let targetIndex = Math.min(pos.insertAfterParagraph - 1, blocks.length - 1);
+    if (targetIndex < 0) continue;
 
-    const insertPosition = paragraphs[paragraphIndex].endIndex;
+    // If target lands on a heading, push forward to the next non-heading block
+    while (targetIndex < blocks.length - 1 && isHeading(blocks[targetIndex])) {
+      targetIndex++;
+    }
 
-    const imgHtml = `
-<figure class="article-image" style="margin: 24px 0; text-align: center;">
-  <img src="${escapeHtml(image.url)}" alt="${escapeHtml(pos.description)}" style="max-width: 100%; height: auto; border-radius: 8px;" />
-  <figcaption style="text-align: center; color: #666; font-size: 14px; margin-top: 8px;">${escapeHtml(pos.description)}</figcaption>
-</figure>`;
+    const imgMarkdown = `![${pos.description}](${image.url})`;
 
-    insertions.push({ position: insertPosition, html: imgHtml });
+    if (!insertions.has(targetIndex)) {
+      insertions.set(targetIndex, []);
+    }
+    insertions.get(targetIndex)!.push(imgMarkdown);
   }
 
-  // 从后往前插入，避免位置偏移
-  insertions.sort((a, b) => b.position - a.position);
-
-  let result = content;
-  for (const insertion of insertions) {
-    result = result.slice(0, insertion.position) + insertion.html + result.slice(insertion.position);
+  // Rebuild content with images inserted after target blocks
+  const result: string[] = [];
+  for (let i = 0; i < blocks.length; i++) {
+    result.push(blocks[i]);
+    const images = insertions.get(i);
+    if (images) {
+      result.push(...images);
+    }
   }
 
-  return result;
+  return result.join('\n\n');
 }
 
 // POST /api/articles/generate - AI生成文章（SSE流式响应）
 export async function POST(request: Request) {
+  const requestId = createRequestId();
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ success: false, error: '请先登录' }, { status: 401 });
+    return unauthorizedResponse('请先登录', requestId);
   }
 
-  const body: GenerateRequest = await request.json();
-  const { insightId, searchId, insight, keyword, style, fetchImages = false } = body;
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return badRequestResponse('请求体必须是有效的 JSON', requestId);
+  }
+  const parsedBody = generateRequestSchema.safeParse(rawBody);
+  if (!parsedBody.success) {
+    const message = parsedBody.error.issues[0]?.message || '请求参数不合法';
+    return badRequestResponse(message, requestId);
+  }
+
+  const {
+    insightId,
+    searchId,
+    insight,
+    keyword,
+    style,
+    fetchImages = false,
+  }: GenerateRequest = parsedBody.data;
   const userId = session.user.id;
+  const generationJobId = createTrackedGenerationJob({
+    userId,
+    searchId,
+    insightId,
+    style,
+    fetchImages,
+  });
 
   // 创建 SSE 流
   const encoder = new TextEncoder();
@@ -105,7 +151,21 @@ export async function POST(request: Request) {
     async start(controller) {
       // 发送进度事件的辅助函数
       const sendProgress = (event: ProgressEvent) => {
-        const data = `data: ${JSON.stringify(event)}\n\n`;
+        trackGenerationProgress(generationJobId, userId, {
+          ...event,
+          data: {
+            generationJobId,
+            ...(typeof event.data === 'object' && event.data !== null ? event.data as Record<string, unknown> : {}),
+          },
+        });
+        const enrichedEvent = {
+          ...event,
+          data: {
+            generationJobId,
+            ...(typeof event.data === 'object' && event.data !== null ? event.data as Record<string, unknown> : {}),
+          },
+        };
+        const data = `data: ${JSON.stringify(enrichedEvent)}\n\n`;
         controller.enqueue(encoder.encode(data));
       };
 
@@ -198,14 +258,17 @@ export async function POST(request: Request) {
         });
 
         // 步骤3: 生成图片（如果启用）
-        let images: GeneratedImage[] = [];
+        const images: GeneratedImage[] = [];
         let coverImage = '';
         let contentWithImages = generated.content;
 
-        // 清理文章中可能存在的旧图片标记
+        // Clean up any leftover [INSERT_IMAGE:...] markers from AI output
         contentWithImages = contentWithImages.replace(/\[INSERT_IMAGE:[^\]]+\]/g, '');
 
-        if (fetchImages) {
+        // CyberZen style skips AI image generation — uses real screenshots instead
+        const isCyberZenStyle = style === 'cyberzen';
+
+        if (fetchImages && !isCyberZenStyle) {
           // 获取图片生成配置
           const imageGenConfig = getImageGenConfig(userId);
 
@@ -282,6 +345,45 @@ export async function POST(request: Request) {
           }
         }
 
+        // CyberZen: capture real screenshots via Playwright
+        if (isCyberZenStyle && generated.screenshotSuggestions?.length) {
+          sendProgress({
+            step: 'screenshots',
+            message: `正在截取 ${generated.screenshotSuggestions.length} 张真实截图...`,
+            progress: 55,
+          });
+
+          try {
+            const screenshots = await captureScreenshots(generated.screenshotSuggestions);
+
+            if (screenshots.length > 0) {
+              contentWithImages = insertScreenshotsIntoMarkdown(
+                contentWithImages,
+                screenshots
+              );
+
+              sendProgress({
+                step: 'screenshots',
+                message: `已截取 ${screenshots.length} 张精准截图`,
+                progress: 80,
+              });
+            } else {
+              sendProgress({
+                step: 'screenshots',
+                message: '截图失败，文章将不包含截图',
+                progress: 80,
+              });
+            }
+          } catch (screenshotError) {
+            console.error(`[${requestId}] Screenshot capture failed:`, screenshotError);
+            sendProgress({
+              step: 'screenshots',
+              message: '截图服务异常，跳过截图',
+              progress: 80,
+            });
+          }
+        }
+
         // 步骤4: 保存文章到数据库
         sendProgress({
           step: 'saving',
@@ -296,6 +398,7 @@ export async function POST(request: Request) {
         const articleId = createArticle({
           title: generated.title,
           content: contentWithImages,
+          markdown_content: contentWithImages,
           coverImage,
           images: images.map(img => img.url),
           source,
@@ -311,6 +414,7 @@ export async function POST(request: Request) {
           message: '创作完成！',
           progress: 100,
           data: {
+            generationJobId,
             articleId,
             title: generated.title,
             content: contentWithImages,
@@ -323,7 +427,7 @@ export async function POST(request: Request) {
 
         controller.close();
       } catch (error) {
-        console.error('生成文章失败:', error);
+        console.error(`[${requestId}] 生成文章失败:`, error);
         sendProgress({
           step: 'error',
           message: error instanceof Error ? error.message : '生成文章失败',
@@ -339,6 +443,47 @@ export async function POST(request: Request) {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
+      'X-Request-Id': requestId,
+      'X-Generation-Job-Id': String(generationJobId),
     },
   });
+}
+
+export async function GET(request: Request) {
+  const requestId = createRequestId();
+  const session = await auth();
+  if (!session?.user) {
+    return unauthorizedResponse('请先登录', requestId);
+  }
+
+  const { searchParams } = new URL(request.url);
+  const jobIdParam = searchParams.get('jobId');
+  if (!jobIdParam) {
+    return badRequestResponse('缺少 jobId 参数', requestId);
+  }
+
+  const parsedId = positiveIdSchema.safeParse(jobIdParam);
+  if (!parsedId.success) {
+    return badRequestResponse('无效的 jobId 参数', requestId);
+  }
+
+  const job = getGenerationJob(parsedId.data, session.user.id);
+  if (!job) {
+    return notFoundResponse('生成任务不存在', requestId);
+  }
+
+  return successResponse({
+    jobId: job.id,
+    status: job.status,
+    step: job.step,
+    progress: job.progress,
+    message: job.message,
+    articleId: job.article_id,
+    errorMessage: job.error_message,
+    searchId: job.search_id,
+    insightId: job.insight_id,
+    startedAt: job.started_at,
+    completedAt: job.completed_at,
+    updatedAt: job.updated_at,
+  }, 200, requestId);
 }

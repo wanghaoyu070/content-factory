@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getTopKeywords } from '@/lib/db';
+import { createRequestId, successResponseWithMeta } from '@/lib/api-response';
 
 // 默认热门话题（当用户没有搜索历史时使用）
 const DEFAULT_HOT_TOPICS = [
@@ -16,16 +16,18 @@ const DEFAULT_HOT_TOPICS = [
 
 // GET /api/hot-topics - 获取热门话题
 export async function GET() {
+  const requestId = createRequestId();
   try {
     const session = await auth();
 
     // 未登录用户返回默认热门话题
     if (!session?.user?.id) {
-      return NextResponse.json({
-        success: true,
-        data: DEFAULT_HOT_TOPICS,
-        source: 'default',
-      });
+      return successResponseWithMeta(
+        DEFAULT_HOT_TOPICS,
+        { source: 'default' },
+        200,
+        requestId
+      );
     }
 
     // 获取用户的热门搜索关键词
@@ -40,11 +42,12 @@ export async function GET() {
         heat: Math.round(50 + (item.count / maxCount) * 50 - index * 2),
       }));
 
-      return NextResponse.json({
-        success: true,
-        data: hotTopics,
-        source: 'user_history',
-      });
+      return successResponseWithMeta(
+        hotTopics,
+        { source: 'user_history' },
+        200,
+        requestId
+      );
     }
 
     // 用户没有搜索历史，尝试获取全局热门关键词
@@ -57,28 +60,31 @@ export async function GET() {
         heat: Math.round(50 + (item.count / maxCount) * 50 - index * 2),
       }));
 
-      return NextResponse.json({
-        success: true,
-        data: hotTopics,
-        source: 'global',
-      });
+      return successResponseWithMeta(
+        hotTopics,
+        { source: 'global' },
+        200,
+        requestId
+      );
     }
 
     // 没有任何搜索记录，返回默认热门话题
-    return NextResponse.json({
-      success: true,
-      data: DEFAULT_HOT_TOPICS,
-      source: 'default',
-    });
+    return successResponseWithMeta(
+      DEFAULT_HOT_TOPICS,
+      { source: 'default' },
+      200,
+      requestId
+    );
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('获取热门话题失败:', error);
     }
     // 出错时返回默认热门话题，保证用户体验
-    return NextResponse.json({
-      success: true,
-      data: DEFAULT_HOT_TOPICS,
-      source: 'default',
-    });
+    return successResponseWithMeta(
+      DEFAULT_HOT_TOPICS,
+      { source: 'default' },
+      200,
+      requestId
+    );
   }
 }
