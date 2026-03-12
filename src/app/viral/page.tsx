@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import { useLoginGuard } from '@/hooks/useLoginGuard';
@@ -24,6 +24,8 @@ import {
     BookOpen,
     Target,
     Copy,
+    RefreshCw,
+    Star,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -97,6 +99,12 @@ export default function ViralPage() {
     const [analyzingUrls, setAnalyzingUrls] = useState<Set<string>>(new Set());
     const [expandedUrls, setExpandedUrls] = useState<Set<string>>(new Set());
 
+    // Personalized Recommendations
+    const [recArticles, setRecArticles] = useState<ViralArticleItem[]>([]);
+    const [recDomains, setRecDomains] = useState<string[]>([]);
+    const [recLoading, setRecLoading] = useState(false);
+    const [recLoaded, setRecLoaded] = useState(false);
+
     const getDaysFromRange = useCallback(() => {
         switch (dateRange) {
             case '3d': return 3;
@@ -144,6 +152,31 @@ export default function ViralPage() {
             setLoading(false);
         }
     }, [ensureLogin, keyword, category, getDaysFromRange]);
+
+    // Auto-fetch personalized recommendations on mount
+    const fetchRecommendations = useCallback(async (forceRefresh = false) => {
+        setRecLoading(true);
+        try {
+            const url = forceRefresh ? '/api/viral-articles/recommend?refresh=1' : '/api/viral-articles/recommend';
+            const res = await fetch(url);
+            const json = await res.json();
+            if (json.success && json.data) {
+                setRecArticles(json.data.articles || []);
+                setRecDomains(json.data.domains || []);
+            }
+        } catch (err) {
+            console.warn('Recommendations fetch failed:', err);
+        } finally {
+            setRecLoading(false);
+            setRecLoaded(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated && !recLoaded) {
+            fetchRecommendations();
+        }
+    }, [isAuthenticated, recLoaded, fetchRecommendations]);
 
     // AI Analysis handler for a single article
     const handleAnalyze = useCallback(async (article: ViralArticleItem) => {
@@ -213,7 +246,121 @@ export default function ViralPage() {
             <Header title="爆文发现" />
 
             <div className="p-6 max-w-7xl mx-auto">
-                {/* Search & Filter Area */}
+                {/* ===== Personalized Recommendation Zone ===== */}
+                {recLoaded && recArticles.length > 0 && (
+                    <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] mb-6 overflow-hidden">
+                        {/* Recommendation Header */}
+                        <div className="px-6 py-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                    <Star className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-semibold text-[#1A1A1A]">为你推荐</h2>
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        {recDomains.map(d => (
+                                            <span key={d} className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">{d}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => fetchRecommendations(true)}
+                                disabled={recLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[#666] hover:text-[#333] hover:bg-[#F7F6F0] transition-all disabled:opacity-50"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${recLoading ? 'animate-spin' : ''}`} />
+                                换一批
+                            </button>
+                        </div>
+                        {/* Recommendation List */}
+                        <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+                            {recArticles.map((article, idx) => {
+                                const key = article.url || article.title;
+                                return (
+                                    <div key={`rec_${idx}`} className="px-6 py-4 hover:bg-[#FDFCF6] transition-colors">
+                                        <div className="flex items-start gap-3">
+                                            {/* Rank */}
+                                            <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${idx < 3
+                                                ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20 text-amber-600 border border-amber-500/30'
+                                                : 'bg-[#F7F6F0] text-[#999] border border-[rgba(0,0,0,0.06)]'
+                                                }`}>
+                                                {idx + 1}
+                                            </div>
+                                            {/* Content */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-sm font-medium text-[#1A1A1A] line-clamp-1">{article.title}</h3>
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-[#999]">
+                                                    <span>{article.mp_nickname}</span>
+                                                    <span className="font-semibold text-[#333]">{article.read_num?.toLocaleString()} 阅读</span>
+                                                    <span className={`font-bold ${article.hot > 100 ? 'text-red-500' : article.hot > 30 ? 'text-orange-500' : 'text-[#666]'}`}>
+                                                        🔥 {article.hot}x
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {/* Actions */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <button
+                                                    onClick={() => handleAnalyze(article)}
+                                                    disabled={analyzingUrls.has(key)}
+                                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all flex items-center gap-1 ${analysisResults[key]
+                                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
+                                                        : 'bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700'
+                                                        } disabled:opacity-60`}
+                                                >
+                                                    {analyzingUrls.has(key) ? (
+                                                        <><Loader2 className="w-3 h-3 animate-spin" /> 拆解中</>
+                                                    ) : analysisResults[key] ? (
+                                                        <><Sparkles className="w-3 h-3" /> 查看</>
+                                                    ) : (
+                                                        <><Zap className="w-3 h-3" /> AI拆解</>
+                                                    )}
+                                                </button>
+                                                {article.url && (
+                                                    <a href={article.url} target="_blank" rel="noopener noreferrer"
+                                                        className="text-[#999] hover:text-[#333] transition-colors">
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Inline Analysis Panel (reuse existing logic) */}
+                                        {expandedUrls.has(key) && analysisResults[key] && (
+                                            <div className="mt-3 ml-9 p-4 rounded-xl bg-gradient-to-br from-violet-50/50 to-purple-50/30 border border-violet-100 text-sm space-y-3">
+                                                {analysisResults[key].viralReason && (
+                                                    <div><span className="font-semibold text-orange-600">🔥 爆款原因：</span>{toRenderable(analysisResults[key].viralReason)}</div>
+                                                )}
+                                                {analysisResults[key].titleAnalysis && (
+                                                    <div><span className="font-semibold text-blue-600">🎯 标题策略：</span>{toRenderable(analysisResults[key].titleAnalysis)}</div>
+                                                )}
+                                                {analysisResults[key].replicableFormula && (
+                                                    <div><span className="font-semibold text-amber-600">📋 可复制公式：</span>{toRenderable(analysisResults[key].replicableFormula)}</div>
+                                                )}
+                                                {analysisResults[key].suggestedTopics && (
+                                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                                        <span className="text-[#666]">✨ 衍生选题：</span>
+                                                        {(Array.isArray(analysisResults[key].suggestedTopics) ? analysisResults[key].suggestedTopics : []).map((t: unknown, i: number) => (
+                                                            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-white border border-[rgba(0,0,0,0.08)] text-[#333]">{toRenderable(t)}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+                {/* Recommendation loading state */}
+                {recLoading && !recLoaded && (
+                    <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] mb-6 p-8 flex items-center justify-center gap-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+                        <span className="text-sm text-[#666]">正在加载个性化推荐...</span>
+                    </div>
+                )}
+
+                {/* ===== Search & Filter Area ===== */}
                 <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] mb-6">
                     <div className="flex flex-col gap-4">
                         {/* Top Row: Search + Button */}

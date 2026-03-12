@@ -6,86 +6,135 @@ import Header from '@/components/layout/Header';
 import { useSession } from 'next-auth/react';
 import LoginPrompt from '@/components/ui/LoginPrompt';
 import {
-  BarChart3,
   FileText,
   Send,
   Clock,
   Search,
   PenTool,
-  ArrowUpRight,
-  ArrowDownRight,
+  Flame,
+  Star,
+  Loader2,
+  ExternalLink,
+  Zap,
+  ArrowRight,
+  Sparkles,
+  BarChart3,
 } from 'lucide-react';
-import { StatCardSkeleton, ChartSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import dynamic from 'next/dynamic';
+import { StatCardSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
+import type { ViralArticleItem } from '@/types/api';
 
-// 动态导入组件
-const QuickCreate = dynamic(() => import('@/components/dashboard/QuickCreate'), {
-  ssr: false,
-});
-const TopKeywordsChart = dynamic(
-  () => import('@/components/dashboard/TopKeywordsChart').then(mod => ({ default: mod.TopKeywordsChart })),
-  { ssr: false }
-);
-const TrendChart = dynamic(
-  () => import('@/components/dashboard/TrendChart').then(mod => ({ default: mod.TrendChart })),
-  { ssr: false }
-);
-const StatusDistributionChart = dynamic(
-  () => import('@/components/dashboard/StatusDistributionChart').then(mod => ({ default: mod.StatusDistributionChart })),
-  { ssr: false }
-);
+interface DashboardStats {
+  totalAnalysis: number;
+  totalArticles: number;
+  publishedArticles: number;
+  pendingArticles: number;
+}
 
-interface DashboardData {
-  stats: {
-    totalAnalysis: number;
-    totalArticles: number;
-    publishedArticles: number;
-    pendingArticles: number;
-    // 趋势百分比（本周 vs 上周）
-    analysisTrend: number;
-    articlesTrend: number;
-    publishedTrend: number;
-    pendingTrend: number;
-  };
-  trend: { date: string; count: number }[];
-  statusDistribution: { status: string; count: number }[];
-  topKeywords: { keyword: string; count: number }[];
-  recentActivities: {
-    type: 'analysis' | 'article' | 'publish';
-    title: string;
-    time: string;
-    id: number;
-  }[];
+interface RecentActivity {
+  type: 'analysis' | 'article' | 'publish';
+  title: string;
+  time: string;
+  id: number;
+}
+
+interface DraftArticle {
+  id: number;
+  title: string;
+  status: string;
+  updatedAt: string;
 }
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const isAuthenticated = status === 'authenticated' && !!session?.user && !session.user.isPending;
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
 
+  // Dashboard data
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [dashLoading, setDashLoading] = useState(true);
+
+  // Recommendations
+  const [recArticles, setRecArticles] = useState<ViralArticleItem[]>([]);
+  const [recDomains, setRecDomains] = useState<string[]>([]);
+  const [recLoading, setRecLoading] = useState(true);
+
+  // Draft articles
+  const [drafts, setDrafts] = useState<DraftArticle[]>([]);
+  const [draftsLoading, setDraftsLoading] = useState(true);
+
+  // Fetch dashboard stats
   useEffect(() => {
     if (!isAuthenticated) {
-      setLoading(false);
-      setData(null);
+      setDashLoading(false);
       return;
     }
-    const fetchDashboardData = async () => {
+    const fetchDashboard = async () => {
       try {
-        const response = await fetch('/api/dashboard');
-        const result = await response.json();
-        if (result.success) {
-          setData(result.data);
+        const res = await fetch('/api/dashboard');
+        const json = await res.json();
+        if (json.success) {
+          setStats(json.data.stats);
+          setRecentActivities(json.data.recentActivities || []);
         }
       } catch (err) {
-        console.error('获取仪表盘数据失败:', err);
+        console.warn('Dashboard fetch failed:', err);
       } finally {
-        setLoading(false);
+        setDashLoading(false);
       }
     };
+    fetchDashboard();
+  }, [isAuthenticated]);
 
-    fetchDashboardData();
+  // Fetch recommendations
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setRecLoading(false);
+      return;
+    }
+    const fetchRec = async () => {
+      try {
+        const res = await fetch('/api/viral-articles/recommend');
+        const json = await res.json();
+        if (json.success && json.data) {
+          setRecArticles((json.data.articles || []).slice(0, 5));
+          setRecDomains(json.data.domains || []);
+        }
+      } catch (err) {
+        console.warn('Recommendations fetch failed:', err);
+      } finally {
+        setRecLoading(false);
+      }
+    };
+    fetchRec();
+  }, [isAuthenticated]);
+
+  // Fetch draft articles
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setDraftsLoading(false);
+      return;
+    }
+    const fetchDrafts = async () => {
+      try {
+        const res = await fetch('/api/articles?status=draft&limit=3');
+        const json = await res.json();
+        if (json.success) {
+          setDrafts(
+            (json.data || []).slice(0, 3).map((a: { id: number; title: string; status: string; updated_at?: string; created_at?: string }) => ({
+              id: a.id,
+              title: a.title,
+              status: a.status,
+              updatedAt: a.updated_at || a.created_at || '',
+            }))
+          );
+        }
+      } catch (err) {
+        console.warn('Drafts fetch failed:', err);
+      } finally {
+        setDraftsLoading(false);
+      }
+    };
+    fetchDrafts();
   }, [isAuthenticated]);
 
   const formatTime = (timeStr: string) => {
@@ -103,246 +152,272 @@ export default function DashboardPage() {
     return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'analysis':
-        return <Search className="w-4 h-4 text-[#333]" />;
-      case 'article':
-        return <PenTool className="w-4 h-4 text-[#333]" />;
-      case 'publish':
-        return <Send className="w-4 h-4 text-[#333]" />;
-      default:
-        return <Clock className="w-4 h-4 text-[#999]" />;
+  const getStatusLabel = (s: string) => {
+    switch (s) {
+      case 'draft': return '草稿';
+      case 'published': return '已发布';
+      case 'pending': return '待发布';
+      default: return s;
     }
   };
 
   if (!isAuthenticated && status !== 'loading') {
     return (
       <div className="min-h-screen bg-[#FDFCF6]">
-        <Header title="仪表盘" />
+        <Header title="工作台" />
         <div className="p-6">
-          <LoginPrompt description="登录后即可查看专属仪表盘与数据统计" />
+          <LoginPrompt description="登录后即可查看个性化推荐与工作台" />
         </div>
       </div>
     );
   }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#FDFCF6]">
-        <Header title="仪表盘" />
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <StatCardSkeleton key={i} />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartSkeleton />
-            <ChartSkeleton />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <ChartSkeleton />
-            </div>
-            <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
-              <div className="h-6 w-24 bg-[#F7F6F0] rounded mb-4" />
-              {Array.from({ length: 5 }).map((_, i) => (
-                <ListItemSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const stats = data?.stats || {
-    totalAnalysis: 0,
-    totalArticles: 0,
-    publishedArticles: 0,
-    pendingArticles: 0,
-    analysisTrend: 0,
-    articlesTrend: 0,
-    publishedTrend: 0,
-    pendingTrend: 0,
-  };
 
   return (
     <div className="min-h-screen bg-[#FDFCF6]">
-      <Header title="仪表盘" />
+      <Header title="工作台" />
 
-      <div className="p-6">
-        {/* 一键创作入口 */}
-        <QuickCreate className="mb-6" />
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
-          <StatCard
-            title="分析次数"
-            value={stats.totalAnalysis}
-            icon={<BarChart3 className="w-5 h-5" />}
-            color="indigo"
-            trend={stats.analysisTrend}
-          />
-          <StatCard
-            title="生成文章"
-            value={stats.totalArticles}
-            icon={<FileText className="w-5 h-5" />}
-            color="purple"
-            trend={stats.articlesTrend}
-          />
-          <StatCard
-            title="已发布"
-            value={stats.publishedArticles}
-            icon={<Send className="w-5 h-5" />}
-            color="emerald"
-            trend={stats.publishedTrend}
-          />
-          <StatCard
-            title="待处理"
-            value={stats.pendingArticles}
-            icon={<Clock className="w-5 h-5" />}
-            color="amber"
-            trend={stats.pendingTrend}
-          />
-        </div>
+        {/* ===== Section 1: Today's Recommendations ===== */}
+        <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="px-6 py-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <Star className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-[#1A1A1A]">今日推荐</h2>
+                {recDomains.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {recDomains.map(d => (
+                      <span key={d} className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">{d}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <Link
+              href="/viral"
+              className="flex items-center gap-1 text-sm text-[#666] hover:text-[#333] transition-colors"
+            >
+              查看更多 <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
 
-        {/* 图表区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
-          {/* 近7天分析趋势 - 使用新组件 */}
-          <TrendChart data={data?.trend || []} />
-
-          {/* 文章状态分布 - 使用新组件 */}
-          <StatusDistributionChart data={data?.statusDistribution || []} />
-        </div>
-
-        {/* 下方区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-          {/* 热门关键词 - 使用新组件 */}
-          <TopKeywordsChart
-            data={data?.topKeywords || []}
-            className="lg:col-span-2"
-          />
-
-          {/* 最近活动 */}
-          <div className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]">
-            <h3 className="text-lg font-semibold text-[#1A1A1A] mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#666]" />
-              最近活动
-            </h3>
-            {(data?.recentActivities || []).length > 0 ? (
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {(data?.recentActivities || []).map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#F7F6F0] transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#F7F6F0] flex items-center justify-center flex-shrink-0">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#333] truncate">{activity.title}</p>
-                      <p className="text-xs text-[#999]">{formatTime(activity.time)}</p>
+          {recLoading ? (
+            <div className="p-8 flex items-center justify-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+              <span className="text-sm text-[#666]">正在加载推荐...</span>
+            </div>
+          ) : recArticles.length > 0 ? (
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+              {recArticles.map((article, idx) => (
+                <div key={`rec_${idx}`} className="px-6 py-3.5 hover:bg-[#FDFCF6] transition-colors flex items-center gap-3">
+                  {/* Rank */}
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0 ${idx < 3
+                      ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20 text-amber-600 border border-amber-500/30'
+                      : 'bg-[#F7F6F0] text-[#999] border border-[rgba(0,0,0,0.06)]'
+                    }`}>
+                    {idx + 1}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-medium text-[#1A1A1A] line-clamp-1">{article.title}</h3>
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-[#999]">
+                      <span>{article.mp_nickname}</span>
+                      <span className="font-semibold text-[#333]">{article.read_num?.toLocaleString()} 阅读</span>
+                      <span className={`font-bold ${article.hot > 100 ? 'text-red-500' : article.hot > 30 ? 'text-orange-500' : 'text-[#666]'}`}>
+                        🔥 {article.hot}x
+                      </span>
                     </div>
                   </div>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Link
+                      href="/viral"
+                      className="px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 flex items-center gap-1"
+                    >
+                      <Zap className="w-3 h-3" /> AI拆解
+                    </Link>
+                    {article.url && (
+                      <a href={article.url} target="_blank" rel="noopener noreferrer"
+                        className="text-[#999] hover:text-[#333] transition-colors">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[#999]">
+              <Star className="w-8 h-8 mx-auto mb-2 text-[#ddd]" />
+              <p>暂无推荐内容</p>
+              <p className="text-xs mt-1">请在 .env.local 中配置 CREATOR_DOMAINS</p>
+            </div>
+          )}
+        </div>
+
+        {/* ===== Section 2: Drafts + Stats ===== */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Drafts */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-[rgba(0,0,0,0.06)]">
+            <div className="px-6 py-4 border-b border-[rgba(0,0,0,0.06)] flex items-center justify-between">
+              <h2 className="text-base font-semibold text-[#1A1A1A] flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#666]" />
+                我的草稿
+              </h2>
+              <Link
+                href="/articles"
+                className="flex items-center gap-1 text-sm text-[#666] hover:text-[#333] transition-colors"
+              >
+                全部文章 <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {draftsLoading ? (
+              <div className="p-4 space-y-3">
+                {[1, 2, 3].map(i => <ListItemSkeleton key={i} />)}
+              </div>
+            ) : drafts.length > 0 ? (
+              <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+                {drafts.map((draft) => (
+                  <Link
+                    key={draft.id}
+                    href={`/articles/${draft.id}`}
+                    className="px-6 py-4 flex items-center justify-between hover:bg-[#FDFCF6] transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-[#1A1A1A] group-hover:text-[#333] line-clamp-1">{draft.title}</h3>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-[#999]">
+                        <span className={`px-1.5 py-0.5 rounded ${draft.status === 'draft' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                            draft.status === 'published' ? 'bg-green-50 text-green-600 border border-green-200' :
+                              'bg-[#F7F6F0] text-[#666] border border-[rgba(0,0,0,0.06)]'
+                          }`}>
+                          {getStatusLabel(draft.status)}
+                        </span>
+                        {draft.updatedAt && <span>{formatTime(draft.updatedAt)}</span>}
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#ccc] group-hover:text-[#666] transition-colors flex-shrink-0" />
+                  </Link>
                 ))}
               </div>
             ) : (
-              <div className="h-64 flex items-center justify-center">
-                <EmptyState
-                  icon={<Clock className="w-6 h-6" />}
-                  title="暂无活动记录"
-                  description="完成一次分析或创作后即可在此查看动态"
-                  action={{ label: '新建任务', href: '/create' }}
-                />
+              <div className="p-8 text-center">
+                <PenTool className="w-8 h-8 mx-auto mb-2 text-[#ddd]" />
+                <p className="text-sm text-[#999]">还没有草稿</p>
+                <Link
+                  href="/create"
+                  className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#333] text-white rounded-xl text-sm hover:bg-[#444] transition-colors"
+                >
+                  <Sparkles className="w-4 h-4" /> 开始创作
+                </Link>
               </div>
             )}
           </div>
+
+          {/* Stats + Quick Actions */}
+          <div className="space-y-6">
+            {/* Compact Stats */}
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-5">
+              <h2 className="text-base font-semibold text-[#1A1A1A] flex items-center gap-2 mb-4">
+                <BarChart3 className="w-5 h-5 text-[#666]" />
+                数据概览
+              </h2>
+              {dashLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => <StatCardSkeleton key={i} />)}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-[#F7F6F0] rounded-xl">
+                    <span className="text-sm text-[#666]">分析次数</span>
+                    <span className="text-lg font-bold text-[#1A1A1A]">{stats?.totalAnalysis || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F7F6F0] rounded-xl">
+                    <span className="text-sm text-[#666]">生成文章</span>
+                    <span className="text-lg font-bold text-[#1A1A1A]">{stats?.totalArticles || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F7F6F0] rounded-xl">
+                    <span className="text-sm text-[#666]">已发布</span>
+                    <span className="text-lg font-bold text-emerald-600">{stats?.publishedArticles || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-[#F7F6F0] rounded-xl">
+                    <span className="text-sm text-[#666]">待处理</span>
+                    <span className="text-lg font-bold text-amber-600">{stats?.pendingArticles || 0}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)] p-5">
+              <h2 className="text-sm font-medium text-[#666] mb-3">快捷操作</h2>
+              <div className="space-y-2">
+                <Link
+                  href="/analysis"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors group"
+                >
+                  <Search className="w-5 h-5 text-[#333]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-[#1A1A1A]">选题分析</div>
+                    <div className="text-xs text-[#999]">搜索关键词，发现新选题</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[#ccc] group-hover:text-[#999]" />
+                </Link>
+                <Link
+                  href="/viral"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors group"
+                >
+                  <Flame className="w-5 h-5 text-[#333]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-[#1A1A1A]">爆文发现</div>
+                    <div className="text-xs text-[#999]">AI 推荐热门爆文</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[#ccc] group-hover:text-[#999]" />
+                </Link>
+                <Link
+                  href="/create"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[#F7F6F0] hover:bg-[#EFEDE7] transition-colors group"
+                >
+                  <PenTool className="w-5 h-5 text-[#333]" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-[#1A1A1A]">内容创作</div>
+                    <div className="text-xs text-[#999]">AI 一键生成高质量文章</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-[#ccc] group-hover:text-[#999]" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 快捷入口 */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-          <Link
-            href="/analysis"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
-            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">选题分析</h4>
-                <p className="text-sm text-[#666]">搜索关键词，发现热门选题</p>
-              </div>
-              <Search className="w-8 h-8 text-[#333]" />
+        {/* ===== Section 3: Recent Activity ===== */}
+        {recentActivities.length > 0 && (
+          <div className="bg-white rounded-2xl border border-[rgba(0,0,0,0.06)]">
+            <div className="px-6 py-4 border-b border-[rgba(0,0,0,0.06)]">
+              <h2 className="text-base font-semibold text-[#1A1A1A] flex items-center gap-2">
+                <Clock className="w-5 h-5 text-[#666]" />
+                最近动态
+              </h2>
             </div>
-          </Link>
-          <Link
-            href="/create"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
-            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">内容创作</h4>
-                <p className="text-sm text-[#666]">AI一键生成高质量文章</p>
-              </div>
-              <PenTool className="w-8 h-8 text-[#333]" />
+            <div className="divide-y divide-[rgba(0,0,0,0.04)]">
+              {recentActivities.slice(0, 5).map((activity, index) => (
+                <div key={index} className="px-6 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-[#F7F6F0] flex items-center justify-center flex-shrink-0">
+                    {activity.type === 'analysis' ? <Search className="w-4 h-4 text-[#333]" /> :
+                      activity.type === 'article' ? <PenTool className="w-4 h-4 text-[#333]" /> :
+                        <Send className="w-4 h-4 text-[#333]" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#333] truncate">{activity.title}</p>
+                  </div>
+                  <span className="text-xs text-[#999] flex-shrink-0">{formatTime(activity.time)}</span>
+                </div>
+              ))}
             </div>
-          </Link>
-          <Link
-            href="/articles"
-            className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)] hover:border-[rgba(0,0,0,0.12)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 group"
-            style={{ transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-lg font-semibold text-[#1A1A1A] mb-1">发布管理</h4>
-                <p className="text-sm text-[#666]">管理和发布你的文章</p>
-              </div>
-              <Send className="w-8 h-8 text-[#333]" />
-            </div>
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  icon,
-  trend,
-}: {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  color?: string;
-  trend?: number;
-}) {
-  return (
-    <div
-      className="bg-white rounded-2xl p-6 border border-[rgba(0,0,0,0.06)]"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-sm text-[#666]">{title}</span>
-        <div className="w-10 h-10 rounded-xl bg-[#F7F6F0] flex items-center justify-center text-[#333]">
-          {icon}
-        </div>
-      </div>
-      <div className="flex items-end justify-between">
-        <span className="text-3xl font-bold text-[#1A1A1A]">{value}</span>
-        {trend !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-[#333]' : 'text-red-400'
-              }`}
-          >
-            {trend >= 0 ? (
-              <ArrowUpRight className="w-4 h-4" />
-            ) : (
-              <ArrowDownRight className="w-4 h-4" />
-            )}
-            <span>{Math.abs(trend)}%</span>
           </div>
         )}
       </div>

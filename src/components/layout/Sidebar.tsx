@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 
 const navItems = [
-  { href: '/', label: '仪表盘', icon: LayoutDashboard },
+  { href: '/', label: '工作台', icon: LayoutDashboard },
   { href: '/analysis', label: '选题分析', icon: Search },
   { href: '/viral', label: '爆文发现', icon: Flame },
   { href: '/create', label: '内容创作', icon: PenTool },
